@@ -1,5 +1,15 @@
 <Solution>
-  <Project Path="WooVisAgent.Api/WooVisAgent.Api.csproj" />
-  <Project Path="WooVisAgent.AppHost/WooVisAgent.AppHost.csproj" />
-  <Project Path="WooVisAgent.ServiceDefaults/WooVisAgent.ServiceDefaults.csproj" />
+  <Folder Name="/Hosts/">
+    <Project Path="WooVisAgent.Api/WooVisAgent.Api.csproj" />
+    <Project Path="WooVisAgent.AppHost/WooVisAgent.AppHost.csproj" />
+    <Project Path="WooVisAgent.GenerateWorker/WooVisAgent.GenerateWorker.csproj" />
+    <Project Path="WooVisAgent.ServiceDefaults/WooVisAgent.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/Infrastructure/">
+    <Project Path="WooVisAgent.EventBus/WooVisAgent.EventBus.csproj" />
+    <Project Path="WooVisAgent.Infrastructure/WooVisAgent.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Services/">
+    <Project Path="WooVisAgent.Services.Common/WooVisAgent.Services.Common.csproj" />
+  </Folder>
 </Solution>
