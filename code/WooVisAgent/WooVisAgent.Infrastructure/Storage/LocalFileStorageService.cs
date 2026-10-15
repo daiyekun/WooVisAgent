@@ -1,4 +1,4 @@
-﻿using Zilor.AICopilot.Services.Common.Contracts;
+﻿using WooVisAgent.Services.Common.Contracts;
 
 namespace WooVisAgent.Infrastructure.Storage;
 

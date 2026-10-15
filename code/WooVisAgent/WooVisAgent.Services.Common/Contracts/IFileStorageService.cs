@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Zilor.AICopilot.Services.Common.Contracts;
+namespace WooVisAgent.Services.Common.Contracts;
 
 public interface IFileStorageService
 {
