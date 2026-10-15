@@ -1,0 +1,6 @@
+@WooVisAgent.Api_HostAddress = http://localhost:5065
+
+GET {{WooVisAgent.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录 · AIVideo</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2312B5E5'/%3E%3Cpath d='M24 19v26l22-13z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="aurora"></div>
+<div class="mesh"></div>
+
+<div class="auth">
+  <!-- ============ 左：品牌视觉 ============ -->
+  <aside class="auth-visual">
+    <div class="vhead">
+      <a class="brand" href="index.html">
+        <span class="brand-logo">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M8.4 6.4v11.2a1.1 1.1 0 0 0 1.68.94l8.8-5.6a1.1 1.1 0 0 0 0-1.88l-8.8-5.6A1.1 1.1 0 0 0 8.4 6.4z" fill="#fff"/><path d="M3.6 9.4v5.2" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".72"/></svg>
+        </span>
+        <span class="brand-txt"><b>AIVideo</b><small>图影创作平台</small></span>
+      </a>
+      <a class="back" href="index.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        原型总览
+      </a>
+    </div>
+
+    <div class="vbody">
+      <span class="eyebrow"><span class="dot" style="background:var(--brand)"></span>图片 · 视频 · 一个工作台</span>
+      <h1>把想法说出来<br><em>剩下的交给模型</em></h1>
+      <p>在对话里直接描述你要的画面或镜头，AIVideo 会调用你自己配置的模型完成生成。所有作品自动归档，随时回看与复用。</p>
+
+      <div class="vfeats">
+        <div class="vfeat">
+          <span class="fi"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></span>
+          对话式生成，支持参考图与首尾帧
+        </div>
+        <div class="vfeat">
+          <span class="fi"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+          模型自由接入，密钥与参数由你掌控
+        </div>
+        <div class="vfeat">
+          <span class="fi"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg></span>
+          作品自动归集，按图/视频分类检索
+        </div>
+      </div>
+    </div>
+
+    <div class="vpreview">
+      <div class="pv" style="background:linear-gradient(150deg,#0B2A3A,#0E7490)">🎨</div>
+      <div class="pv" style="background:linear-gradient(150deg,#241B4D,#5B21B6)">🎬</div>
+      <div class="pv" style="background:linear-gradient(150deg,#3A1D0B,#C2410C)">🥤</div>
+    </div>
+
+    <div class="vfoot">© 2026 AIVideo · 原型演示版本，数据均为占位内容</div>
+  </aside>
+
+  <!-- ============ 右：登录表单 ============ -->
+  <section class="auth-panel">
+    <div class="auth-card">
+      <div class="m-brand brand">
+        <span class="brand-logo">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M8.4 6.4v11.2a1.1 1.1 0 0 0 1.68.94l8.8-5.6a1.1 1.1 0 0 0 0-1.88l-8.8-5.6A1.1 1.1 0 0 0 8.4 6.4z" fill="#fff"/><path d="M3.6 9.4v5.2" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".72"/></svg>
+        </span>
+        <span class="brand-txt"><b>AIVideo</b><small>图影创作平台</small></span>
+      </div>
+
+      <h2>欢迎回来</h2>
+      <p class="lead">登录后即可使用图片与视频生成能力</p>
+
+      <form class="auth-form" onsubmit="event.preventDefault();location.href='app.html'">
+        <div class="field">
+          <label for="account">账号</label>
+          <div class="input-group">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <input class="input" id="account" type="text" placeholder="邮箱或手机号" autocomplete="username">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="pwd">密码</label>
+          <div class="input-group">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input class="input" id="pwd" type="password" placeholder="请输入密码" autocomplete="current-password">
+            <span class="suffix"><button class="btn-icon" type="button" style="width:28px;height:28px;background:none;border:none" data-key-toggle="pwd" title="显示密码">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button></span>
+          </div>
+        </div>
+
+        <div class="row-between">
+          <label class="check"><input type="checkbox" checked>记住我</label>
+          <a href="#" data-demo="原型演示：重置密码邮件已发送">忘记密码？</a>
+        </div>
+
+        <button class="btn btn-primary btn-lg btn-block" type="submit">登录</button>
+
+        <label class="check">
+          <input type="checkbox" checked>
+          <span>我已阅读并同意 <a href="#" data-demo="原型演示：用户服务协议">《用户服务协议》</a> 与 <a href="#" data-demo="原型演示：隐私政策">《隐私政策》</a></span>
+        </label>
+      </form>
+
+      <div class="divider">或使用以下方式登录</div>
+
+      <div class="oauth">
+        <button class="btn btn-ghost" type="button" data-demo="原型演示：微信扫码登录">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 3C4.9 3 2 5.4 2 8.4c0 1.7.9 3.2 2.4 4.2l-.6 2 2.2-1.2c.6.2 1.3.3 2 .3h.5a5.9 5.9 0 0 1-.2-1.5C8.3 9.4 11 7.3 14.4 7.3h.6C14.3 4.9 11.7 3 8.5 3z"/><path d="M22 13.6c0-2.5-2.4-4.5-5.4-4.5s-5.4 2-5.4 4.5 2.4 4.5 5.4 4.5c.6 0 1.2-.1 1.7-.3l1.9 1-.5-1.7c1.4-.8 2.3-2.1 2.3-3.5z"/></svg>
+          微信
+        </button>
+        <button class="btn btn-ghost" type="button" data-demo="原型演示：GitHub 授权登录">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.4 3.4 0 0 0-.9-2.6c3-.3 6.2-1.5 6.2-6.7A5.2 5.2 0 0 0 20 4.8a4.9 4.9 0 0 0-.1-3.6s-1.1-.3-3.6 1.4a12.4 12.4 0 0 0-6.6 0C7.2.9 6.1 1.2 6.1 1.2A4.9 4.9 0 0 0 6 4.8a5.2 5.2 0 0 0-1.4 3.6c0 5.2 3.2 6.4 6.2 6.7A3.4 3.4 0 0 0 9.9 17v4"/></svg>
+          GitHub
+        </button>
+      </div>
+
+      <div class="auth-switch">还没有账号？<a href="register.html">立即注册</a></div>
+    </div>
+  </section>
+</div>
+
+<script src="assets/app.js"></script>
+</body>
+</html>

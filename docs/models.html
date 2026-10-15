@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>模型配置 · AIVideo</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2312B5E5'/%3E%3Cpath d='M24 19v26l22-13z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="aurora"></div>
+<div class="mesh"></div>
+
+<div class="shell" id="shell">
+
+  <!-- ==================== 左侧栏 ==================== -->
+  <aside class="side">
+    <div class="side-head">
+      <a class="brand" href="index.html">
+        <span class="brand-logo">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M8.4 6.4v11.2a1.1 1.1 0 0 0 1.68.94l8.8-5.6a1.1 1.1 0 0 0 0-1.88l-8.8-5.6A1.1 1.1 0 0 0 8.4 6.4z" fill="#fff"/><path d="M3.6 9.4v5.2" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".72"/></svg>
+        </span>
+        <span class="brand-txt"><b>AIVideo</b><small>图影创作平台</small></span>
+      </a>
+      <button class="btn-icon collapse" data-collapse title="收起 / 展开侧边栏">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+    </div>
+
+    <div class="side-body">
+      <button class="btn btn-primary btn-block" style="margin:6px 2px 2px" onclick="location.href='app.html'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        新建创作
+      </button>
+
+      <div class="side-label">工作区</div>
+      <a class="nav-item" data-nav href="app.html" title="对话创作">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>对话创作</span>
+      </a>
+      <a class="nav-item" data-nav href="works.html" title="我的作品">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>
+        <span>我的作品</span>
+        <span class="badge">36</span>
+      </a>
+      <a class="nav-item on" data-nav href="models.html" title="模型配置">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 2.6 15a2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.2-2.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 9.5 4.2a2 2 0 1 1 4 0 1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 21.4 11a2 2 0 1 1 0 4z"/></svg>
+        <span>模型配置</span>
+      </a>
+
+      <div class="side-label"><span>最近会话</span></div>
+      <div class="conv" onclick="location.href='app.html'">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></span>
+        <span class="tt">极简日系护肤海报</span>
+        <span class="tm">刚刚</span>
+      </div>
+      <div class="conv" onclick="location.href='app.html'">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M10 9l5 3-5 3z"/></svg></span>
+        <span class="tt">汽水倒入玻璃杯慢镜头</span>
+        <span class="tm">12 分钟</span>
+      </div>
+      <div class="conv" onclick="location.href='app.html'">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></span>
+        <span class="tt">产品爆炸瞬间海报</span>
+        <span class="tm">今天 14:02</span>
+      </div>
+    </div>
+
+    <div class="side-foot">
+      <span class="avatar">代</span>
+      <div class="who"><b>daiyekun</b><small>已配置 4 个模型</small></div>
+      <button class="btn-icon" title="退出登录" onclick="location.href='login.html'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ==================== 主区 ==================== -->
+  <div class="main">
+    <div class="topbar">
+      <div class="tt">
+        <b>模型配置</b>
+        <small>接入你自己的模型服务，密钥仅保存在本地会话中</small>
+      </div>
+      <div class="spacer"></div>
+      <span class="tb-chip hide-sm" data-demo="原型演示：打开接入文档">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-5M12 8h.01"/></svg>
+        接入文档
+      </span>
+      <button class="btn btn-primary btn-sm" data-modal-open="addModel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        添加模型
+      </button>
+    </div>
+
+    <div class="scroll">
+      <div class="pad">
+
+        <!-- 说明 -->
+        <div class="card card-pad" style="display:flex;gap:14px;align-items:flex-start;margin-bottom:24px;border-color:rgba(18,181,229,.24);background:linear-gradient(135deg,rgba(18,181,229,.07),rgba(124,92,252,.05))">
+          <span style="width:34px;height:34px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--brand-dim);border:1px solid rgba(18,181,229,.3)">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-5M12 8h.01"/></svg>
+          </span>
+          <div style="flex:1;min-width:0">
+            <b style="font-size:13.5px">平台不自带模型额度，全部由你自行接入</b>
+            <p style="font-size:12.5px;color:var(--sub);margin-top:6px;line-height:1.7">
+              填写服务商提供的 <code style="font-family:var(--mono);color:var(--brand);font-size:11.5px">Base URL</code> 与 <code style="font-family:var(--mono);color:var(--brand);font-size:11.5px">API Key</code> 即可开始生成，费用由你的服务商账户结算，AIVideo 不经手任何计费。
+            </p>
+          </div>
+          <button class="btn btn-ghost btn-sm" data-demo="原型演示：安全说明">安全说明</button>
+        </div>
+
+        <!-- 标签页 -->
+        <div class="model-tabs">
+          <button class="on" data-tab="image">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+            图片模型 <span class="cnt">3</span>
+          </button>
+          <button data-tab="video">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M10 9l5 3-5 3z"/></svg>
+            视频模型 <span class="cnt">2</span>
+          </button>
+          <button data-tab="general">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 2.6 15a2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.2-2.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 9.5 4.2a2 2 0 1 1 4 0 1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 21.4 11a2 2 0 1 1 0 4z"/></svg>
+            通用设置
+          </button>
+        </div>
+
+        <!-- ========== 图片模型 ========== -->
+        <div data-panel="image">
+          <div class="model-list">
+
+            <div class="model-row">
+              <span class="mlogo" style="background:linear-gradient(135deg,#12B5E5,#0891B2)">G</span>
+              <div class="minfo">
+                <b>GPT-Image-1 <span class="tag tag-ok">默认</span></b>
+                <small>OpenAI 兼容 · 上次更新 10-15 16:02</small>
+              </div>
+              <div class="mtags">
+                <span class="tag tag-dim">文生图</span>
+                <span class="tag tag-dim">图生图</span>
+                <span class="tag tag-dim">参考图</span>
+              </div>
+              <div class="mact">
+                <span class="tag tag-ok"><span class="dot" style="background:var(--ok)"></span>已连通</span>
+                <button class="btn btn-ghost btn-sm" data-test="GPT-Image-1">测试连接</button>
+                <button class="btn btn-soft btn-sm" data-demo="原型演示：已设为默认图片模型">已设为默认</button>
+              </div>
+
+              <!-- 内联配置（演示展开态） -->
+              <div style="flex-basis:100%;border-top:1px dashed var(--line-2);margin-top:13px;padding-top:13px">
+                <div class="key-line">
+                  <div class="field" style="flex:1;min-width:190px">
+                    <label>API Key</label>
+                    <input class="input" id="keyImage1" type="password" value="sk-proj-9f3a7c21b8e44d6fa0c1" autocomplete="off">
+                  </div>
+                  <button class="btn btn-ghost btn-sm" style="margin-top:20px" data-key-toggle="keyImage1">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    显示
+                  </button>
+                </div>
+                <div class="key-line">
+                  <div class="field" style="flex:1;min-width:190px">
+                    <label>Base URL</label>
+                    <input class="input" type="text" value="https://api.openai.com/v1" spellcheck="false">
+                  </div>
+                  <div class="field" style="width:150px">
+                    <label>默认尺寸</label>
+                    <select class="select"><option>1024×1024</option><option>1536×1024</option><option>1024×1536</option></select>
+                  </div>
+                  <button class="btn btn-danger btn-sm" style="margin-top:20px" data-demo="原型演示：确认移除该模型">移除</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="model-row">
+              <span class="mlogo" style="background:linear-gradient(135deg,#7C5CFC,#A78BFA)">F</span>
+              <div class="minfo">
+                <b>Flux-Pro</b>
+                <small>自定义服务 · 上次更新 10-14 20:31</small>
+              </div>
+              <div class="mtags">
+                <span class="tag tag-dim">文生图</span>
+                <span class="tag tag-dim">高清放大</span>
+              </div>
+              <div class="mact">
+                <span class="tag tag-ok"><span class="dot" style="background:var(--ok)"></span>已连通</span>
+                <button class="btn btn-ghost btn-sm" data-test="Flux-Pro">测试连接</button>
+                <button class="btn btn-ghost btn-sm" data-demo="原型演示：已设为默认图片模型">设为默认</button>
+              </div>
+            </div>
+
+            <div class="model-row">
+              <span class="mlogo" style="background:linear-gradient(135deg,#F97316,#FBBF24)">S</span>
+              <div class="minfo">
+                <b>Seedream 4.0</b>
+                <small>尚未填写 API Key</small>
+              </div>
+              <div class="mtags">
+                <span class="tag tag-dim">文生图</span>
+                <span class="tag tag-dim">中文文字</span>
+              </div>
+              <div class="mact">
+                <span class="tag tag-dim"><span class="dot" style="background:var(--dim)"></span>未配置</span>
+                <button class="btn btn-soft btn-sm" data-demo="原型演示：展开填写密钥">去配置</button>
+              </div>
+            </div>
+
+          </div>
+
+          <button class="btn btn-ghost btn-block" style="margin-top:14px;border-style:dashed" data-modal-open="addModel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            添加图片模型
+          </button>
+        </div>
+
+        <!-- ========== 视频模型 ========== -->
+        <div data-panel="video" style="display:none">
+          <div class="model-list">
+
+            <div class="model-row">
+              <span class="mlogo" style="background:linear-gradient(135deg,#7C5CFC,#5B21B6)">S</span>
+              <div class="minfo">
+                <b>Sora-2 <span class="tag tag-ok">默认</span></b>
+                <small>OpenAI 兼容 · 上次更新 10-15 16:02</small>
+              </div>
+              <div class="mtags">
+                <span class="tag tag-dim">文生视频</span>
+                <span class="tag tag-dim">图生视频</span>
+                <span class="tag tag-dim">首尾帧</span>
+              </div>
+              <div class="mact">
+                <span class="tag tag-ok"><span class="dot" style="background:var(--ok)"></span>已连通</span>
+                <button class="btn btn-ghost btn-sm" data-test="Sora-2">测试连接</button>
+                <button class="btn btn-soft btn-sm" data-demo="原型演示：展开编辑视频模型配置">编辑配置</button>
+              </div>
+            </div>
+
+            <div class="model-row">
+              <span class="mlogo" style="background:linear-gradient(135deg,#10B981,#34D399)">K</span>
+              <div class="minfo">
+                <b>Kling-2.1</b>
+                <small>自定义服务 · 上次更新 10-13 09:12</small>
+              </div>
+              <div class="mtags">
+                <span class="tag tag-dim">图生视频</span>
+                <span class="tag tag-dim">1080p</span>
+              </div>
+              <div class="mact">
+                <span class="tag tag-ok"><span class="dot" style="background:var(--ok)"></span>已连通</span>
+                <button class="btn btn-ghost btn-sm" data-test="Kling-2.1">测试连接</button>
+                <button class="btn btn-ghost btn-sm" data-demo="原型演示：已设为默认视频模型">设为默认</button>
+              </div>
+            </div>
+
+          </div>
+
+          <button class="btn btn-ghost btn-block" style="margin-top:14px;border-style:dashed" data-modal-open="addModel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            添加视频模型
+          </button>
+        </div>
+
+        <!-- ========== 通用设置 ========== -->
+        <div data-panel="general" style="display:none">
+          <div class="card" style="padding:22px 24px">
+            <div class="card-head">
+              <div>
+                <h3><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 2.6 15a2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.2-2.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 9.5 4.2a2 2 0 1 1 4 0 1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 21.4 11a2 2 0 1 1 0 4z"/></svg>生成偏好</h3>
+                <div class="sub">这些设置将作为对话创作时的默认值</div>
+              </div>
+            </div>
+
+            <div class="setting-grid">
+              <div class="field">
+                <label>默认图片模型</label>
+                <select class="select"><option>GPT-Image-1</option><option>Flux-Pro</option><option>Seedream 4.0</option></select>
+              </div>
+              <div class="field">
+                <label>默认视频模型</label>
+                <select class="select"><option>Sora-2</option><option>Kling-2.1</option></select>
+              </div>
+              <div class="field">
+                <label>请求超时</label>
+                <select class="select"><option>120 秒</option><option>300 秒</option><option>600 秒</option></select>
+              </div>
+              <div class="field">
+                <label>最大并发任务</label>
+                <select class="select"><option>2</option><option>4</option><option>8</option></select>
+              </div>
+              <div class="field full">
+                <label>作品保存目录</label>
+                <div class="key-line" style="margin-top:0">
+                  <input class="input" type="text" value="D:\WooProject\AIVideo\outputs" spellcheck="false">
+                  <button class="btn btn-ghost btn-sm" data-demo="原型演示：选择本地目录">选择目录</button>
+                </div>
+                <span class="hint">生成结果会按「日期 / 类型」自动分目录归档</span>
+              </div>
+              <div class="field full">
+                <label>网络代理</label>
+                <input class="input" type="text" placeholder="http://127.0.0.1:7890（留空表示直连）" spellcheck="false">
+                <span class="hint">调用海外模型服务时可能需要填写</span>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:14px;margin-top:22px;padding-top:20px;border-top:1px solid var(--line)">
+              <label class="check" style="justify-content:space-between;align-items:center">
+                <span style="flex:1">
+                  <b style="font-size:13px;color:var(--text);display:block">失败自动重试</b>
+                  <span style="font-size:11.5px;color:var(--dim)">生成失败时最多自动重试 2 次</span>
+                </span>
+                <span class="toggle"><input type="checkbox" checked><i></i></span>
+              </label>
+              <label class="check" style="justify-content:space-between;align-items:center">
+                <span style="flex:1">
+                  <b style="font-size:13px;color:var(--text);display:block">结果自动归档到「我的作品」</b>
+                  <span style="font-size:11.5px;color:var(--dim)">关闭后需要手动保存生成结果</span>
+                </span>
+                <span class="toggle"><input type="checkbox" checked><i></i></span>
+              </label>
+              <label class="check" style="justify-content:space-between;align-items:center">
+                <span style="flex:1">
+                  <b style="font-size:13px;color:var(--text);display:block">提示词自动优化</b>
+                  <span style="font-size:11.5px;color:var(--dim)">生成前自动补全画面细节描述</span>
+                </span>
+                <span class="toggle"><input type="checkbox"><i></i></span>
+              </label>
+            </div>
+
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:22px">
+              <button class="btn btn-ghost" data-demo="原型演示：已恢复默认设置">恢复默认</button>
+              <button class="btn btn-primary" data-demo="原型演示：设置已保存">保存设置</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 添加模型弹层 ==================== -->
+<div class="mask" id="addModel">
+  <div class="modal">
+    <div class="modal-head">
+      <span style="width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--brand-dim);border:1px solid rgba(18,181,229,.3)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </span>
+      <b>接入新模型</b>
+      <button class="btn-icon" data-modal-close title="关闭">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="field">
+        <label>服务商预设</label>
+        <select class="select">
+          <option>OpenAI 兼容接口</option>
+          <option>阿里云百炼</option>
+          <option>火山方舟</option>
+          <option>智谱开放平台</option>
+          <option>自定义（完全手填）</option>
+        </select>
+        <span class="hint">选择预设会自动填充 Base URL 与推荐模型 ID</span>
+      </div>
+
+      <div class="setting-grid" style="gap:14px">
+        <div class="field">
+          <label>显示名称</label>
+          <input class="input" type="text" placeholder="例如：GPT-Image-1">
+        </div>
+        <div class="field">
+          <label>模型类型</label>
+          <select class="select"><option>图片模型</option><option>视频模型</option></select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>模型 ID</label>
+        <input class="input" type="text" placeholder="gpt-image-1" spellcheck="false" style="font-family:var(--mono);font-size:12.5px">
+      </div>
+
+      <div class="field">
+        <label>Base URL</label>
+        <input class="input" type="text" placeholder="https://api.openai.com/v1" spellcheck="false" style="font-family:var(--mono);font-size:12.5px">
+      </div>
+
+      <div class="field">
+        <label>API Key</label>
+        <div class="key-line" style="margin-top:0">
+          <input class="input" id="newKey" type="password" placeholder="sk-..." autocomplete="off">
+          <button class="btn btn-ghost btn-sm" data-key-toggle="newKey">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            显示
+          </button>
+        </div>
+        <span class="hint">密钥将加密保存在你的账号下，不会出现在任何生成结果中</span>
+      </div>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-modal-close>取消</button>
+      <button class="btn btn-primary" data-demo="原型演示：模型已保存并测试通过">保存并测试连接</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+</body>
+</html>

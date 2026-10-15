@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的作品 · AIVideo</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2312B5E5'/%3E%3Cpath d='M24 19v26l22-13z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="aurora"></div>
+<div class="mesh"></div>
+
+<div class="shell" id="shell">
+
+  <!-- ==================== 左侧栏 ==================== -->
+  <aside class="side">
+    <div class="side-head">
+      <a class="brand" href="index.html">
+        <span class="brand-logo">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M8.4 6.4v11.2a1.1 1.1 0 0 0 1.68.94l8.8-5.6a1.1 1.1 0 0 0 0-1.88l-8.8-5.6A1.1 1.1 0 0 0 8.4 6.4z" fill="#fff"/><path d="M3.6 9.4v5.2" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".72"/></svg>
+        </span>
+        <span class="brand-txt"><b>AIVideo</b><small>图影创作平台</small></span>
+      </a>
+      <button class="btn-icon collapse" data-collapse title="收起 / 展开侧边栏">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+    </div>
+
+    <div class="side-body">
+      <button class="btn btn-primary btn-block" style="margin:6px 2px 2px" onclick="location.href='app.html'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        新建创作
+      </button>
+
+      <div class="side-label">工作区</div>
+      <a class="nav-item" data-nav href="app.html" title="对话创作">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>对话创作</span>
+      </a>
+      <a class="nav-item on" data-nav href="works.html" title="我的作品">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>
+        <span>我的作品</span>
+        <span class="badge">36</span>
+      </a>
+      <a class="nav-item" data-nav href="models.html" title="模型配置">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 2.6 15a2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.2-2.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 9.5 4.2a2 2 0 1 1 4 0 1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 21.4 11a2 2 0 1 1 0 4z"/></svg>
+        <span>模型配置</span>
+      </a>
+
+      <div class="side-label"><span>最近会话</span></div>
+      <div class="conv" onclick="location.href='app.html'">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></span>
+        <span class="tt">极简日系护肤海报</span>
+        <span class="tm">刚刚</span>
+      </div>
+      <div class="conv" onclick="location.href='app.html'">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M10 9l5 3-5 3z"/></svg></span>
+        <span class="tt">汽水倒入玻璃杯慢镜头</span>
+        <span class="tm">12 分钟</span>
+      </div>
+      <div class="conv" onclick="location.href='app.html'">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></span>
+        <span class="tt">产品爆炸瞬间海报</span>
+        <span class="tm">今天 14:02</span>
+      </div>
+      <div class="conv" onclick="location.href='app.html'">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M10 9l5 3-5 3z"/></svg></span>
+        <span class="tt">城市夜景延时运镜</span>
+        <span class="tm">昨天</span>
+      </div>
+    </div>
+
+    <div class="side-foot">
+      <span class="avatar">代</span>
+      <div class="who"><b>daiyekun</b><small>已配置 4 个模型</small></div>
+      <button class="btn-icon" title="退出登录" onclick="location.href='login.html'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ==================== 主区 ==================== -->
+  <div class="main">
+    <div class="topbar">
+      <div class="tt">
+        <b>我的作品</b>
+        <small>所有生成结果自动归档，可下载、复用与再次编辑</small>
+      </div>
+      <div class="spacer"></div>
+      <span class="tb-chip hide-sm" data-demo="原型演示：已导出作品清单">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>
+        导出清单
+      </span>
+      <button class="btn btn-primary btn-sm" onclick="location.href='app.html'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        新建创作
+      </button>
+    </div>
+
+    <div class="scroll">
+      <div class="pad">
+
+        <!-- 统计条 -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px">
+          <div class="card card-pad" style="padding:15px 17px">
+            <div style="font-size:11.5px;color:var(--dim);font-weight:600">全部作品</div>
+            <div style="font-size:24px;font-weight:900;letter-spacing:-.6px;margin-top:5px">36</div>
+          </div>
+          <div class="card card-pad" style="padding:15px 17px">
+            <div style="font-size:11.5px;color:var(--dim);font-weight:600">图片</div>
+            <div style="font-size:24px;font-weight:900;letter-spacing:-.6px;margin-top:5px;color:var(--brand)">24</div>
+          </div>
+          <div class="card card-pad" style="padding:15px 17px">
+            <div style="font-size:11.5px;color:var(--dim);font-weight:600">视频</div>
+            <div style="font-size:24px;font-weight:900;letter-spacing:-.6px;margin-top:5px;color:#A78BFA">12</div>
+          </div>
+          <div class="card card-pad" style="padding:15px 17px">
+            <div style="font-size:11.5px;color:var(--dim);font-weight:600">已收藏</div>
+            <div style="font-size:24px;font-weight:900;letter-spacing:-.6px;margin-top:5px">7</div>
+          </div>
+        </div>
+
+        <!-- 筛选 -->
+        <div class="filters">
+          <div class="group">
+            <div class="seg" id="kindFilter" data-seg data-group="kind">
+              <button class="on" data-value="all">全部</button>
+              <button data-value="image">图片</button>
+              <button data-value="video">视频</button>
+            </div>
+          </div>
+          <div class="group">
+            <span class="pill on" data-demo="原型演示：时间范围 不限">不限时间</span>
+            <span class="pill" data-demo="原型演示：时间范围 今天">今天</span>
+            <span class="pill" data-demo="原型演示：时间范围 近 7 天">近 7 天</span>
+            <span class="pill" data-demo="原型演示：时间范围 近 30 天">近 30 天</span>
+          </div>
+          <div class="spacer"></div>
+          <div class="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input type="search" placeholder="搜索提示词或作品名称">
+          </div>
+          <div class="view-seg" id="viewSeg" data-seg data-group="view">
+            <button class="on" data-value="grid" title="网格视图">
+              <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+            </button>
+            <button data-value="list" title="列表视图">
+              <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- 作品网格 -->
+        <div class="works" id="worksGrid">
+
+          <div class="work" data-kind="image">
+            <div class="pv" style="background:linear-gradient(150deg,#0F2E22,#047857)">🧴
+              <span class="kind img"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>图片</span>
+            </div>
+            <div class="ov">
+              <span class="act" title="预览" data-demo="原型演示：打开大图预览"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
+              <span class="act" title="下载" data-demo="原型演示：已下载"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></span>
+              <span class="act" title="复用参数" data-demo="原型演示：已带入参数返回创作"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg></span>
+            </div>
+            <div class="info">
+              <div class="t">极简日系护肤海报</div>
+              <div class="m"><span>GPT-Image-1</span><span class="dot"></span><span>1024×1024</span><span class="dot"></span><span>10-15 16:02</span></div>
+            </div>
+          </div>
+
+          <div class="work" data-kind="video">
+            <div class="pv" style="background:linear-gradient(150deg,#0B2A3A,#0E7490)">🌊
+              <span class="kind vid"><svg viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M10 9l5 3-5 3z"/></svg>视频</span>
+              <span class="dur">00:04</span>
+              <span style="position:absolute;z-index:2;width:44px;height:44px;border-radius:50%;background:rgba(4,7,12,.55);border:1.5px solid rgba(255,255,255,.35);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="#fff" style="margin-left:2px"><path d="M6 4l14 8-14 8z"/></svg>
+              </span>
+            </div>
+            <div class="ov">
+              <span class="act" title="播放" data-demo="原型演示：播放视频"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M10 9l5 3-5 3z"/></svg></span>
+              <span class="act" title="下载" data-demo="原型演示：已下载 MP4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></span>
+              <span class="act" title="复用参数" data-demo="原型演示：已带入参数返回创作"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg></span>
+            </div>
+            <div class="info">
+              <div class="t">瓶身旋转 + 光斑横扫</div>
+              <div class="m"><span>Sora-2</span><span class="dot"></span><span>1280×720</span><span class="dot"></span><span>10-15 15:58</span></div>
+            </div>
+          </div>
+
+          <div class="work" data-kind="image">
+            <div class="pv" style="background:linear-gradient(150deg,#3A1D0B,#C2410C)">🍳
+              <span class="kind img"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>图片</span>
+            </div>
+            <div class="ov">
+              <span class="act" title="预览" data-demo="原型演示：打开大图预览"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
+              <span class="act" title="下载" data-demo="原型演示：已下载"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></span>
+              <span class="act" title="复用参数" data-demo="原型演示：已带入参数返回创作"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg></span>
+            </div>
+            <div class="info">
+              <div class="t">食物爆炸瞬间</div>
+              <div class="m"><span>GPT-Image-1</span><span class="dot"></span><span>1024×1024</span><span class="dot"></span><span>10-15 14:02</span></div>
+            </div>
+          </div>
+
+          <div class="work" data-kind="image">
+            <div class="pv" style="background:linear-gradient(150deg,#241B4D,#5B21B6)">🎨
+              <span class="kind img"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>图片</span>
+            </div>
+            <div class="ov">
+              <span class="act" title="预览" data-demo="原型演示：打开大图预览"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
+              <span class="act" title="下载" data-demo="原型演示：已下载"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></span>
+              <span class="act" title="复用参数" data-demo="原型演示：已带入参数返回创作"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg></span>
+            </div>
+            <div class="info">
+              <div class="t">奢侈时尚广告海报</div>
+              <div class="m"><span>Flux-Pro</span><span class="dot"></span><span>1536×2048</span><span class="dot"></span><span>10-14</span></div>
+            </div>
+          </div>
+
+          <div class="work" data-kind="video">
+            <div class="pv" style="background:linear-gradient(150deg,#1A1035,#4C1D95)">🎥
+              <span class="kind vid"><svg viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M10 9l5 3-5 3z"/></svg>视频</span>
+              <span class="dur">00:08</span>
+            </div>
+            <div class="ov">
+              <span class="act" title="播放" data-demo="原型演示：播放视频"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M10 9l5 3-5 3z"/></svg></span>
+              <span class="act" title="下载" data-demo="原型演示：已下载 MP4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></span>
+              <span class="act" title="复用参数" data-demo="原型演示：已带入参数返回创作"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg></span>
+            </div>
+            <div class="info">
+              <div class="t">城市夜景延时运镜</div>
+              <div class="m"><span>Kling-2.1</span><span class="dot"></span><span>1920×1080</span><span class="dot"></span><span>10-14</span></div>
+            </div>
+          </div>
+
+          <div class="work" data-kind="image">
+            <div class="pv" style="background:linear-gradient(150deg,#122634,#0E7490)">🧴
+              <span class="kind img"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>图片</span>
+            </div>
+            <div class="ov">
+              <span class="act" title="预览" data-demo="原型演示：打开大图预览"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
+              <span class="act" title="下载" data-demo="原型演示：已下载"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></span>
+              <span class="act" title="复用参数" data-demo="原型演示：已带入参数返回创作"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg></span>
+            </div>
+            <div class="info">
+              <div class="t">产品剖面剧场广告</div>
+              <div class="m"><span>GPT-Image-1</span><span class="dot"></span><span>1024×1024</span><span class="dot"></span><span>10-13</span></div>
+            </div>
+          </div>
+
+          <div class="work" data-kind="image">
+            <div class="pv" style="background:linear-gradient(150deg,#3B1D3A,#9D174D)">👗
+              <span class="kind img"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>图片</span>
+            </div>
+            <div class="ov">
+              <span class="act" title="预览" data-demo="原型演示：打开大图预览"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
+              <span class="act" title="下载" data-demo="原型演示：已下载"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></span>
+              <span class="act" title="复用参数" data-demo="原型演示：已带入参数返回创作"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg></span>
+            </div>
+            <div class="info">
+              <div class="t">小红书竖版穿搭图</div>
+              <div class="m"><span>Flux-Pro</span><span class="dot"></span><span>1080×1440</span><span class="dot"></span><span>10-13</span></div>
+            </div>
+          </div>
+
+          <div class="work" data-kind="video">
+            <div class="pv" style="background:linear-gradient(150deg,#0B2A3A,#0E7490)">🥤
+              <span class="kind vid"><svg viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M10 9l5 3-5 3z"/></svg>视频</span>
+              <span class="dur">00:05</span>
+            </div>
+            <div class="ov">
+              <span class="act" title="播放" data-demo="原型演示：播放视频"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M10 9l5 3-5 3z"/></svg></span>
+              <span class="act" title="下载" data-demo="原型演示：已下载 MP4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></span>
+              <span class="act" title="复用参数" data-demo="原型演示：已带入参数返回创作"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg></span>
+            </div>
+            <div class="info">
+              <div class="t">汽水倒入玻璃杯慢镜头</div>
+              <div class="m"><span>Sora-2</span><span class="dot"></span><span>1280×720</span><span class="dot"></span><span>10-12</span></div>
+            </div>
+          </div>
+
+          <div class="work" data-kind="image">
+            <div class="pv" style="background:linear-gradient(150deg,#0C2A2E,#0F766E)">🧊
+              <span class="kind img"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>图片</span>
+            </div>
+            <div class="ov">
+              <span class="act" title="预览" data-demo="原型演示：打开大图预览"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
+              <span class="act" title="下载" data-demo="原型演示：已下载"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></span>
+              <span class="act" title="复用参数" data-demo="原型演示：已带入参数返回创作"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg></span>
+            </div>
+            <div class="info">
+              <div class="t">极地冰封巨型海报</div>
+              <div class="m"><span>GPT-Image-1</span><span class="dot"></span><span>1536×1024</span><span class="dot"></span><span>10-11</span></div>
+            </div>
+          </div>
+
+          <div class="work" data-kind="video">
+            <div class="pv" style="background:linear-gradient(150deg,#2A1030,#7E22CE)">🎬
+              <span class="kind vid"><svg viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M10 9l5 3-5 3z"/></svg>视频</span>
+              <span class="dur">00:10</span>
+            </div>
+            <div class="ov">
+              <span class="act" title="播放" data-demo="原型演示：播放视频"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M10 9l5 3-5 3z"/></svg></span>
+              <span class="act" title="下载" data-demo="原型演示：已下载 MP4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></span>
+              <span class="act" title="复用参数" data-demo="原型演示：已带入参数返回创作"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg></span>
+            </div>
+            <div class="info">
+              <div class="t">未来派时尚大片运镜</div>
+              <div class="m"><span>Kling-2.1</span><span class="dot"></span><span>1920×1080</span><span class="dot"></span><span>10-10</span></div>
+            </div>
+          </div>
+
+          <div class="work" data-kind="image">
+            <div class="pv" style="background:linear-gradient(150deg,#3B1F08,#B45309)">💫
+              <span class="kind img"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>图片</span>
+            </div>
+            <div class="ov">
+              <span class="act" title="预览" data-demo="原型演示：打开大图预览"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
+              <span class="act" title="下载" data-demo="原型演示：已下载"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></span>
+              <span class="act" title="复用参数" data-demo="原型演示：已带入参数返回创作"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg></span>
+            </div>
+            <div class="info">
+              <div class="t">高端品牌光场特效海报</div>
+              <div class="m"><span>Flux-Pro</span><span class="dot"></span><span>2048×1536</span><span class="dot"></span><span>10-09</span></div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="load-more">
+          <button class="btn btn-ghost" data-demo="原型演示：已加载下一页（还有 24 条）">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+            加载更多作品
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+</body>
+</html>

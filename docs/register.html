@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>注册 · AIVideo</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2312B5E5'/%3E%3Cpath d='M24 19v26l22-13z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="aurora"></div>
+<div class="mesh"></div>
+
+<div class="auth">
+  <!-- ============ 左：品牌视觉 ============ -->
+  <aside class="auth-visual">
+    <div class="vhead">
+      <a class="brand" href="index.html">
+        <span class="brand-logo">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M8.4 6.4v11.2a1.1 1.1 0 0 0 1.68.94l8.8-5.6a1.1 1.1 0 0 0 0-1.88l-8.8-5.6A1.1 1.1 0 0 0 8.4 6.4z" fill="#fff"/><path d="M3.6 9.4v5.2" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".72"/></svg>
+        </span>
+        <span class="brand-txt"><b>AIVideo</b><small>图影创作平台</small></span>
+      </a>
+      <a class="back" href="index.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        原型总览
+      </a>
+    </div>
+
+    <div class="vbody">
+      <span class="eyebrow"><span class="dot" style="background:var(--brand)"></span>3 步完成，开始创作</span>
+      <h1>注册账号<br><em>即刻开始生成</em></h1>
+      <p>注册后先配置你自己的模型服务（API Key、Base URL、默认参数），随后就能在对话里直接出图、出片。平台不代收费用，用量由你的服务商结算。</p>
+
+      <div class="vfeats">
+        <div class="vfeat">
+          <span class="fi"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+          邮箱注册，一步到位
+        </div>
+        <div class="vfeat">
+          <span class="fi"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M10 9l5 3-5 3z"/></svg></span>
+          图片与视频模型分别配置
+        </div>
+        <div class="vfeat">
+          <span class="fi"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+          作品自动留存，永久可查
+        </div>
+      </div>
+    </div>
+
+    <div class="vpreview">
+      <div class="pv" style="background:linear-gradient(150deg,#0B2A3A,#0E7490)">✨</div>
+      <div class="pv" style="background:linear-gradient(150deg,#241B4D,#5B21B6)">🎥</div>
+      <div class="pv" style="background:linear-gradient(150deg,#0F2E22,#047857)">🧴</div>
+    </div>
+
+    <div class="vfoot">© 2026 AIVideo · 原型演示版本，数据均为占位内容</div>
+  </aside>
+
+  <!-- ============ 右：注册表单 ============ -->
+  <section class="auth-panel">
+    <div class="auth-card">
+      <div class="m-brand brand">
+        <span class="brand-logo">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M8.4 6.4v11.2a1.1 1.1 0 0 0 1.68.94l8.8-5.6a1.1 1.1 0 0 0 0-1.88l-8.8-5.6A1.1 1.1 0 0 0 8.4 6.4z" fill="#fff"/><path d="M3.6 9.4v5.2" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".72"/></svg>
+        </span>
+        <span class="brand-txt"><b>AIVideo</b><small>图影创作平台</small></span>
+      </div>
+
+      <h2>创建账号</h2>
+      <p class="lead">已有账号？<a href="login.html" style="color:var(--brand);font-weight:700">直接登录</a></p>
+
+      <form class="auth-form" onsubmit="event.preventDefault();location.href='models.html'">
+        <div class="field">
+          <label for="email">邮箱</label>
+          <div class="input-group">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 7l10 6 10-6"/></svg>
+            <input class="input" id="email" type="email" placeholder="you@example.com" autocomplete="email">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="code">邮箱验证码</label>
+          <div class="code-row">
+            <input class="input" id="code" type="text" inputmode="numeric" placeholder="6 位数字验证码">
+            <button class="btn btn-ghost" type="button" id="sendCode">获取验证码</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="pwd">设置密码</label>
+          <div class="input-group">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input class="input" id="pwd" type="password" placeholder="至少 8 位，含字母与数字" autocomplete="new-password">
+          </div>
+          <span class="hint">建议使用 8 位以上、包含大小写字母与数字的组合</span>
+        </div>
+
+        <div class="field">
+          <label for="pwd2">确认密码</label>
+          <div class="input-group">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input class="input" id="pwd2" type="password" placeholder="再次输入密码" autocomplete="new-password">
+          </div>
+        </div>
+
+        <label class="check">
+          <input type="checkbox">
+          <span>我已阅读并同意 <a href="#" data-demo="原型演示：用户服务协议">《用户服务协议》</a> 与 <a href="#" data-demo="原型演示：隐私政策">《隐私政策》</a>，并知悉生成内容需符合相关法律法规</span>
+        </label>
+
+        <button class="btn btn-primary btn-lg btn-block" type="submit">注册并配置模型</button>
+      </form>
+
+      <div class="auth-switch">注册即表示你已阅读并同意全部条款</div>
+    </div>
+  </section>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+  (function () {
+    var btn = document.getElementById('sendCode');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      if (btn.disabled) return;
+      var n = 60;
+      btn.disabled = true;
+      btn.classList.add('is-disabled');
+      btn.textContent = '重新获取 ' + n + 's';
+      toast('验证码已发送至邮箱（原型演示）');
+      var t = setInterval(function () {
+        n--;
+        if (n <= 0) {
+          clearInterval(t);
+          btn.disabled = false;
+          btn.classList.remove('is-disabled');
+          btn.textContent = '获取验证码';
+        } else {
+          btn.textContent = '重新获取 ' + n + 's';
+        }
+      }, 1000);
+    });
+  })();
+</script>
+</body>
+</html>

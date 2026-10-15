@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="WooVisAgent.Api/WooVisAgent.Api.csproj" />
+  <Project Path="WooVisAgent.AppHost/WooVisAgent.AppHost.csproj" />
+  <Project Path="WooVisAgent.ServiceDefaults/WooVisAgent.ServiceDefaults.csproj" />
+</Solution>

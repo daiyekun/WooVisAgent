@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIVideo · 原型总览</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2312B5E5'/%3E%3Cpath d='M24 19v26l22-13z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+  .topnav{position:sticky;top:0;z-index:50;border-bottom:1px solid var(--line);
+    background:rgba(8,11,18,.78);backdrop-filter:blur(16px) saturate(1.6);-webkit-backdrop-filter:blur(16px) saturate(1.6)}
+  .topnav-in{height:64px;display:flex;align-items:center;gap:18px}
+  .topnav-in .spacer{flex:1}
+  .sec{padding:44px 0}
+  .sec-head{margin-bottom:22px}
+  .sec-head .eyebrow{font-size:11.5px;font-weight:800;color:var(--brand);letter-spacing:3px;text-transform:uppercase}
+  .sec-head h2{font-size:22px;font-weight:900;letter-spacing:-.5px;margin-top:9px}
+  .sec-head p{font-size:13px;color:var(--sub);margin-top:8px;max-width:640px;line-height:1.75}
+  .swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .sw{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--card)}
+  .sw .chip-c{height:52px}
+  .sw .meta{padding:10px 12px;border-top:1px solid var(--line)}
+  .sw .meta b{font-size:12px;font-weight:700;display:block}
+  .sw .meta code{font-family:var(--mono);font-size:10.5px;color:var(--dim);display:block;margin-top:3px}
+  .notes{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .note{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px}
+  .note b{font-size:13.5px;font-weight:800;display:flex;align-items:center;gap:9px}
+  .note b svg{width:16px;height:16px;stroke:var(--brand);stroke-width:2}
+  .note ul{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+  .note li{font-size:12.5px;color:var(--sub);display:flex;gap:8px;align-items:flex-start;line-height:1.65}
+  .note li::before{content:"";width:4px;height:4px;border-radius:50%;background:var(--brand);flex-shrink:0;margin-top:8px}
+  footer{border-top:1px solid var(--line);padding:26px 0;font-size:12px;color:var(--dim);margin-top:20px}
+  @media(max-width:900px){
+    .swatches{grid-template-columns:repeat(2,1fr)}
+    .notes{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="aurora"></div>
+<div class="mesh"></div>
+
+<!-- ================= 顶栏 ================= -->
+<header class="topnav">
+  <div class="wrap topnav-in">
+    <a class="brand" href="index.html">
+      <span class="brand-logo">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M8.4 6.4v11.2a1.1 1.1 0 0 0 1.68.94l8.8-5.6a1.1 1.1 0 0 0 0-1.88l-8.8-5.6A1.1 1.1 0 0 0 8.4 6.4z" fill="#fff"/><path d="M3.6 9.4v5.2" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".72"/></svg>
+      </span>
+      <span class="brand-txt"><b>AIVideo</b><small>图影创作平台</small></span>
+    </a>
+    <span class="tag tag-cyan" style="margin-left:4px">原型 v1 · 深色科技风</span>
+    <span class="spacer"></span>
+    <a class="btn btn-ghost btn-sm" href="works.html">我的作品</a>
+    <a class="btn btn-primary btn-sm" href="login.html">进入登录</a>
+  </div>
+</header>
+
+<!-- ================= Hero ================= -->
+<section class="wrap hero">
+  <span class="eyebrow"><span class="dot" style="background:var(--brand)"></span>AI 图片 · AI 视频 · 自配模型</span>
+  <h1>说一句话，<em>出图或者出片</em></h1>
+  <p>面向个人的 AI 图影创作台：用最熟悉的对话方式提出需求，模型在你的账号下运行，作品自动归档。以下是全部页面原型，点击任意卡片即可进入体验。</p>
+
+  <div class="flow" style="margin-top:26px">
+    <span class="step"><i>1</i>注册 / 登录</span>
+    <span class="arw">→</span>
+    <span class="step"><i>2</i>配置模型与密钥</span>
+    <span class="arw">→</span>
+    <span class="step"><i>3</i>对话中生成图片 / 视频</span>
+    <span class="arw">→</span>
+    <span class="step"><i>4</i>在「我的作品」回看与复用</span>
+  </div>
+</section>
+
+<!-- ================= 页面清单 ================= -->
+<section class="wrap sec" style="padding-top:12px">
+  <div class="sec-head">
+    <div class="eyebrow">Screens</div>
+    <h2>五个页面，一条完整闭环</h2>
+    <p>所有页面共用同一套深色设计系统，未登录状态下任何入口都会回到登录页。</p>
+  </div>
+
+  <div class="screen-grid">
+
+    <a class="screen" href="login.html">
+      <div class="sh">
+        <span class="sc-ic ic-a"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+        <div><b>登录</b><div class="path">login.html</div></div>
+      </div>
+      <p>左侧品牌视觉 + 右侧账号密码表单，支持记住我、第三方登录与忘记密码。</p>
+      <ul>
+        <li>未登录不可进入创作台</li>
+        <li>协议勾选为必选项</li>
+      </ul>
+      <span class="go">查看页面 <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+    </a>
+
+    <a class="screen" href="register.html">
+      <div class="sh">
+        <span class="sc-ic ic-d"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span>
+        <div><b>注册</b><div class="path">register.html</div></div>
+      </div>
+      <p>邮箱 + 验证码注册，含密码强度提示与协议确认，注册完成直接引导去配置模型。</p>
+      <ul>
+        <li>验证码 60 秒倒计时</li>
+        <li>注册后落地到模型配置</li>
+      </ul>
+      <span class="go">查看页面 <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+    </a>
+
+    <a class="screen" href="app.html">
+      <div class="sh">
+        <span class="sc-ic ic-b"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+        <div><b>对话创作（主窗口）</b><div class="path">app.html</div></div>
+      </div>
+      <p>类 WorkBuddy 的主窗口：左侧会话列表、中部对话流、底部输入区。图片与视频共用同一会话，用开关切换。</p>
+      <ul>
+        <li>图片模式：比例、参考图</li>
+        <li>视频模式：分辨率、时长、首尾帧</li>
+        <li>结果卡片可下载 / 复用 / 重绘</li>
+      </ul>
+      <span class="go">查看页面 <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+    </a>
+
+    <a class="screen" href="works.html">
+      <div class="sh">
+        <span class="sc-ic ic-c"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg></span>
+        <div><b>我的作品</b><div class="path">works.html</div></div>
+      </div>
+      <p>自己的历史生成结果全部在这里：类型与时间筛选、关键词搜索、网格 / 列表切换，悬停即可预览、下载或复用参数。</p>
+      <ul>
+        <li>图片 / 视频分类统计</li>
+        <li>一键把参数带回创作台</li>
+      </ul>
+      <span class="go">查看页面 <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+    </a>
+
+    <a class="screen" href="models.html">
+      <div class="sh">
+        <span class="sc-ic ic-e"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 2.6 15a2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.2-2.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 9.5 4.2a2 2 0 1 1 4 0 1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 21.4 11a2 2 0 1 1 0 4z"/></svg></span>
+        <div><b>模型配置</b><div class="path">models.html</div></div>
+      </div>
+      <p>图片模型与视频模型分开管理：填 Base URL 与 API Key，测连通性、设默认、存默认参数。平台不代收任何费用。</p>
+      <ul>
+        <li>服务商预设一键填充</li>
+        <li>密钥可显隐，支持移除</li>
+      </ul>
+      <span class="go">查看页面 <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span>
+    </a>
+
+    <div class="screen" style="justify-content:center;text-align:center;align-items:center">
+      <span class="sc-ic ic-a" style="width:44px;height:44px;border-radius:13px"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 4.9 5.6 1.1-4 4 1 5.6-5-2.6-5 2.6 1-5.6-4-4 5.6-1.1z"/></svg></span>
+      <b style="font-size:15px">设计系统同源</b>
+      <p style="flex:none">五个页面共用 <code style="font-family:var(--mono);font-size:11.5px;color:var(--brand)">assets/style.css</code>，改一处 token 即可全站换肤。</p>
+      <span class="tag tag-dim">assets/style.css · assets/app.js</span>
+    </div>
+
+  </div>
+</section>
+
+<!-- ================= 设计基调 ================= -->
+<section class="wrap sec">
+  <div class="sec-head">
+    <div class="eyebrow">Design Tokens</div>
+    <h2>深色科技风的色彩基调</h2>
+    <p>以深蓝黑打底，青蓝到紫的主渐变贯穿按钮、选中态与关键数据，橙色仅用于强调提醒。</p>
+  </div>
+
+  <div class="swatches">
+    <div class="sw"><div class="chip-c" style="background:#080B12"></div><div class="meta"><b>页面底色</b><code>#080B12</code></div></div>
+    <div class="sw"><div class="chip-c" style="background:#0C111B"></div><div class="meta"><b>侧栏 / 面板</b><code>#0C111B</code></div></div>
+    <div class="sw"><div class="chip-c" style="background:#121826"></div><div class="meta"><b>卡片</b><code>#121826</code></div></div>
+    <div class="sw"><div class="chip-c" style="background:#1F2735"></div><div class="meta"><b>描边</b><code>#1F2735</code></div></div>
+    <div class="sw"><div class="chip-c" style="background:linear-gradient(135deg,#12B5E5,#7C5CFC)"></div><div class="meta"><b>品牌主渐变</b><code>#12B5E5 → #7C5CFC</code></div></div>
+    <div class="sw"><div class="chip-c" style="background:#12B5E5"></div><div class="meta"><b>主色（图片）</b><code>#12B5E5</code></div></div>
+    <div class="sw"><div class="chip-c" style="background:#7C5CFC"></div><div class="meta"><b>辅助（视频）</b><code>#7C5CFC</code></div></div>
+    <div class="sw"><div class="chip-c" style="background:linear-gradient(135deg,#F97316,#FBBF24)"></div><div class="meta"><b>强调 / 提醒</b><code>#F97316 → #FBBF24</code></div></div>
+  </div>
+</section>
+
+<!-- ================= 说明 ================= -->
+<section class="wrap sec" style="padding-top:8px">
+  <div class="notes">
+    <div class="note">
+      <b><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>这一版原型覆盖的范围</b>
+      <ul>
+        <li>账号体系：登录、注册</li>
+        <li>核心创作：图片生成、视频生成（同一对话窗口内切换）</li>
+        <li>历史资产：我的作品列表与检索</li>
+        <li>模型接入：图片 / 视频模型 + 密钥与参数配置</li>
+      </ul>
+    </div>
+    <div class="note">
+      <b><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-5M12 8h.01"/></svg>开发落地时的注意点</b>
+      <ul>
+        <li>所有生成图与视频目前为占位块，接入接口后替换渲染层即可</li>
+        <li>登录后需校验会话态，未登录一律重定向到 <code style="font-family:var(--mono);font-size:11.5px">login.html</code></li>
+        <li>API Key 建议由后端加密存储，前端只做掩码展示</li>
+        <li>不涉及积分与支付，费用由用户自己的模型服务商结算</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap" style="display:flex;gap:18px;flex-wrap:wrap;align-items:center">
+    <span>AIVideo 原型 v1 · 深色科技风 · 共 5 个页面 + 1 个总览</span>
+    <span style="flex:1"></span>
+    <span>数据均为占位内容，仅用于交互与视觉评审</span>
+  </div>
+</footer>
+
+<script src="assets/app.js"></script>
+</body>
+</html>

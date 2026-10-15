@@ -1,0 +1,10 @@
+{
+  "properties": {
+    "Parameters": {
+      "description": ".NET Aspire parameter configuration. A parameter\u0027s value will be retrieved from the property with the same name.",
+      "type": "object"
+    }
+  },
+  "type": "object",
+  "SourceSegments": "C:\\Users\\user\\.nuget\\packages\\aspire.hosting.apphost\\13.1.3\\AspireAppHostConfiguration.json"
+}
