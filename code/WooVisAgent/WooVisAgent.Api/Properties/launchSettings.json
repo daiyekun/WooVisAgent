@@ -13,6 +13,18 @@
         "ASPIRE_DASHBOARD_MCP_ENDPOINT_URL": "http://localhost:18200",
         "ASPIRE_RESOURCE_SERVICE_ENDPOINT_URL": "http://localhost:20126"
       }
+    },
+    "http-inmemory": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:5210",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DOTNET_ENVIRONMENT": "Development",
+        "Database__Provider": "InMemory",
+        "Database__Name": "woovisagent-dev"
+      }
     }
   }
 }

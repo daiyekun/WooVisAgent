@@ -11,3 +11,9 @@ D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.SharedLib\obj\Debug\net10.0\W
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.SharedLib\obj\Debug\net10.0\refint\WooVisAgent.SharedLib.dll
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.SharedLib\obj\Debug\net10.0\WooVisAgent.SharedLib.pdb
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.SharedLib\obj\Debug\net10.0\ref\WooVisAgent.SharedLib.dll
+C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-verify\WooVisAgent.SharedLib.deps.json
+C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-verify\WooVisAgent.SharedLib.dll
+C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-verify\WooVisAgent.SharedLib.pdb
+C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgent.SharedLib.deps.json
+C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgent.SharedLib.dll
+C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgent.SharedLib.pdb

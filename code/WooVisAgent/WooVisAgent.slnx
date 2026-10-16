@@ -13,6 +13,7 @@
   <Folder Name="/Services/">
     <Project Path="WooVisAgent.Services.Common/WooVisAgent.Services.Common.csproj" />
     <Project Path="WooVisAgentServices.IdentityService/WooVisAgentServices.IdentityService.csproj" />
+    <Project Path="WooVisAgentServices.ModelService/WooVisAgentServices.ModelService.csproj" />
   </Folder>
   <Folder Name="/Shared/">
     <Project Path="WooVisAgent.SharedLib/WooVisAgent.SharedLib.csproj" />

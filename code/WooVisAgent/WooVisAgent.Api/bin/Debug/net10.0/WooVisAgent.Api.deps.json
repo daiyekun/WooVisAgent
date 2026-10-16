@@ -14,7 +14,8 @@
           "WooVisAgent.ServiceDefaults": "1.0.0",
           "WooVisAgent.Services.Common": "1.0.0",
           "WooVisAgent.SharedLib": "1.0.0",
-          "WooVisAgentServices.IdentityService": "1.0.0"
+          "WooVisAgentServices.IdentityService": "1.0.0",
+          "WooVisAgentServices.ModelService": "1.0.0"
         },
         "runtime": {
           "WooVisAgent.Api.dll": {}
@@ -564,6 +565,20 @@
             "fileVersion": "1.0.0.0"
           }
         }
+      },
+      "WooVisAgentServices.ModelService/1.0.0": {
+        "dependencies": {
+          "MediatR": "14.2.0",
+          "WooVisAgent.EntityFrameworkCore": "1.0.0",
+          "WooVisAgent.Services.Common": "1.0.0",
+          "WooVisAgent.SharedLib": "1.0.0"
+        },
+        "runtime": {
+          "WooVisAgentServices.ModelService.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
       }
     }
   },
@@ -909,6 +924,11 @@
       "sha512": ""
     },
     "WooVisAgentServices.IdentityService/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "WooVisAgentServices.ModelService/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

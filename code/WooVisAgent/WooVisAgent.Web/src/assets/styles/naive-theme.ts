@@ -196,6 +196,8 @@ export const darkThemeOverrides: GlobalThemeOverrides = {
     buttonBorderColor: '#2A3446',
     buttonBorderColorActive: 'transparent',
     buttonColor: '#0A0E16',
+    // 选中态底色必须显式给出：默认会回落到 baseColor，与白色文字同色导致文字不可见
+    buttonColorActive: '#12B5E5',
     buttonTextColor: '#8A94A9',
     buttonTextColorActive: '#FFFFFF',
     buttonTextColorHover: '#EDF1F8',
@@ -440,6 +442,8 @@ export const lightThemeOverrides: GlobalThemeOverrides = {
     buttonBorderColor: '#E4E9F2',
     buttonBorderColorActive: 'transparent',
     buttonColor: '#FFFFFF',
+    // 选中态底色必须显式给出：默认会回落到 baseColor（浅色主题下是白色），与白色文字同色导致文字不可见
+    buttonColorActive: '#12B5E5',
     buttonTextColor: '#586379',
     buttonTextColorActive: '#FFFFFF',
     buttonTextColorHover: '#0E1726',

@@ -1,12 +1,16 @@
 ﻿using System.Reflection;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using WooVisAgent.SharedLib.Domain;
 
 
 namespace WooVisAgent.EntityFrameworkCore;
 
 public class AiCopilotDbContext(DbContextOptions<AiCopilotDbContext> options) : IdentityDbContext(options)
 {
+    /// <summary>用户自行接入的模型配置（映射见 Configurations/ModelConfigConfiguration.cs）</summary>
+    public DbSet<ModelConfig> ModelConfigs => Set<ModelConfig>();
+
     // AiGateway 实体模型
     //public DbSet<LanguageModel> LanguageModels => Set<LanguageModel>();
     //public DbSet<ConversationTemplate> ConversationTemplates => Set<ConversationTemplate>();

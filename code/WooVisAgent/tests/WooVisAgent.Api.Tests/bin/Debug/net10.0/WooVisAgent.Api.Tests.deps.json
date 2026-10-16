@@ -142,7 +142,6 @@
           "Microsoft.Extensions.FileProviders.Physical.Reference": "10.0.0.0",
           "Microsoft.Extensions.FileSystemGlobbing.Reference": "10.0.0.0",
           "Microsoft.Extensions.Hosting.Reference": "10.0.0.0",
-          "Microsoft.Extensions.Http.Reference": "10.0.0.0",
           "Microsoft.Extensions.Localization.Abstractions": "10.0.0.0",
           "Microsoft.Extensions.Localization": "10.0.0.0",
           "Microsoft.Extensions.Logging.Configuration.Reference": "10.0.0.0",
@@ -852,9 +851,28 @@
           "lib/net10.0/Microsoft.Extensions.Hosting.Abstractions.dll": {}
         }
       },
+      "Microsoft.Extensions.Http/10.0.12": {
+        "dependencies": {
+          "Microsoft.Extensions.Configuration.Abstractions": "10.0.13",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.13",
+          "Microsoft.Extensions.Diagnostics": "10.0.13",
+          "Microsoft.Extensions.Logging": "10.0.13",
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.13",
+          "Microsoft.Extensions.Options": "10.0.13"
+        },
+        "runtime": {
+          "lib/net10.0/Microsoft.Extensions.Http.dll": {
+            "assemblyVersion": "10.0.0.0",
+            "fileVersion": "10.0.1226.42308"
+          }
+        },
+        "compile": {
+          "lib/net10.0/Microsoft.Extensions.Http.dll": {}
+        }
+      },
       "Microsoft.Extensions.Http.Diagnostics/10.1.0": {
         "dependencies": {
-          "Microsoft.Extensions.Http": "10.0.1",
+          "Microsoft.Extensions.Http": "10.0.12",
           "Microsoft.Extensions.Telemetry": "10.1.0"
         },
         "runtime": {
@@ -1011,7 +1029,7 @@
       },
       "Microsoft.Extensions.ServiceDiscovery/10.1.0": {
         "dependencies": {
-          "Microsoft.Extensions.Http": "10.0.1",
+          "Microsoft.Extensions.Http": "10.0.12",
           "Microsoft.Extensions.ServiceDiscovery.Abstractions": "10.1.0"
         },
         "runtime": {
@@ -1752,7 +1770,8 @@
           "WooVisAgent.ServiceDefaults": "1.0.0",
           "WooVisAgent.Services.Common": "1.0.0",
           "WooVisAgent.SharedLib": "1.0.0",
-          "WooVisAgentServices.IdentityService": "1.0.0"
+          "WooVisAgentServices.IdentityService": "1.0.0",
+          "WooVisAgentServices.ModelService": "1.0.0"
         },
         "runtime": {
           "WooVisAgent.Api.dll": {
@@ -1852,6 +1871,26 @@
         },
         "compile": {
           "WooVisAgentServices.IdentityService.dll": {}
+        }
+      },
+      "WooVisAgentServices.ModelService/1.0.0": {
+        "dependencies": {
+          "MediatR": "14.2.0",
+          "Microsoft.Extensions.Hosting.Abstractions": "10.0.13",
+          "Microsoft.Extensions.Http": "10.0.12",
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.13",
+          "WooVisAgent.EntityFrameworkCore": "1.0.0",
+          "WooVisAgent.Services.Common": "1.0.0",
+          "WooVisAgent.SharedLib": "1.0.0"
+        },
+        "runtime": {
+          "WooVisAgentServices.ModelService.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        },
+        "compile": {
+          "WooVisAgentServices.ModelService.dll": {}
         }
       },
       "Microsoft.AspNetCore.Antiforgery/10.0.0.0": {
@@ -2445,12 +2484,6 @@
       "Microsoft.Extensions.Hosting.Reference/10.0.0.0": {
         "compile": {
           "Microsoft.Extensions.Hosting.dll": {}
-        },
-        "compileOnly": true
-      },
-      "Microsoft.Extensions.Http.Reference/10.0.0.0": {
-        "compile": {
-          "Microsoft.Extensions.Http.dll": {}
         },
         "compileOnly": true
       },
@@ -3637,17 +3670,6 @@
         },
         "compileOnly": true
       },
-      "Microsoft.Extensions.Http/10.0.1": {
-        "dependencies": {
-          "Microsoft.Extensions.Configuration.Abstractions": "10.0.13",
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.13",
-          "Microsoft.Extensions.Diagnostics": "10.0.13",
-          "Microsoft.Extensions.Logging": "10.0.13",
-          "Microsoft.Extensions.Logging.Abstractions": "10.0.13",
-          "Microsoft.Extensions.Options": "10.0.13"
-        },
-        "compileOnly": true
-      },
       "Microsoft.Extensions.Logging.Configuration/10.0.2": {
         "dependencies": {
           "Microsoft.Extensions.Configuration": "10.0.13",
@@ -3966,6 +3988,13 @@
       "sha512": "sha512-zIrbe9vkIFXxW3mOApIOWXw+xMwX7Cgsptr3ZSlglJt4hW2qp4fB/JU1NHgAevteBNH4PicvU9DsFPHxlnnloA==",
       "path": "microsoft.extensions.hosting.abstractions/10.0.13",
       "hashPath": "microsoft.extensions.hosting.abstractions.10.0.13.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Http/10.0.12": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-x/fnoUGgmIUjSgLR1p6Mpi/vXc1Xe0xDPJnggPp23I6vwM/kY4nxyOjo8i6G5KPVw+esJM+rJsqnHbdjasvCBw==",
+      "path": "microsoft.extensions.http/10.0.12",
+      "hashPath": "microsoft.extensions.http.10.0.12.nupkg.sha512"
     },
     "Microsoft.Extensions.Http.Diagnostics/10.1.0": {
       "type": "package",
@@ -4322,6 +4351,11 @@
       "sha512": ""
     },
     "WooVisAgentServices.IdentityService/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "WooVisAgentServices.ModelService/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
@@ -4817,11 +4851,6 @@
       "sha512": ""
     },
     "Microsoft.Extensions.Hosting.Reference/10.0.0.0": {
-      "type": "referenceassembly",
-      "serviceable": false,
-      "sha512": ""
-    },
-    "Microsoft.Extensions.Http.Reference/10.0.0.0": {
       "type": "referenceassembly",
       "serviceable": false,
       "sha512": ""
@@ -5808,13 +5837,6 @@
       "sha512": "sha512-qUU5XAayGD0wySbu9ntSLCjM3gudmDLzuWVBbnMKlIbdgqhr0dC1bfULpFnPCVSQsU5TaSblU1qShFyTRwSjrQ==",
       "path": "microsoft.extensions.hosting/10.0.2",
       "hashPath": "microsoft.extensions.hosting.10.0.2.nupkg.sha512"
-    },
-    "Microsoft.Extensions.Http/10.0.1": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-ZXJup9ReE1Ot3M8jqcw1b/lnc8USxyYS3cyLsssU39u04TES9JNGviWUGIvP3K7mMU3TF7kQl2aS0SmVwegflw==",
-      "path": "microsoft.extensions.http/10.0.1",
-      "hashPath": "microsoft.extensions.http.10.0.1.nupkg.sha512"
     },
     "Microsoft.Extensions.Logging.Configuration/10.0.2": {
       "type": "package",

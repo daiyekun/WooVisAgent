@@ -1,11 +1,13 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using WooVisAgent.Api.Extensions;
 using WooVisAgent.Api.Services;
 using WooVisAgent.EntityFrameworkCore;
 using WooVisAgent.Services.Common.Contracts;
 using WooVisAgentServices.IdentityService;
 using WooVisAgentServices.IdentityService.Options;
+using WooVisAgentServices.ModelService;
 
 namespace WooVisAgent.Api;
 
@@ -19,8 +21,16 @@ public class Program
         // 数据库 + Identity 存储（AddEfCore），身份用例与 JWT 签发（AddIdentityService）
         builder.AddEfCore();
         builder.AddIdentityService();
+        // 模型配置用例：64 位雪花主键、连通性测试、供应方模型清单
+        builder.AddModelService();
 
-        builder.Services.AddControllers();
+        builder.Services.AddControllers()
+            .AddJsonOptions(options =>
+            {
+                // 64 位主键超出 JS 安全整数范围，统一以字符串输出给前端（详见 LongToStringJsonConverter）
+                options.JsonSerializerOptions.Converters.Add(new LongToStringJsonConverter());
+                options.JsonSerializerOptions.Converters.Add(new NullableLongToStringJsonConverter());
+            });
         // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
         builder.Services.AddOpenApi();
 

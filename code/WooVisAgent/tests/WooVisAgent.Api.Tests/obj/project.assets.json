@@ -842,15 +842,15 @@
           "buildTransitive/net8.0/_._": {}
         }
       },
-      "Microsoft.Extensions.Http/10.0.1": {
+      "Microsoft.Extensions.Http/10.0.12": {
         "type": "package",
         "dependencies": {
-          "Microsoft.Extensions.Configuration.Abstractions": "10.0.1",
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.1",
-          "Microsoft.Extensions.Diagnostics": "10.0.1",
-          "Microsoft.Extensions.Logging": "10.0.1",
-          "Microsoft.Extensions.Logging.Abstractions": "10.0.1",
-          "Microsoft.Extensions.Options": "10.0.1"
+          "Microsoft.Extensions.Configuration.Abstractions": "10.0.12",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.12",
+          "Microsoft.Extensions.Diagnostics": "10.0.12",
+          "Microsoft.Extensions.Logging": "10.0.12",
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.12",
+          "Microsoft.Extensions.Options": "10.0.12"
         },
         "compile": {
           "lib/net10.0/Microsoft.Extensions.Http.dll": {
@@ -2082,7 +2082,8 @@
           "WooVisAgent.ServiceDefaults": "1.0.0",
           "WooVisAgent.Services.Common": "1.0.0",
           "WooVisAgent.SharedLib": "1.0.0",
-          "WooVisAgentServices.IdentityService": "1.0.0"
+          "WooVisAgentServices.IdentityService": "1.0.0",
+          "WooVisAgentServices.ModelService": "1.0.0"
         },
         "compile": {
           "bin/placeholder/WooVisAgent.Api.dll": {}
@@ -2180,6 +2181,25 @@
         },
         "runtime": {
           "bin/placeholder/WooVisAgentServices.IdentityService.dll": {}
+        }
+      },
+      "WooVisAgentServices.ModelService/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "dependencies": {
+          "MediatR": "14.2.0",
+          "Microsoft.Extensions.Hosting.Abstractions": "10.0.13",
+          "Microsoft.Extensions.Http": "10.0.12",
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.13",
+          "WooVisAgent.EntityFrameworkCore": "1.0.0",
+          "WooVisAgent.Services.Common": "1.0.0",
+          "WooVisAgent.SharedLib": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/WooVisAgentServices.ModelService.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/WooVisAgentServices.ModelService.dll": {}
         }
       }
     }
@@ -3283,10 +3303,10 @@
         "useSharedDesignerContext.txt"
       ]
     },
-    "Microsoft.Extensions.Http/10.0.1": {
-      "sha512": "ZXJup9ReE1Ot3M8jqcw1b/lnc8USxyYS3cyLsssU39u04TES9JNGviWUGIvP3K7mMU3TF7kQl2aS0SmVwegflw==",
+    "Microsoft.Extensions.Http/10.0.12": {
+      "sha512": "x/fnoUGgmIUjSgLR1p6Mpi/vXc1Xe0xDPJnggPp23I6vwM/kY4nxyOjo8i6G5KPVw+esJM+rJsqnHbdjasvCBw==",
       "type": "package",
-      "path": "microsoft.extensions.http/10.0.1",
+      "path": "microsoft.extensions.http/10.0.12",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -3307,7 +3327,7 @@
         "lib/net9.0/Microsoft.Extensions.Http.xml",
         "lib/netstandard2.0/Microsoft.Extensions.Http.dll",
         "lib/netstandard2.0/Microsoft.Extensions.Http.xml",
-        "microsoft.extensions.http.10.0.1.nupkg.sha512",
+        "microsoft.extensions.http.10.0.12.nupkg.sha512",
         "microsoft.extensions.http.nuspec",
         "useSharedDesignerContext.txt"
       ]
@@ -4913,6 +4933,11 @@
       "type": "project",
       "path": "../../WooVisAgentServices.IdentityService/WooVisAgentServices.IdentityService.csproj",
       "msbuildProject": "../../WooVisAgentServices.IdentityService/WooVisAgentServices.IdentityService.csproj"
+    },
+    "WooVisAgentServices.ModelService/1.0.0": {
+      "type": "project",
+      "path": "../../WooVisAgentServices.ModelService/WooVisAgentServices.ModelService.csproj",
+      "msbuildProject": "../../WooVisAgentServices.ModelService/WooVisAgentServices.ModelService.csproj"
     }
   },
   "projectFileDependencyGroups": {

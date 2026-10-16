@@ -11,3 +11,9 @@ D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.ServiceDefaults\obj\Debug\net
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.ServiceDefaults\obj\Debug\net10.0\WooVisAgent.ServiceDefaults.pdb
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.ServiceDefaults\obj\Debug\net10.0\ref\WooVisAgent.ServiceDefaults.dll
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.ServiceDefaults\obj\Debug\net10.0\WooVisAgent.ServiceDefaults.sourcelink.json
+C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-verify\WooVisAgent.ServiceDefaults.deps.json
+C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-verify\WooVisAgent.ServiceDefaults.dll
+C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-verify\WooVisAgent.ServiceDefaults.pdb
+C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgent.ServiceDefaults.deps.json
+C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgent.ServiceDefaults.dll
+C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgent.ServiceDefaults.pdb

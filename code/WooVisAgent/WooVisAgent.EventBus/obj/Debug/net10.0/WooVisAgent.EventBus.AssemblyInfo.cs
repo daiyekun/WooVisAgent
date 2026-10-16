@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WooVisAgent.EventBus")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3700224943ef0113fac75a6a1facc476b876c269")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+891743121e3b530dff8a9eec03d077a6aeb11a83")]
 [assembly: System.Reflection.AssemblyProductAttribute("WooVisAgent.EventBus")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WooVisAgent.EventBus")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -16,3 +16,9 @@ D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.EntityFrameworkCore\obj\Debug
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.EntityFrameworkCore\obj\Debug\net10.0\refint\WooVisAgent.EntityFrameworkCore.dll
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.EntityFrameworkCore\obj\Debug\net10.0\WooVisAgent.EntityFrameworkCore.pdb
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.EntityFrameworkCore\obj\Debug\net10.0\ref\WooVisAgent.EntityFrameworkCore.dll
+C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-verify\WooVisAgent.EntityFrameworkCore.deps.json
+C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-verify\WooVisAgent.EntityFrameworkCore.dll
+C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-verify\WooVisAgent.EntityFrameworkCore.pdb
+C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgent.EntityFrameworkCore.deps.json
+C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgent.EntityFrameworkCore.dll
+C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgent.EntityFrameworkCore.pdb

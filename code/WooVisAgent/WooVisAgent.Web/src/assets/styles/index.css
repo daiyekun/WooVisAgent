@@ -1574,20 +1574,22 @@ html:not(.dark) {
   }
 
   /* ---------- 模型配置 ---------- */
+  /* 分类筛选：品牌渐变胶囊，与 .btn-primary 同一套视觉 */
   .model-tabs {
     display: flex;
-    gap: 6px;
-    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+    gap: 10px;
     margin-bottom: 22px;
-    overflow-x: auto;
   }
 
   .model-tabs button {
-    padding: 11px 18px;
-    font-size: 13.5px;
+    padding: 9px 16px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--sub);
-    position: relative;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-full);
     transition: var(--t);
     display: inline-flex;
     align-items: center;
@@ -1599,21 +1601,20 @@ html:not(.dark) {
 
   .model-tabs button:hover {
     color: var(--text);
+    border-color: var(--line-2);
+    background: var(--card-2);
   }
 
-  .model-tabs button.on {
-    color: var(--brand-strong);
-  }
-
-  .model-tabs button.on::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -1px;
-    height: 2px;
+  .model-tabs button.on,
+  .model-tabs button.on:hover {
+    color: #fff;
     background: var(--grad);
-    border-radius: 2px;
+    border-color: transparent;
+    box-shadow: var(--sh-glow);
+  }
+
+  .model-tabs button.on:hover {
+    transform: translateY(-1px);
   }
 
   .model-tabs button .cnt {
@@ -1623,11 +1624,12 @@ html:not(.dark) {
     border-radius: var(--r-full);
     background: var(--elev);
     color: var(--dim);
+    transition: var(--t);
   }
 
   .model-tabs button.on .cnt {
-    background: var(--brand-dim);
-    color: var(--brand-strong);
+    background: rgba(255, 255, 255, 0.24);
+    color: #fff;
   }
 
   .model-list {
@@ -2102,10 +2104,12 @@ html:not(.dark) {
     filter: brightness(0.97);
   }
 
-  /* 单选按钮选中态同样用渐变 */
-  .n-radio-button.n-radio-button--checked .n-radio-button__state-border {
-    border-color: transparent;
-    background-image: var(--grad);
+  /* 单选按钮选中态同样用渐变。
+     注意：渐变必须作为按钮底色（--n-button-color-active），
+     不能画在 __state-border 覆盖层上——该层 z-index 高于文字，会把选中项的文字盖住。 */
+  .n-radio-button.n-radio-button--checked {
+    --n-button-color-active: var(--grad);
+    --n-button-text-color-active: #fff;
   }
 
   /* 卡片与弹窗的边框跟随主题描边 */

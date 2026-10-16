@@ -16,3 +16,9 @@ D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgentServices.IdentityService\obj\D
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgentServices.IdentityService\obj\Debug\net10.0\refint\WooVisAgentServices.IdentityService.dll
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgentServices.IdentityService\obj\Debug\net10.0\WooVisAgentServices.IdentityService.pdb
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgentServices.IdentityService\obj\Debug\net10.0\ref\WooVisAgentServices.IdentityService.dll
+C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-verify\WooVisAgentServices.IdentityService.deps.json
+C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-verify\WooVisAgentServices.IdentityService.dll
+C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-verify\WooVisAgentServices.IdentityService.pdb
+C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgentServices.IdentityService.deps.json
+C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgentServices.IdentityService.dll
+C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgentServices.IdentityService.pdb
