@@ -49,7 +49,6 @@ D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Api\obj\Debug\net10.0\staticw
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Api\obj\Debug\net10.0\staticwebassets.development.json
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Api\obj\Debug\net10.0\staticwebassets.build.endpoints.json
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Api\obj\Debug\net10.0\swae.build.ex.cache
-D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Api\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Api\obj\Debug\net10.0\WooVisAg.B0C9B0FF.Up2Date
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Api\obj\Debug\net10.0\WooVisAgent.Api.dll
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Api\obj\Debug\net10.0\refint\WooVisAgent.Api.dll
