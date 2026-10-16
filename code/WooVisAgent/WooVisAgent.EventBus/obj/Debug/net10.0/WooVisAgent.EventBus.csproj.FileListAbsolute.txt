@@ -23,3 +23,6 @@ D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgent.EventBus.pdb
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.EventBus.deps.json
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.EventBus.dll
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.EventBus.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.EventBus.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.EventBus.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.EventBus.pdb

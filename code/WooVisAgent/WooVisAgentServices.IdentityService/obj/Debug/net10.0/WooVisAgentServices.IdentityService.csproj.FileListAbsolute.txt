@@ -28,3 +28,6 @@ D:\WooProject\AIVidio\code\WooVisAgent\.verify\api\WooVisAgentServices.IdentityS
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgentServices.IdentityService.deps.json
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgentServices.IdentityService.dll
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgentServices.IdentityService.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgentServices.IdentityService.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgentServices.IdentityService.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgentServices.IdentityService.pdb

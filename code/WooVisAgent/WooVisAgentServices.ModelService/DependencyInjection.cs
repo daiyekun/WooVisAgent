@@ -1,7 +1,9 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using WooVisAgent.SharedLib.Delivery;
 using WooVisAgent.SharedLib.Ids;
 using WooVisAgentServices.ModelService.Providers;
 using WooVisAgentServices.ModelService.Services;
@@ -32,6 +34,15 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(10);
             client.DefaultRequestHeaders.UserAgent.ParseAdd("WooVisAgent-ModelConnectivity/1.0");
         });
+
+        // 模型交付协议解析器（放在 SharedLib，供连通性测试与图片生成共用）。
+        // 用 TryAdd 兜底：Api 同时注册 ImageService 与 ModelService 时，只保留一份实例。
+        builder.Services.TryAddSingleton<ModelDeliveryProtocolResolver>(sp => new ModelDeliveryProtocolResolver(
+        [
+            new OpenAiImagesProtocol(),
+            new AliyunWanxProtocol(),
+            new PassthroughProtocol(),
+        ]));
 
         builder.Services.AddSingleton<IModelConnectivityTester, LightProbeModelConnectivityTester>();
         builder.Services.AddSingleton<IModelProviderCatalog, StaticModelProviderCatalog>();

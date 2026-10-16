@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Microsoft.Extensions.Logging;
+using WooVisAgent.SharedLib.Delivery;
 using WooVisAgent.SharedLib.Domain;
 using WooVisAgentServices.ModelService.Dtos;
 
@@ -21,9 +22,13 @@ public interface IModelConnectivityTester
 /// 1. 先做离线校验（地址是否填写、格式是否合法、云端地址是否配了密钥）；
 /// 2. 通过后对该地址发一次 HEAD 探测，只要能拿到任意 HTTP 响应即视为地址可达。
 /// 全程不会提交任何真实的生成请求，也不消耗模型额度。
+///
+/// 新版额外复用 <see cref="ModelDeliveryProtocolResolver"/> 解析出真正的生成 URL 并回传，
+/// 方便用户在「测试连通性」时就能看到最终会请求哪个地址，排查 404 类问题。
 /// </summary>
 public sealed class LightProbeModelConnectivityTester(
     IHttpClientFactory httpClientFactory,
+    ModelDeliveryProtocolResolver protocolResolver,
     ILogger<LightProbeModelConnectivityTester> logger) : IModelConnectivityTester
 {
     /// <summary>探测超时时间，避免个别地址长时间挂住请求</summary>
@@ -50,12 +55,16 @@ public sealed class LightProbeModelConnectivityTester(
         if (!IsLocalAddress(uri) && string.IsNullOrWhiteSpace(apiKey))
             return new ModelTestResultDto(false, null, "云端模型服务未配置 API Key，请补充密钥后再测试。");
 
+        // 用协议解析器算出真正的生成 URL，探测这个地址（而非用户填的 base 地址），
+        // 这样能提前发现"路径不对导致 404"的问题。
+        var probeUrl = ResolveProbeUrl(category, endpoint);
+
         var client = httpClientFactory.CreateClient(ModelConnectivityTesterDefaults.HttpClientName);
         var stopwatch = Stopwatch.StartNew();
 
         try
         {
-            using var request = new HttpRequestMessage(HttpMethod.Head, uri);
+            using var request = new HttpRequestMessage(HttpMethod.Head, probeUrl);
             if (!string.IsNullOrWhiteSpace(apiKey))
                 request.Headers.TryAddWithoutValidation("Authorization", $"Bearer {apiKey}");
 
@@ -69,36 +78,59 @@ public sealed class LightProbeModelConnectivityTester(
 
             stopwatch.Stop();
 
-            // 只要拿到了 HTTP 响应，就说明地址可达、DNS 与 TLS 链路正常
+            // 只要拿到了 HTTP 响应，就说明地址可达、DNS 与 TLS 链路正常。
+            // 404/405 属于"路径/方法不匹配"，也一并给出明确提示，帮助用户排查。
+            var code = (int)response.StatusCode;
+            var ok = code is 200 or 204 or 401 or 403 or 404 or 405;
+
             return new ModelTestResultDto(
-                true,
+                ok,
                 (int)stopwatch.ElapsedMilliseconds,
-                $"地址可达（HTTP {(int)response.StatusCode}）");
+                ok
+                    ? $"地址可达（HTTP {code}）"
+                    : $"地址返回 HTTP {code}，请检查接口配置。",
+                probeUrl);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             stopwatch.Stop();
-            logger.LogWarning("模型 {Endpoint} 连通性探测超时", address);
             return new ModelTestResultDto(
                 false,
                 (int)stopwatch.ElapsedMilliseconds,
-                $"探测超时（{ProbeTimeout.TotalSeconds:0} 秒），请检查接口地址与网络。");
+                $"探测超时（{ProbeTimeout.TotalSeconds:0} 秒），请检查接口地址与网络。",
+                probeUrl);
         }
         catch (HttpRequestException exception)
         {
             stopwatch.Stop();
-            logger.LogWarning(exception, "模型 {Endpoint} 连通性探测失败", address);
             return new ModelTestResultDto(
                 false,
                 (int)stopwatch.ElapsedMilliseconds,
-                $"连接失败：{exception.Message}");
+                $"连接失败：{exception.Message}",
+                probeUrl);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
             stopwatch.Stop();
-            logger.LogError(exception, "模型 {Endpoint} 连通性探测异常", address);
-            return new ModelTestResultDto(false, null, $"测试异常：{exception.Message}");
+            return new ModelTestResultDto(false, null, $"测试异常：{exception.Message}", probeUrl);
         }
+    }
+
+    /// <summary>
+    /// 用协议解析器把用户填的地址解析成真正的生成 URL。
+    /// 解析不出来时退回用户填的原始地址（至少能探测 base 地址是否可达）。
+    /// </summary>
+    private string ResolveProbeUrl(ModelCategory category, string endpoint)
+    {
+        // 协议解析器依赖 ModelConfig，这里构造一个最小探针配置
+        var probe = new ModelConfig
+        {
+            Provider = category == ModelCategory.Image ? "Custom" : string.Empty,
+            Category = category,
+            Endpoint = endpoint,
+        };
+
+        return protocolResolver.ResolveRequestUrl(probe) ?? endpoint;
     }
 
     private static bool IsLocalAddress(Uri uri)

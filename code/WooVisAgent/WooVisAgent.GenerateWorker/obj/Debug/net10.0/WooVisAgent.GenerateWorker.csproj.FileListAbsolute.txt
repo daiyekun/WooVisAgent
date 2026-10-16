@@ -120,3 +120,8 @@ D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.GenerateWorker.deps
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.GenerateWorker.runtimeconfig.json
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.GenerateWorker.dll
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.GenerateWorker.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.GenerateWorker.exe
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.GenerateWorker.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.GenerateWorker.runtimeconfig.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.GenerateWorker.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.GenerateWorker.pdb

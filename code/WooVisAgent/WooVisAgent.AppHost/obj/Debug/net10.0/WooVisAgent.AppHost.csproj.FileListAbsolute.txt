@@ -171,3 +171,8 @@ D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgent.AppHost.runti
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgent.AppHost.dll
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgent.AppHost.pdb
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.AppHost\obj\Debug\net10.0\Aspire\references\WooVisAgent_GenerateWorker.ProjectMetadata.g.cs
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.AppHost.exe
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.AppHost.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.AppHost.runtimeconfig.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.AppHost.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.AppHost.pdb

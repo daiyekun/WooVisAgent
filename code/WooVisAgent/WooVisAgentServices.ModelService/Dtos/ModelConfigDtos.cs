@@ -83,7 +83,11 @@ public sealed record ModelConfigDto(
     DateTimeOffset UpdatedAt);
 
 /// <summary>连通性测试结果</summary>
-public sealed record ModelTestResultDto(bool Success, int? Latency, string? Message);
+public sealed record ModelTestResultDto(
+    bool Success,
+    int? Latency,
+    string? Message,
+    string? ResolvedUrl = null);
 
 /// <summary>供应方支持的模型清单项</summary>
 public sealed record ProviderModelDto(string Key, string Name);

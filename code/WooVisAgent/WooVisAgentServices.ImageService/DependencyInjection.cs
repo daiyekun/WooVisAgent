@@ -3,8 +3,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using WooVisAgent.SharedLib.Delivery;
 using WooVisAgent.SharedLib.Ids;
 using WooVisAgentServices.ImageService.Contracts;
+using WooVisAgentServices.ImageService.Delivery;
 using WooVisAgentServices.ImageService.Services;
 
 namespace WooVisAgentServices.ImageService;
@@ -49,6 +51,20 @@ public static class DependencyInjection
         builder.Services.AddSingleton<IImageGenerationService, ConfiguredImageGenerationService>();
         builder.Services.AddScoped<IGenerationTaskDispatcher, GenerationTaskDispatcher>();
         builder.Services.AddScoped<IGenerationTaskNotifier, GenerationTaskNotifier>();
+
+        // 模型交付协议解析器：按供应商/endpoint 形态把「接口地址」解析成真正的生成 URL，
+        // 取代早期硬编码 /v1/images/generations 的做法（那正是 404 的根源）。
+        // 顺序敏感：越具体、歧义越少的协议越靠前；PassthroughProtocol 作为兜底放最后。
+        // 用 TryAdd 兜底：Api 同时注册 ImageService 与 ModelService 时，只保留一份实例。
+        builder.Services.TryAddSingleton<ModelDeliveryProtocolResolver>(sp => new ModelDeliveryProtocolResolver(
+        [
+            new OpenAiImagesProtocol(),
+            new AliyunWanxProtocol(),
+            new PassthroughProtocol(),
+        ]));
+
+        // 模型交付框架：统一编排图片生成与连通性测试，是面向 Microsoft Agent Framework 的抽象落点。
+        builder.Services.AddSingleton<IModelDeliveryFramework, ModelDeliveryFramework>();
 
         // MediatR 核心服务与管道行为已在 AddIdentityService 注册，
         // 这里只追加本程序集内的用例，避免重复注册 AuthorizationBehavior。

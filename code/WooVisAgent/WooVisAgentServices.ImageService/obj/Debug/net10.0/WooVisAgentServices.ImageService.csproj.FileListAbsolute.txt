@@ -29,3 +29,6 @@ D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgentServices.Image
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgentServices.ImageService.deps.json
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgentServices.ImageService.dll
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgentServices.ImageService.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgentServices.ImageService.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgentServices.ImageService.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgentServices.ImageService.pdb

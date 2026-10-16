@@ -6,7 +6,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:20133"
+      "url": "http://localhost:25884"
     }
   ],
   "paths": {
@@ -1802,6 +1802,12 @@
             "format": "int32"
           },
           "message": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "resolvedUrl": {
             "type": [
               "null",
               "string"
