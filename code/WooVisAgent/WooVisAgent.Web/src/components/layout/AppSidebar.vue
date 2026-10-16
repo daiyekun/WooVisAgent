@@ -1,4 +1,11 @@
 <script setup lang="ts">
+/**
+ * 侧边栏 · IA 对齐原型 docs/prot/app.html
+ *
+ * 结构：品牌 + 折叠 → 新建创作 → 工作区导航 → 最近会话 → 底部账户。
+ * 「最近会话」读的是真实任务数据（taskStore），版式与原型 1:1；
+ * 等会话模型落地后再换成按会话聚合的结果。
+ */
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -20,17 +27,22 @@ const taskStore = useTaskStore()
 const route = useRoute()
 const router = useRouter()
 
-/** 侧边栏菜单，直接由路由表派生，避免两处维护 */
-const menuItems = computed(() =>
-  menuRoutes.map((item) => ({
-    name: String(item.name),
-    title: (item.meta?.title as string) ?? '',
-    icon: (item.meta?.icon as string) ?? 'grid',
-  })),
+/**
+ * 工作区导航，直接由路由表派生，避免两处维护。
+ * 这里再挡一道 name：`to={{ name: undefined }}` 会让 router.resolve 抛错，
+ * 一抛就是整个布局渲染失败、页面全白，代价太大，宁可少渲染一项。
+ */
+const navItems = computed(() =>
+  menuRoutes
+    .filter((item) => Boolean(item.name) && Boolean(item.meta?.title))
+    .map((item) => ({
+      name: String(item.name),
+      title: (item.meta?.title as string) ?? '',
+      icon: (item.meta?.icon as string) ?? 'grid',
+    })),
 )
 
-/** 子路由高亮父级菜单，例如 /tasks/create 时仍高亮「新建任务」自身 */
-const activeKey = computed(() => String(route.name ?? 'TaskList'))
+const activeKey = computed(() => String(route.name ?? 'Workspace'))
 
 const avatarText = computed(() => authStore.displayName.slice(0, 1).toUpperCase())
 
@@ -38,8 +50,22 @@ const modelSummary = computed(() =>
   modelStore.models.length ? `已配置 ${modelStore.models.length} 个模型` : '尚未配置模型',
 )
 
-/** 最近任务：侧边栏只展示最近若干条，点击回到任务列表 */
+/**
+ * 「我的作品」角标：与工作台的口径保持一致，都按已完成任务的产物条数算。
+ * 目前只统计当前分页内的任务，接入作品接口后换成接口返回的 total 更准。
+ */
+const worksCount = computed(() =>
+  taskStore.tasks
+    .filter((task) => task.status === 'succeeded')
+    .reduce((sum, task) => sum + (task.outputs?.length ?? 0), 0),
+)
+
+/** 最近会话：先展示最近若干条任务，点击回到任务列表查看全部 */
 const recentTasks = computed(() => taskStore.tasks.slice(0, 5))
+
+function startNewChat(): void {
+  void router.push({ name: 'Chat', query: { new: String(Date.now()) } })
+}
 
 function handleLogout(): void {
   authStore.logout()
@@ -52,7 +78,7 @@ function handleLogout(): void {
   <aside class="side">
     <!-- 品牌与折叠 -->
     <div class="side-head">
-      <router-link class="brand" :to="{ name: 'TaskList' }">
+      <router-link class="brand" :to="{ name: 'Workspace' }">
         <span class="brand-logo">
           <svg viewBox="0 0 24 24" fill="none" width="19" height="19">
             <path
@@ -86,22 +112,23 @@ function handleLogout(): void {
 
     <!-- 主体导航 -->
     <div class="side-body">
-      <router-link
+      <button
         class="btn btn-primary btn-block"
         style="margin: 6px 2px 2px"
-        :to="{ name: 'TaskCreate' }"
+        type="button"
         title="新建创作"
+        @click="startNewChat"
       >
         <app-icon name="plus" :size="16" />
         <span>新建创作</span>
-      </router-link>
+      </button>
 
       <div class="side-label">
         <span>工作区</span>
       </div>
 
       <router-link
-        v-for="item in menuItems"
+        v-for="item in navItems"
         :key="item.name"
         class="nav-item"
         :class="{ on: activeKey === item.name }"
@@ -110,11 +137,12 @@ function handleLogout(): void {
       >
         <app-icon :name="item.icon" :size="17" />
         <span>{{ item.title }}</span>
+        <span v-if="item.name === 'Works' && worksCount" class="badge">{{ worksCount }}</span>
       </router-link>
 
       <template v-if="recentTasks.length">
         <div class="side-label">
-          <span>最近任务</span>
+          <span>最近会话</span>
           <span class="mini" @click="router.push({ name: 'TaskList' })">全部</span>
         </div>
 

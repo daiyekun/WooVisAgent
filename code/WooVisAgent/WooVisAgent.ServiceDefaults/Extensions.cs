@@ -2,11 +2,13 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.ServiceDiscovery;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
+using WooVisAgent.ServiceDefaults;
 
 namespace Microsoft.Extensions.Hosting;
 
@@ -28,8 +30,13 @@ public static class Extensions
 
         builder.Services.ConfigureHttpClientDefaults(http =>
         {
-            // Turn on resilience by default
-            http.AddStandardResilienceHandler();
+            // 开启标准弹性管道（重试 / 熔断 / 超时）。
+            //
+            // 必须显式放长超时：模板默认值是「单次尝试 10 秒、总超时 30 秒」，
+            // 而本应用的出站调用主要是模型调用——图片生成动辄几十秒甚至几分钟。
+            // 沿用默认值会让请求在真正返回前就被 Polly 掐断，任务列表里出现
+            // “The operation didn't complete within the allowed timeout of '00:00:30'.”
+            http.AddStandardResilienceHandler(HttpResilienceDefaults.Apply);
 
             // Turn on service discovery by default
             http.AddServiceDiscovery();

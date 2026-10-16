@@ -14,8 +14,12 @@ const router = useRouter()
       </span>
       <b>404 · 页面不存在</b>
       <p>地址可能已变更，或者你输入了错误的链接</p>
-      <button class="btn btn-primary btn-sm mt-2" type="button" @click="router.push({ name: 'TaskList' })">
-        返回任务列表
+      <button
+        class="btn btn-primary btn-sm mt-2"
+        type="button"
+        @click="router.push({ name: 'Workspace' })"
+      >
+        返回工作台
       </button>
     </div>
   </div>

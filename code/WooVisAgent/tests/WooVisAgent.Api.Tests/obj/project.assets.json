@@ -2290,6 +2290,7 @@
           "Microsoft.Extensions.Hosting.Abstractions": "10.0.13",
           "Microsoft.Extensions.Http": "10.0.12",
           "Microsoft.Extensions.Logging.Abstractions": "10.0.13",
+          "Polly.Core": "8.4.2",
           "WooVisAgent.EntityFrameworkCore": "1.0.0",
           "WooVisAgent.EventBus": "1.0.0",
           "WooVisAgent.Services.Common": "1.0.0",

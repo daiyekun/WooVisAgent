@@ -635,6 +635,7 @@
       "WooVisAgentServices.ImageService/1.0.0": {
         "dependencies": {
           "MediatR": "14.2.0",
+          "Polly.Core": "8.4.2",
           "WooVisAgent.EntityFrameworkCore": "1.0.0",
           "WooVisAgent.EventBus": "1.0.0",
           "WooVisAgent.Services.Common": "1.0.0",

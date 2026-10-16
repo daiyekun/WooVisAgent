@@ -29,3 +29,6 @@ D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.ServiceDefaults.pdb
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.ServiceDefaults.deps.json
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.ServiceDefaults.dll
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.ServiceDefaults.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.ServiceDefaults.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.ServiceDefaults.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.ServiceDefaults.pdb

@@ -41,7 +41,13 @@ public static class DependencyInjection
         });
         builder.Services.TryAddSingleton<ISnowflakeIdGenerator, SnowflakeIdGenerator>();
 
-        // 图片生成耗时可能较长，超时给足；重试交给消费者侧的 MassTransit 策略控制
+        // 图片生成耗时可能较长，超时给足。
+        //
+        // 注意这里的时间必须和 ServiceDefaults 里的弹性管道配置对齐：
+        // HttpClient.Timeout 是「最外层」兜底（一旦触发会直接砍掉整个请求，包括管道内的重试），
+        // 真正的超时判定交给 Polly（单次尝试 4 分钟 / 总 5 分钟），
+        // 所以这里留到 5 分钟，正常情况下永远不会先于弹性管道触发。
+        // 只调这一个参数是修不好 30 秒超时的——30 秒来自弹性管道的 TotalRequestTimeout 默认值。
         builder.Services.AddHttpClient(ImageGenerationHttpClientName, client =>
         {
             client.Timeout = TimeSpan.FromMinutes(5);
@@ -52,16 +58,10 @@ public static class DependencyInjection
         builder.Services.AddScoped<IGenerationTaskDispatcher, GenerationTaskDispatcher>();
         builder.Services.AddScoped<IGenerationTaskNotifier, GenerationTaskNotifier>();
 
-        // 模型交付协议解析器：按供应商/endpoint 形态把「接口地址」解析成真正的生成 URL，
-        // 取代早期硬编码 /v1/images/generations 的做法（那正是 404 的根源）。
-        // 顺序敏感：越具体、歧义越少的协议越靠前；PassthroughProtocol 作为兜底放最后。
+        // 模型交付协议解析器：按供应商/endpoint 形态把「接口地址」解析成真正的生成 URL。
+        // 协议清单与顺序由 ModelDeliveryProtocols.CreateDefault() 统一维护；
         // 用 TryAdd 兜底：Api 同时注册 ImageService 与 ModelService 时，只保留一份实例。
-        builder.Services.TryAddSingleton<ModelDeliveryProtocolResolver>(sp => new ModelDeliveryProtocolResolver(
-        [
-            new OpenAiImagesProtocol(),
-            new AliyunWanxProtocol(),
-            new PassthroughProtocol(),
-        ]));
+        builder.Services.TryAddSingleton(ModelDeliveryProtocols.CreateDefault());
 
         // 模型交付框架：统一编排图片生成与连通性测试，是面向 Microsoft Agent Framework 的抽象落点。
         builder.Services.AddSingleton<IModelDeliveryFramework, ModelDeliveryFramework>();

@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WooVisAgent.Api.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+deb0f9e54145b7bd7c5008e07af03694da852784")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+494f52395f9b9f94924f699fb0e15477780ed7a5")]
 [assembly: System.Reflection.AssemblyProductAttribute("WooVisAgent.Api.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WooVisAgent.Api.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

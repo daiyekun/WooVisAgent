@@ -137,4 +137,12 @@ D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.Api.deps.json
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.Api.runtimeconfig.json
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.Api.dll
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.Api.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\appsettings.Development.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\appsettings.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.Api.staticwebassets.endpoints.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.Api.exe
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.Api.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.Api.runtimeconfig.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.Api.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.Api.pdb
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Api\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt

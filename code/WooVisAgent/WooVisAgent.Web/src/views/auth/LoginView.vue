@@ -42,10 +42,17 @@ function validate(): boolean {
   return !errors.account && !errors.password
 }
 
-/** 登录成功后的回跳地址：由路由守卫写入 ?redirect=/tasks/create */
+/**
+ * 登录成功后的回跳地址：由路由守卫写入 ?redirect=/tasks/create。
+ * 没有回跳地址、或回跳地址是站点根路径时，统一落到「工作台」——
+ * 对话窗口不在这里自动打开，需要用户自己点「新建创作」。
+ */
 function resolveRedirect(): string | { name: string } {
   const redirect = route.query.redirect
-  return typeof redirect === 'string' && redirect.startsWith('/') ? redirect : { name: 'TaskList' }
+  if (typeof redirect === 'string' && redirect.startsWith('/') && redirect !== '/') {
+    return redirect
+  }
+  return { name: 'Workspace' }
 }
 
 function handleForget(): void {

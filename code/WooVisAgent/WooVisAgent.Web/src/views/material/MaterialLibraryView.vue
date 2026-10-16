@@ -163,8 +163,8 @@ onMounted(async () => {
     <!-- 页面标题条 -->
     <div class="page-head">
       <h1>
-        素材库
-        <small>共 {{ total }} 个素材 · 上传或归档的图片与视频都会出现在这里</small>
+        我的作品
+        <small>共 {{ total }} 个作品 · 生成的图片与视频都会出现在这里</small>
       </h1>
 
       <div class="flex flex-wrap items-center gap-2">
@@ -300,7 +300,7 @@ onMounted(async () => {
       <empty-state
         v-else-if="!loading"
         icon="images"
-        title="素材库还是空的"
+        title="还没有作品"
         description="上传图片或视频，或把任务生成的结果归档到这里"
       />
 

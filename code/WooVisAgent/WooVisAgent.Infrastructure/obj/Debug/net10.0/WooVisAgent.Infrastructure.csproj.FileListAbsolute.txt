@@ -28,3 +28,6 @@ D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.Infrastructure.pdb
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.Infrastructure.deps.json
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.Infrastructure.dll
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.Infrastructure.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.Infrastructure.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.Infrastructure.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.Infrastructure.pdb

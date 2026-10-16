@@ -34,3 +34,6 @@ D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.EntityFrameworkCore
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.EntityFrameworkCore.deps.json
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.EntityFrameworkCore.dll
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.EntityFrameworkCore.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.EntityFrameworkCore.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.EntityFrameworkCore.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.EntityFrameworkCore.pdb

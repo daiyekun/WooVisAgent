@@ -36,13 +36,9 @@ public static class DependencyInjection
         });
 
         // 模型交付协议解析器（放在 SharedLib，供连通性测试与图片生成共用）。
+        // 协议清单与顺序由 ModelDeliveryProtocols.CreateDefault() 统一维护；
         // 用 TryAdd 兜底：Api 同时注册 ImageService 与 ModelService 时，只保留一份实例。
-        builder.Services.TryAddSingleton<ModelDeliveryProtocolResolver>(sp => new ModelDeliveryProtocolResolver(
-        [
-            new OpenAiImagesProtocol(),
-            new AliyunWanxProtocol(),
-            new PassthroughProtocol(),
-        ]));
+        builder.Services.TryAddSingleton(ModelDeliveryProtocols.CreateDefault());
 
         builder.Services.AddSingleton<IModelConnectivityTester, LightProbeModelConnectivityTester>();
         builder.Services.AddSingleton<IModelProviderCatalog, StaticModelProviderCatalog>();

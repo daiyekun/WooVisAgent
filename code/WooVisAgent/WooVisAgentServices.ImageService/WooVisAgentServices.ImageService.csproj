@@ -11,6 +11,8 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.13" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.12" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.13" />
+    <!-- 仅用于捕获弹性管道的超时异常类型（TimeoutRejectedException），把它翻译成可读的中文提示 -->
+    <PackageReference Include="Polly.Core" Version="8.4.2" />
   </ItemGroup>
 
   <ItemGroup>

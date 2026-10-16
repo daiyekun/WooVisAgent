@@ -1,0 +1,193 @@
+using WooVisAgent.SharedLib.Domain;
+
+namespace WooVisAgent.SharedLib.Delivery;
+
+/// <summary>
+/// 百炼（DashScope / Model Studio）地址的识别与归一化。
+///
+/// 用户可能把地址填成很多种形态，都必须能还原出同一个「服务根地址」，再由方案协议拼各自的原生路径：
+/// <list type="bullet">
+///   <item><c>https://dashscope.aliyuncs.com</c>（纯域名）</item>
+///   <item><c>https://dashscope.aliyuncs.com/api/v1</c>（原生版本前缀）</item>
+///   <item><c>https://dashscope.aliyuncs.com/compatible-mode/v1</c>（OpenAI 兼容入口）</item>
+///   <item><c>https://{WorkspaceId}.cn-beijing.maas.aliyuncs.com/compatible-mode/v1</c>（业务空间专属域名）</item>
+///   <item><c>.../api/v1/services/aigc/text2image/image-synthesis</c>（已经填到完整接口路径）</item>
+/// </list>
+/// </summary>
+public static class AliyunDashScopeEndpoints
+{
+    /// <summary>
+    /// 已知的「版本前缀 / 服务路径」结尾。归一化时从长到短反复剥离，
+    /// 直到路径不再变化——这样"填到完整接口路径"和"只填到 /v1"能收敛到同一个根地址。
+    /// 顺序无关紧要，使用前会按长度降序排序。
+    /// </summary>
+    private static readonly string[] KnownSuffixes =
+    [
+        "/api/v1/services/aigc/multimodal-generation/generation",
+        "/api/v1/services/aigc/image-generation/generation",
+        "/api/v1/services/aigc/text2image/image-synthesis",
+        "/compatible-mode/v1/images/generations",
+        "/compatible-mode/images/generations",
+        "/api/v1/services/aigc/text2image",
+        "/api/v1/services/aigc",
+        "/v1/images/generations",
+        "/images/generations",
+        "/compatible-mode/v1",
+        "/compatible-mode",
+        "/api/v1",
+        "/v1",
+    ];
+
+    private static readonly string[] SuffixesByLengthDesc =
+        [.. KnownSuffixes.OrderByDescending(x => x.Length)];
+
+    /// <summary>是否应该由百炼协议族来投递这个模型</summary>
+    public static bool IsDashScopeEndpoint(ModelConfig model)
+    {
+        var endpoint = model.Endpoint?.Trim();
+
+        if (!string.IsNullOrEmpty(endpoint))
+        {
+            if (endpoint.Contains("/compatible-mode", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (endpoint.Contains("/services/aigc/", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (Uri.TryCreate(endpoint, UriKind.Absolute, out var uri) && IsDashScopeHost(uri.Host))
+                return true;
+        }
+
+        return IsAliyunProvider(model.Provider);
+    }
+
+    /// <summary>
+    /// 还原服务根地址（scheme + authority + 自定义前缀）。
+    /// 地址不是合法的 http(s) 绝对地址时返回 <c>false</c>。
+    /// </summary>
+    public static bool TryResolveBase(string? endpoint, out string baseUrl)
+    {
+        baseUrl = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(endpoint))
+            return false;
+
+        if (!Uri.TryCreate(endpoint.Trim(), UriKind.Absolute, out var uri))
+            return false;
+
+        if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+            return false;
+
+        var path = uri.AbsolutePath.TrimEnd('/');
+
+        // 反复剥离已知结尾（自建网关的自定义前缀会被保留下来）
+        var stripping = true;
+        while (stripping && path.Length > 0)
+        {
+            stripping = false;
+
+            foreach (var suffix in SuffixesByLengthDesc)
+            {
+                if (path.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                {
+                    path = path[..^suffix.Length].TrimEnd('/');
+                    stripping = true;
+                    break;
+                }
+            }
+        }
+
+        baseUrl = $"{uri.Scheme}://{uri.Authority}{path}";
+        return true;
+    }
+
+    /// <summary>
+    /// 按模型名判断优先走哪套原生入口。
+    ///
+    /// qwen-image 系列（多模态同步）与 wan / wanx 系列（文生图异步）的接口完全不同，
+    /// 猜错的代价是一次 400，框架会据此自动切到另一套方案，所以这里取"更可能"的一个即可。
+    /// </summary>
+    public static DashScopeImageMode PreferMode(string? modelKey)
+    {
+        var key = modelKey?.Trim().ToLowerInvariant() ?? string.Empty;
+
+        if (key.Contains("qwen", StringComparison.Ordinal))
+            return DashScopeImageMode.SyncMultimodal;
+
+        return DashScopeImageMode.AsyncText2Image;
+    }
+
+    /// <summary>公共域名、国际站域名，以及业务空间专属域名 *.maas.aliyuncs.com</summary>
+    public static bool IsDashScopeHost(string host)
+        => host.Contains("dashscope", StringComparison.OrdinalIgnoreCase)
+           || host.Contains("maas.aliyuncs.com", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>供应方字段是否指向阿里云百炼（用户可能填中文名）</summary>
+    public static bool IsAliyunProvider(string? provider)
+    {
+        var value = provider?.Trim();
+        if (string.IsNullOrEmpty(value))
+            return false;
+
+        return value.Equals("AliyunBailian", StringComparison.OrdinalIgnoreCase)
+               || value.Equals("Aliyun", StringComparison.OrdinalIgnoreCase)
+               || value.Equals("DashScope", StringComparison.OrdinalIgnoreCase)
+               || value.Equals("ModelStudio", StringComparison.OrdinalIgnoreCase)
+               || value.Equals("通义万相", StringComparison.OrdinalIgnoreCase)
+               || value.Equals("通义", StringComparison.OrdinalIgnoreCase)
+               || value.Equals("阿里云百炼", StringComparison.OrdinalIgnoreCase)
+               || value.Equals("百炼", StringComparison.OrdinalIgnoreCase);
+    }
+}
+
+/// <summary>
+/// 百炼图片生成的<b>二次分派器</b>：命中百炼地址后，按 模型名 + 地址形态 决定投递方案的优先级。
+///
+/// 这是本次 404 故障的修复落点。之前对 <c>/compatible-mode/v1</c> 补
+/// <c>/images/generations</c> 是错的——该路径在公共域名上并不存在（必然 404）。
+/// 现在改为：
+/// <list type="number">
+///   <item>填了 <c>/compatible-mode</c> → 先试兼容入口（业务空间专属域名上确实可用），
+///         失败再自动落到原生接口；</item>
+///   <item>其他形态 → 按模型名直接走原生同步（qwen-image）或原生异步（wan / wanx），
+///         再把另一套原生入口作为兜底方案。</item>
+/// </list>
+/// </summary>
+public sealed class AliyunDashScopeProtocol : IModelDeliveryProtocol
+{
+    public string Name => "aliyun-dashscope";
+
+    public bool Matches(ModelConfig model) => AliyunDashScopeEndpoints.IsDashScopeEndpoint(model);
+
+    /// <summary>二次分派：交给真正会使用的那个方案，保证请求体/异步语义/轮询地址都对上</summary>
+    public IModelDeliveryProtocol SelectDeliveryProtocol(ModelConfig model) => BuildPlans(model)[0];
+
+    public string? ResolveRequestUrl(ModelConfig model)
+        => BuildPlans(model)[0].ResolveRequestUrl(model);
+
+    /// <summary>
+    /// 按优先级排出候选方案；第一项即首选。
+    ///
+    /// 由 <see cref="AliyunDashScopeImageProtocol"/> 反查自己的兄弟方案来实现兜底链条，
+    /// 这样即便解析器已经把结果二次分派成了具体方案，仍然能拿到"其余入口"。
+    /// </summary>
+    internal static List<AliyunDashScopeImageProtocol> BuildPlans(ModelConfig model)
+    {
+        var preferred = AliyunDashScopeEndpoints.PreferMode(model.ModelKey);
+
+        var nativeOrder = preferred == DashScopeImageMode.SyncMultimodal
+            ? new[] { DashScopeImageMode.SyncMultimodal, DashScopeImageMode.AsyncText2Image }
+            : new[] { DashScopeImageMode.AsyncText2Image, DashScopeImageMode.SyncMultimodal };
+
+        // 只有用户显式填了 /compatible-mode 才把兼容入口排进候选，
+        // 避免对没要求兼容模式的地址凭空多打一次必然 404 的请求。
+        IEnumerable<DashScopeImageMode> modes = IsCompatibleMode(model.Endpoint)
+            ? new[] { DashScopeImageMode.CompatibleOpenAi }.Concat(nativeOrder)
+            : nativeOrder;
+
+        return [.. modes.Select(mode => new AliyunDashScopeImageProtocol(mode))];
+    }
+
+    private static bool IsCompatibleMode(string? endpoint)
+        => endpoint?.Contains("/compatible-mode", StringComparison.OrdinalIgnoreCase) == true;
+}

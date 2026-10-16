@@ -29,3 +29,6 @@ D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.SharedLib.pdb
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.SharedLib.deps.json
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.SharedLib.dll
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.SharedLib.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.SharedLib.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.SharedLib.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.SharedLib.pdb

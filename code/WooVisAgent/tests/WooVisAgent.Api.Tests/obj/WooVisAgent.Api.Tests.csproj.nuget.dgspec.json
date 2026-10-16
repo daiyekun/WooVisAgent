@@ -3623,6 +3623,10 @@
             "Microsoft.Extensions.Logging.Abstractions": {
               "target": "Package",
               "version": "[10.0.13, )"
+            },
+            "Polly.Core": {
+              "target": "Package",
+              "version": "[8.4.2, )"
             }
           },
           "imports": [

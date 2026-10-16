@@ -32,3 +32,6 @@ D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.Services.Common.pdb
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.Services.Common.deps.json
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.Services.Common.dll
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.Services.Common.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.Services.Common.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.Services.Common.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.Services.Common.pdb
