@@ -27,6 +27,16 @@ var httpapi = builder.AddProject<Projects.WooVisAgent_Api>("woovisagent-api")
     .WithReference(postgresdb)
     .WithReference(rabbitmq);
 
+// 图片/视频生成工作服务：消费队列 WooVisAgent.GenerateWorker 中的任务并执行生成。
+// 与 Api 共用同一套 PostgreSQL 与 RabbitMQ，产物落盘目录也一致（见 LocalStorageDefaults）。
+// WaitFor(httpapi)：让 Api 先完成建表，避免两个进程同时首次建表造成竞争。
+builder.AddProject<Projects.WooVisAgent_GenerateWorker>("woovisagent-generateworker")
+    .WithReference(postgresdb)
+    .WithReference(rabbitmq)
+    .WaitFor(postgresdb)
+    .WaitFor(rabbitmq)
+    .WaitFor(httpapi);
+
 // 前端目录 WooVisAgent.Web 目前还是空的（没有 package.json），
 // 直接注册 Vite 会因为 `npm error enoent Could not read package.json` 启动失败，
 // 所以这里做个判断：等前端工程建好（有 package.json）后会自动纳入编排，无需再改代码。

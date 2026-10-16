@@ -12,8 +12,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\WooVisAgent.EntityFrameworkCore\WooVisAgent.EntityFrameworkCore.csproj" />
     <ProjectReference Include="..\WooVisAgent.EventBus\WooVisAgent.EventBus.csproj" />
+    <ProjectReference Include="..\WooVisAgent.Infrastructure\WooVisAgent.Infrastructure.csproj" />
     <ProjectReference Include="..\WooVisAgent.ServiceDefaults\WooVisAgent.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\WooVisAgent.Services.Common\WooVisAgent.Services.Common.csproj" />
+    <ProjectReference Include="..\WooVisAgent.SharedLib\WooVisAgent.SharedLib.csproj" />
+    <ProjectReference Include="..\WooVisAgentServices.ImageService\WooVisAgentServices.ImageService.csproj" />
   </ItemGroup>
 
 </Project>

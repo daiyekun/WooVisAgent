@@ -20,3 +20,12 @@ C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-verify\WooVisAgent.Services.Comm
 C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgent.Services.Common.deps.json
 C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgent.Services.Common.dll
 C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgent.Services.Common.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\api\WooVisAgent.Services.Common.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\api\WooVisAgent.Services.Common.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\api\WooVisAgent.Services.Common.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgent.Services.Common.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgent.Services.Common.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgent.Services.Common.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.Services.Common.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.Services.Common.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.Services.Common.pdb

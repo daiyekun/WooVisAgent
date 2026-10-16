@@ -165,3 +165,9 @@ D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.AppHost\bin\Debug\net10.0\run
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.AppHost\obj\Debug\net10.0\WooVisAgent.AppHost.sourcelink.json
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.AppHost\bin\Debug\net10.0\Microsoft.Extensions.Diagnostics.HealthChecks.dll
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.AppHost\bin\Debug\net10.0\Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgent.AppHost.exe
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgent.AppHost.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgent.AppHost.runtimeconfig.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgent.AppHost.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgent.AppHost.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.AppHost\obj\Debug\net10.0\Aspire\references\WooVisAgent_GenerateWorker.ProjectMetadata.g.cs

@@ -17,3 +17,12 @@ C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-verify\WooVisAgent.ServiceDefaul
 C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgent.ServiceDefaults.deps.json
 C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgent.ServiceDefaults.dll
 C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgent.ServiceDefaults.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\api\WooVisAgent.ServiceDefaults.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\api\WooVisAgent.ServiceDefaults.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\api\WooVisAgent.ServiceDefaults.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgent.ServiceDefaults.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgent.ServiceDefaults.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgent.ServiceDefaults.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.ServiceDefaults.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.ServiceDefaults.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.ServiceDefaults.pdb

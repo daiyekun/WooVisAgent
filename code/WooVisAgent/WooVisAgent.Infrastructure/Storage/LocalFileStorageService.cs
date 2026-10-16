@@ -1,11 +1,13 @@
 ﻿using WooVisAgent.Services.Common.Contracts;
+using WooVisAgent.Services.Common.Storage;
 
 namespace WooVisAgent.Infrastructure.Storage;
 
 public class LocalFileStorageService : IFileStorageService
 {
-    private const string RootPath = "D:\\";
-    private const string UploadRoot = "uploads";
+    // 路径约定集中放在 LocalStorageDefaults，Api 静态托管 /uploads 时复用同一组常量
+    private const string RootPath = LocalStorageDefaults.RootPath;
+    private const string UploadRoot = LocalStorageDefaults.UploadFolder;
 
     public async Task<string> SaveAsync(Stream stream, string fileName, CancellationToken cancellationToken = default)
     {

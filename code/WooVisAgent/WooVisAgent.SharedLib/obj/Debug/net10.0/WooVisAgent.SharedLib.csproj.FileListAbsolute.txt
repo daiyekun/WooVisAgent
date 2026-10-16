@@ -17,3 +17,12 @@ C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-verify\WooVisAgent.SharedLib.pdb
 C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgent.SharedLib.deps.json
 C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgent.SharedLib.dll
 C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgent.SharedLib.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\api\WooVisAgent.SharedLib.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\api\WooVisAgent.SharedLib.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\api\WooVisAgent.SharedLib.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgent.SharedLib.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgent.SharedLib.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgent.SharedLib.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.SharedLib.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.SharedLib.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.SharedLib.pdb

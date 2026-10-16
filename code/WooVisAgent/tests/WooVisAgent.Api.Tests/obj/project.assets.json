@@ -36,6 +36,57 @@
           "buildTransitive/net10.0/Aspire.Npgsql.EntityFrameworkCore.PostgreSQL.targets": {}
         }
       },
+      "MassTransit/9.2.3": {
+        "type": "package",
+        "dependencies": {
+          "MassTransit.Abstractions": "9.2.3",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.0",
+          "Microsoft.Extensions.Diagnostics.HealthChecks": "10.0.0",
+          "Microsoft.Extensions.Hosting.Abstractions": "10.0.0",
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.0",
+          "Microsoft.Extensions.Options": "10.0.0"
+        },
+        "compile": {
+          "lib/net10.0/MassTransit.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net10.0/MassTransit.dll": {
+            "related": ".xml"
+          }
+        }
+      },
+      "MassTransit.Abstractions/9.2.3": {
+        "type": "package",
+        "compile": {
+          "lib/net10.0/MassTransit.Abstractions.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net10.0/MassTransit.Abstractions.dll": {
+            "related": ".xml"
+          }
+        }
+      },
+      "MassTransit.RabbitMQ/9.2.3": {
+        "type": "package",
+        "dependencies": {
+          "MassTransit": "9.2.3",
+          "RabbitMQ.Client": "7.2.2"
+        },
+        "compile": {
+          "lib/net10.0/MassTransit.RabbitMqTransport.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net10.0/MassTransit.RabbitMqTransport.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "MediatR/14.2.0": {
         "type": "package",
         "dependencies": {
@@ -1917,6 +1968,22 @@
           }
         }
       },
+      "RabbitMQ.Client/7.2.2": {
+        "type": "package",
+        "dependencies": {
+          "System.Threading.RateLimiting": "8.0.0"
+        },
+        "compile": {
+          "lib/net8.0/RabbitMQ.Client.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/RabbitMQ.Client.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "System.Diagnostics.EventLog/10.0.2": {
         "type": "package",
         "compile": {
@@ -2079,10 +2146,13 @@
           "Microsoft.AspNetCore.Authentication.JwtBearer": "10.0.8",
           "Microsoft.AspNetCore.OpenApi": "10.0.8",
           "WooVisAgent.EntityFrameworkCore": "1.0.0",
+          "WooVisAgent.EventBus": "1.0.0",
+          "WooVisAgent.Infrastructure": "1.0.0",
           "WooVisAgent.ServiceDefaults": "1.0.0",
           "WooVisAgent.Services.Common": "1.0.0",
           "WooVisAgent.SharedLib": "1.0.0",
           "WooVisAgentServices.IdentityService": "1.0.0",
+          "WooVisAgentServices.ImageService": "1.0.0",
           "WooVisAgentServices.ModelService": "1.0.0"
         },
         "compile": {
@@ -2114,6 +2184,35 @@
         },
         "runtime": {
           "bin/placeholder/WooVisAgent.EntityFrameworkCore.dll": {}
+        }
+      },
+      "WooVisAgent.EventBus/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "dependencies": {
+          "MassTransit": "9.2.3",
+          "MassTransit.RabbitMQ": "9.2.3",
+          "Microsoft.Extensions.Hosting.Abstractions": "10.0.13",
+          "WooVisAgent.SharedLib": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/WooVisAgent.EventBus.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/WooVisAgent.EventBus.dll": {}
+        }
+      },
+      "WooVisAgent.Infrastructure/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "dependencies": {
+          "WooVisAgent.Services.Common": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/WooVisAgent.Infrastructure.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/WooVisAgent.Infrastructure.dll": {}
         }
       },
       "WooVisAgent.ServiceDefaults/1.0.0": {
@@ -2183,6 +2282,26 @@
           "bin/placeholder/WooVisAgentServices.IdentityService.dll": {}
         }
       },
+      "WooVisAgentServices.ImageService/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "dependencies": {
+          "MediatR": "14.2.0",
+          "Microsoft.Extensions.Hosting.Abstractions": "10.0.13",
+          "Microsoft.Extensions.Http": "10.0.12",
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.13",
+          "WooVisAgent.EntityFrameworkCore": "1.0.0",
+          "WooVisAgent.EventBus": "1.0.0",
+          "WooVisAgent.Services.Common": "1.0.0",
+          "WooVisAgent.SharedLib": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/WooVisAgentServices.ImageService.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/WooVisAgentServices.ImageService.dll": {}
+        }
+      },
       "WooVisAgentServices.ModelService/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v10.0",
@@ -2227,6 +2346,75 @@
         "lib/net8.0/Aspire.Npgsql.EntityFrameworkCore.PostgreSQL.xml",
         "lib/net9.0/Aspire.Npgsql.EntityFrameworkCore.PostgreSQL.dll",
         "lib/net9.0/Aspire.Npgsql.EntityFrameworkCore.PostgreSQL.xml"
+      ]
+    },
+    "MassTransit/9.2.3": {
+      "sha512": "exbI8yF4w8swAOj5cHiZVyWWWb/O/d0x1hBrD8nvFcAk4iMjEyvg1i+8zvgOsfYkSZp4horycBJVLAQPv1gFbw==",
+      "type": "package",
+      "path": "masstransit/9.2.3",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "NuGet.README.md",
+        "lib/net10.0/MassTransit.dll",
+        "lib/net10.0/MassTransit.xml",
+        "lib/net472/MassTransit.dll",
+        "lib/net472/MassTransit.xml",
+        "lib/net8.0/MassTransit.dll",
+        "lib/net8.0/MassTransit.xml",
+        "lib/net9.0/MassTransit.dll",
+        "lib/net9.0/MassTransit.xml",
+        "lib/netstandard2.0/MassTransit.dll",
+        "lib/netstandard2.0/MassTransit.xml",
+        "masstransit.9.2.3.nupkg.sha512",
+        "masstransit.nuspec",
+        "mt-logo-small.png"
+      ]
+    },
+    "MassTransit.Abstractions/9.2.3": {
+      "sha512": "D0y98XbWq4Su8YCn1Y3WvQKy3Mn6SS5DGp1vkICy0TpPPzGQI6EPTMmITiim0KCf/WXgh/mRIP9UswIZVDuRjw==",
+      "type": "package",
+      "path": "masstransit.abstractions/9.2.3",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "NuGet.README.md",
+        "lib/net10.0/MassTransit.Abstractions.dll",
+        "lib/net10.0/MassTransit.Abstractions.xml",
+        "lib/net472/MassTransit.Abstractions.dll",
+        "lib/net472/MassTransit.Abstractions.xml",
+        "lib/net8.0/MassTransit.Abstractions.dll",
+        "lib/net8.0/MassTransit.Abstractions.xml",
+        "lib/net9.0/MassTransit.Abstractions.dll",
+        "lib/net9.0/MassTransit.Abstractions.xml",
+        "lib/netstandard2.0/MassTransit.Abstractions.dll",
+        "lib/netstandard2.0/MassTransit.Abstractions.xml",
+        "masstransit.abstractions.9.2.3.nupkg.sha512",
+        "masstransit.abstractions.nuspec",
+        "mt-logo-small.png"
+      ]
+    },
+    "MassTransit.RabbitMQ/9.2.3": {
+      "sha512": "leInIa/ogii5hzKmqbU8DdlYGDUwODoUcIcx8Vlu4NZjjmGoiCdPybDdgeRpSt/ebmar0MHL9m4sainogXU6jQ==",
+      "type": "package",
+      "path": "masstransit.rabbitmq/9.2.3",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "NuGet.README.md",
+        "lib/net10.0/MassTransit.RabbitMqTransport.dll",
+        "lib/net10.0/MassTransit.RabbitMqTransport.xml",
+        "lib/net472/MassTransit.RabbitMqTransport.dll",
+        "lib/net472/MassTransit.RabbitMqTransport.xml",
+        "lib/net8.0/MassTransit.RabbitMqTransport.dll",
+        "lib/net8.0/MassTransit.RabbitMqTransport.xml",
+        "lib/net9.0/MassTransit.RabbitMqTransport.dll",
+        "lib/net9.0/MassTransit.RabbitMqTransport.xml",
+        "lib/netstandard2.0/MassTransit.RabbitMqTransport.dll",
+        "lib/netstandard2.0/MassTransit.RabbitMqTransport.xml",
+        "masstransit.rabbitmq.9.2.3.nupkg.sha512",
+        "masstransit.rabbitmq.nuspec",
+        "mt-logo-small.png"
       ]
     },
     "MediatR/14.2.0": {
@@ -4674,6 +4862,23 @@
         "polly.ratelimiting.nuspec"
       ]
     },
+    "RabbitMQ.Client/7.2.2": {
+      "sha512": "k4b6RnTXpLbsF96V93ooNYxgPMnoA2tEm24B6AXNJr1mG8wwNYdA1XJtgU66L5xqeGyveS7SJriRzlX3cbqQNA==",
+      "type": "package",
+      "path": "rabbitmq.client/7.2.2",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "icon.png",
+        "lib/net8.0/RabbitMQ.Client.dll",
+        "lib/net8.0/RabbitMQ.Client.xml",
+        "lib/netstandard2.0/RabbitMQ.Client.dll",
+        "lib/netstandard2.0/RabbitMQ.Client.xml",
+        "rabbitmq.client.7.2.2.nupkg.sha512",
+        "rabbitmq.client.nuspec"
+      ]
+    },
     "System.Diagnostics.EventLog/10.0.2": {
       "sha512": "TJPpTLF5MFPobq09c9BQ5X8QuviQfsKvH0Jbm7MkGylGvfIdRqJQLZDPC5sMRFkk9aZhmgir1NJKekip2NxfaA==",
       "type": "package",
@@ -4914,6 +5119,16 @@
       "path": "../../WooVisAgent.EntityFrameworkCore/WooVisAgent.EntityFrameworkCore.csproj",
       "msbuildProject": "../../WooVisAgent.EntityFrameworkCore/WooVisAgent.EntityFrameworkCore.csproj"
     },
+    "WooVisAgent.EventBus/1.0.0": {
+      "type": "project",
+      "path": "../../WooVisAgent.EventBus/WooVisAgent.EventBus.csproj",
+      "msbuildProject": "../../WooVisAgent.EventBus/WooVisAgent.EventBus.csproj"
+    },
+    "WooVisAgent.Infrastructure/1.0.0": {
+      "type": "project",
+      "path": "../../WooVisAgent.Infrastructure/WooVisAgent.Infrastructure.csproj",
+      "msbuildProject": "../../WooVisAgent.Infrastructure/WooVisAgent.Infrastructure.csproj"
+    },
     "WooVisAgent.ServiceDefaults/1.0.0": {
       "type": "project",
       "path": "../../WooVisAgent.ServiceDefaults/WooVisAgent.ServiceDefaults.csproj",
@@ -4933,6 +5148,11 @@
       "type": "project",
       "path": "../../WooVisAgentServices.IdentityService/WooVisAgentServices.IdentityService.csproj",
       "msbuildProject": "../../WooVisAgentServices.IdentityService/WooVisAgentServices.IdentityService.csproj"
+    },
+    "WooVisAgentServices.ImageService/1.0.0": {
+      "type": "project",
+      "path": "../../WooVisAgentServices.ImageService/WooVisAgentServices.ImageService.csproj",
+      "msbuildProject": "../../WooVisAgentServices.ImageService/WooVisAgentServices.ImageService.csproj"
     },
     "WooVisAgentServices.ModelService/1.0.0": {
       "type": "project",

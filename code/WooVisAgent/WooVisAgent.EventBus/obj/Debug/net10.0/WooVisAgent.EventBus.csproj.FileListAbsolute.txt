@@ -11,3 +11,15 @@ D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.EventBus\obj\Debug\net10.0\Wo
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.EventBus\obj\Debug\net10.0\refint\WooVisAgent.EventBus.dll
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.EventBus\obj\Debug\net10.0\WooVisAgent.EventBus.pdb
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.EventBus\obj\Debug\net10.0\ref\WooVisAgent.EventBus.dll
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.EventBus\bin\Debug\net10.0\WooVisAgent.SharedLib.dll
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.EventBus\bin\Debug\net10.0\WooVisAgent.SharedLib.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.EventBus\obj\Debug\net10.0\WooVisAg.B5968DF5.Up2Date
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\api\WooVisAgent.EventBus.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\api\WooVisAgent.EventBus.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\api\WooVisAgent.EventBus.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgent.EventBus.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgent.EventBus.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgent.EventBus.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.EventBus.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.EventBus.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.EventBus.pdb

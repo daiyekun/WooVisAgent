@@ -1,12 +1,18 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using WooVisAgent.Api.Extensions;
+using WooVisAgent.Api.Hubs;
 using WooVisAgent.Api.Services;
 using WooVisAgent.EntityFrameworkCore;
+using WooVisAgent.EventBus;
+using WooVisAgent.Infrastructure.Storage;
 using WooVisAgent.Services.Common.Contracts;
+using WooVisAgent.Services.Common.Storage;
 using WooVisAgentServices.IdentityService;
 using WooVisAgentServices.IdentityService.Options;
+using WooVisAgentServices.ImageService;
 using WooVisAgentServices.ModelService;
 
 namespace WooVisAgent.Api;
@@ -23,6 +29,22 @@ public class Program
         builder.AddIdentityService();
         // 模型配置用例：64 位雪花主键、连通性测试、供应方模型清单
         builder.AddModelService();
+
+        // 图片生成用例：提交任务后把消息投递到 RabbitMQ；
+        // 真正的生成由独立服务 WooVisAgent.GenerateWorker 消费队列后执行
+        builder.AddImageService();
+
+        // 产物落盘实现。与 GenerateWorker 使用同一实现、同一目录，
+        // 这样 Worker 写出的图片能被下面挂载的 /uploads 静态托管读到
+        builder.Services.AddSingleton<IFileStorageService, LocalFileStorageService>();
+
+        // 任务实时通道（/hubs/tasks），把生成进度与产物推给前端页面
+        builder.Services.AddSignalR();
+
+        // RabbitMQ 事件总线：只扫描 Api 自身程序集。
+        // 本程序集里只有一个消费者——GenerationTaskStatusChangedConsumer（状态 -> SignalR），
+        // 生成任务消息的消费者在 GenerateWorker 里，因此 Api 不会重复消费生成任务。
+        builder.AddEventBus(typeof(Program).Assembly);
 
         builder.Services.AddControllers()
             .AddJsonOptions(options =>
@@ -53,6 +75,16 @@ public class Program
 
         app.MapDefaultEndpoints();
 
+        // 生成产物通过 /uploads 静态托管给页面。
+        // 目录与 GenerateWorker 落盘目录共用同一组常量，避免"写这边、读那边"。
+        var uploadsRoot = Path.Combine(LocalStorageDefaults.RootPath, LocalStorageDefaults.UploadFolder);
+        Directory.CreateDirectory(uploadsRoot);
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = new PhysicalFileProvider(uploadsRoot),
+            RequestPath = LocalStorageDefaults.PublicRequestPath,
+        });
+
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
@@ -70,6 +102,9 @@ public class Program
         app.UseAuthorization();
 
         app.MapControllers();
+
+        // 任务实时通道：前端 useSignalR.ts 里的 TASK_HUB_PATH
+        app.MapHub<TaskHub>("/hubs/tasks");
 
         await app.RunAsync();
     }

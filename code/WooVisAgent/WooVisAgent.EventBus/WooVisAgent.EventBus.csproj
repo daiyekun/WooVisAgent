@@ -12,4 +12,9 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.13" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- 事件契约里会带上 TaskAsset 等共享领域对象 -->
+    <ProjectReference Include="..\WooVisAgent.SharedLib\WooVisAgent.SharedLib.csproj" />
+  </ItemGroup>
+
 </Project>

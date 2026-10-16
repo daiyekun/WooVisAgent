@@ -22,3 +22,12 @@ C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-verify\WooVisAgent.EntityFramewo
 C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgent.EntityFrameworkCore.deps.json
 C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgent.EntityFrameworkCore.dll
 C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgent.EntityFrameworkCore.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\api\WooVisAgent.EntityFrameworkCore.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\api\WooVisAgent.EntityFrameworkCore.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\api\WooVisAgent.EntityFrameworkCore.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgent.EntityFrameworkCore.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgent.EntityFrameworkCore.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgent.EntityFrameworkCore.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.EntityFrameworkCore.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.EntityFrameworkCore.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\w\WooVisAgent.EntityFrameworkCore.pdb

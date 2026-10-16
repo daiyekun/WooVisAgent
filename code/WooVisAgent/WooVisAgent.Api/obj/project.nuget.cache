@@ -1,10 +1,13 @@
 {
   "version": 2,
-  "dgSpecHash": "DPIaI240ytI=",
+  "dgSpecHash": "skGU3WOQeY8=",
   "success": true,
   "projectFilePath": "D:\\WooProject\\AIVidio\\code\\WooVisAgent\\WooVisAgent.Api\\WooVisAgent.Api.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\user\\.nuget\\packages\\aspire.npgsql.entityframeworkcore.postgresql\\13.6.1\\aspire.npgsql.entityframeworkcore.postgresql.13.6.1.nupkg.sha512",
+    "C:\\Users\\user\\.nuget\\packages\\masstransit\\9.2.3\\masstransit.9.2.3.nupkg.sha512",
+    "C:\\Users\\user\\.nuget\\packages\\masstransit.abstractions\\9.2.3\\masstransit.abstractions.9.2.3.nupkg.sha512",
+    "C:\\Users\\user\\.nuget\\packages\\masstransit.rabbitmq\\9.2.3\\masstransit.rabbitmq.9.2.3.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\mediatr\\14.2.0\\mediatr.14.2.0.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\mediatr.contracts\\2.0.1\\mediatr.contracts.2.0.1.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\microsoft.aspnetcore.authentication.jwtbearer\\10.0.8\\microsoft.aspnetcore.authentication.jwtbearer.10.0.8.nupkg.sha512",
@@ -49,6 +52,7 @@
     "C:\\Users\\user\\.nuget\\packages\\polly.core\\8.4.2\\polly.core.8.4.2.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\polly.extensions\\8.4.2\\polly.extensions.8.4.2.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\polly.ratelimiting\\8.4.2\\polly.ratelimiting.8.4.2.nupkg.sha512",
+    "C:\\Users\\user\\.nuget\\packages\\rabbitmq.client\\7.2.2\\rabbitmq.client.7.2.2.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\system.identitymodel.tokens.jwt\\8.0.1\\system.identitymodel.tokens.jwt.8.0.1.nupkg.sha512"
   ],
   "logs": []

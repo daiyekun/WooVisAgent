@@ -34,6 +34,11 @@ export default defineConfig({
         target: proxyTarget,
         changeOrigin: true,
       },
+      // 生成产物（图片/视频）由后端 /uploads 静态托管，页面直接引用该地址
+      '/uploads': {
+        target: proxyTarget,
+        changeOrigin: true,
+      },
       // SignalR 握手 + WebSocket 升级
       '/hubs': {
         target: proxyTarget,

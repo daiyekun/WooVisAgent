@@ -11,10 +11,13 @@
           "Microsoft.AspNetCore.Authentication.JwtBearer": "10.0.8",
           "Microsoft.AspNetCore.OpenApi": "10.0.8",
           "WooVisAgent.EntityFrameworkCore": "1.0.0",
+          "WooVisAgent.EventBus": "1.0.0",
+          "WooVisAgent.Infrastructure": "1.0.0",
           "WooVisAgent.ServiceDefaults": "1.0.0",
           "WooVisAgent.Services.Common": "1.0.0",
           "WooVisAgent.SharedLib": "1.0.0",
           "WooVisAgentServices.IdentityService": "1.0.0",
+          "WooVisAgentServices.ImageService": "1.0.0",
           "WooVisAgentServices.ModelService": "1.0.0"
         },
         "runtime": {
@@ -33,6 +36,37 @@
           "lib/net10.0/Aspire.Npgsql.EntityFrameworkCore.PostgreSQL.dll": {
             "assemblyVersion": "13.6.1.0",
             "fileVersion": "13.600.126.50606"
+          }
+        }
+      },
+      "MassTransit/9.2.3": {
+        "dependencies": {
+          "MassTransit.Abstractions": "9.2.3"
+        },
+        "runtime": {
+          "lib/net10.0/MassTransit.dll": {
+            "assemblyVersion": "9.2.3.0",
+            "fileVersion": "9.2.3.0"
+          }
+        }
+      },
+      "MassTransit.Abstractions/9.2.3": {
+        "runtime": {
+          "lib/net10.0/MassTransit.Abstractions.dll": {
+            "assemblyVersion": "9.2.3.0",
+            "fileVersion": "9.2.3.0"
+          }
+        }
+      },
+      "MassTransit.RabbitMQ/9.2.3": {
+        "dependencies": {
+          "MassTransit": "9.2.3",
+          "RabbitMQ.Client": "7.2.2"
+        },
+        "runtime": {
+          "lib/net10.0/MassTransit.RabbitMqTransport.dll": {
+            "assemblyVersion": "9.2.3.0",
+            "fileVersion": "9.2.3.0"
           }
         }
       },
@@ -484,6 +518,14 @@
           }
         }
       },
+      "RabbitMQ.Client/7.2.2": {
+        "runtime": {
+          "lib/net8.0/RabbitMQ.Client.dll": {
+            "assemblyVersion": "7.0.0.0",
+            "fileVersion": "7.2.2.0"
+          }
+        }
+      },
       "System.IdentityModel.Tokens.Jwt/8.0.1": {
         "dependencies": {
           "Microsoft.IdentityModel.JsonWebTokens": "8.14.0",
@@ -508,6 +550,30 @@
         },
         "runtime": {
           "WooVisAgent.EntityFrameworkCore.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "WooVisAgent.EventBus/1.0.0": {
+        "dependencies": {
+          "MassTransit": "9.2.3",
+          "MassTransit.RabbitMQ": "9.2.3",
+          "WooVisAgent.SharedLib": "1.0.0"
+        },
+        "runtime": {
+          "WooVisAgent.EventBus.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "WooVisAgent.Infrastructure/1.0.0": {
+        "dependencies": {
+          "WooVisAgent.Services.Common": "1.0.0"
+        },
+        "runtime": {
+          "WooVisAgent.Infrastructure.dll": {
             "assemblyVersion": "1.0.0.0",
             "fileVersion": "1.0.0.0"
           }
@@ -566,6 +632,21 @@
           }
         }
       },
+      "WooVisAgentServices.ImageService/1.0.0": {
+        "dependencies": {
+          "MediatR": "14.2.0",
+          "WooVisAgent.EntityFrameworkCore": "1.0.0",
+          "WooVisAgent.EventBus": "1.0.0",
+          "WooVisAgent.Services.Common": "1.0.0",
+          "WooVisAgent.SharedLib": "1.0.0"
+        },
+        "runtime": {
+          "WooVisAgentServices.ImageService.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
       "WooVisAgentServices.ModelService/1.0.0": {
         "dependencies": {
           "MediatR": "14.2.0",
@@ -594,6 +675,27 @@
       "sha512": "sha512-4J8ZPPlo88+wt3frbASAPH6OBGMZ1/f9ywnEsSsS8QvMECAU6RWgmxrR/Qjg70L0Dax5Ontt9IWyq8TYvGj2kg==",
       "path": "aspire.npgsql.entityframeworkcore.postgresql/13.6.1",
       "hashPath": "aspire.npgsql.entityframeworkcore.postgresql.13.6.1.nupkg.sha512"
+    },
+    "MassTransit/9.2.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-exbI8yF4w8swAOj5cHiZVyWWWb/O/d0x1hBrD8nvFcAk4iMjEyvg1i+8zvgOsfYkSZp4horycBJVLAQPv1gFbw==",
+      "path": "masstransit/9.2.3",
+      "hashPath": "masstransit.9.2.3.nupkg.sha512"
+    },
+    "MassTransit.Abstractions/9.2.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-D0y98XbWq4Su8YCn1Y3WvQKy3Mn6SS5DGp1vkICy0TpPPzGQI6EPTMmITiim0KCf/WXgh/mRIP9UswIZVDuRjw==",
+      "path": "masstransit.abstractions/9.2.3",
+      "hashPath": "masstransit.abstractions.9.2.3.nupkg.sha512"
+    },
+    "MassTransit.RabbitMQ/9.2.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-leInIa/ogii5hzKmqbU8DdlYGDUwODoUcIcx8Vlu4NZjjmGoiCdPybDdgeRpSt/ebmar0MHL9m4sainogXU6jQ==",
+      "path": "masstransit.rabbitmq/9.2.3",
+      "hashPath": "masstransit.rabbitmq.9.2.3.nupkg.sha512"
     },
     "MediatR/14.2.0": {
       "type": "package",
@@ -896,6 +998,13 @@
       "path": "polly.ratelimiting/8.4.2",
       "hashPath": "polly.ratelimiting.8.4.2.nupkg.sha512"
     },
+    "RabbitMQ.Client/7.2.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-k4b6RnTXpLbsF96V93ooNYxgPMnoA2tEm24B6AXNJr1mG8wwNYdA1XJtgU66L5xqeGyveS7SJriRzlX3cbqQNA==",
+      "path": "rabbitmq.client/7.2.2",
+      "hashPath": "rabbitmq.client.7.2.2.nupkg.sha512"
+    },
     "System.IdentityModel.Tokens.Jwt/8.0.1": {
       "type": "package",
       "serviceable": true,
@@ -904,6 +1013,16 @@
       "hashPath": "system.identitymodel.tokens.jwt.8.0.1.nupkg.sha512"
     },
     "WooVisAgent.EntityFrameworkCore/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "WooVisAgent.EventBus/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "WooVisAgent.Infrastructure/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
@@ -924,6 +1043,11 @@
       "sha512": ""
     },
     "WooVisAgentServices.IdentityService/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "WooVisAgentServices.ImageService/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

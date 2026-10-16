@@ -24,3 +24,9 @@ C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-verify\WooVisAgentServices.Model
 C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgentServices.ModelService.deps.json
 C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgentServices.ModelService.dll
 C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgentServices.ModelService.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\api\WooVisAgentServices.ModelService.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\api\WooVisAgentServices.ModelService.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\api\WooVisAgentServices.ModelService.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgentServices.ModelService.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgentServices.ModelService.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgentServices.ModelService.pdb

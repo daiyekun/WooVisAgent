@@ -22,3 +22,9 @@ C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-verify\WooVisAgentServices.Ident
 C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgentServices.IdentityService.deps.json
 C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgentServices.IdentityService.dll
 C:\Users\user\WorkBuddy\2026-10-16-15-58-41\tmp-test\WooVisAgentServices.IdentityService.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\api\WooVisAgentServices.IdentityService.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\api\WooVisAgentServices.IdentityService.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\api\WooVisAgentServices.IdentityService.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgentServices.IdentityService.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgentServices.IdentityService.dll
+D:\WooProject\AIVidio\code\WooVisAgent\.verify\apphost\WooVisAgentServices.IdentityService.pdb
