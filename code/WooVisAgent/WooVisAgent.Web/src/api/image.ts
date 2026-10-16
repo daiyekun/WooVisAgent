@@ -1,0 +1,56 @@
+import { del, get, post } from './http'
+import type { GenerationTask, PageQuery, PagedResult, TaskAsset, TaskStatus } from '@/types'
+
+const BASE_URL = '/api/image/generations'
+
+/** 图片生成入参 */
+export interface ImageGenerationInput {
+  /** 不传则由后端按 prompt 截取生成 */
+  name?: string
+  modelId: string
+  prompt: string
+  negativePrompt?: string
+  width?: number
+  height?: number
+  /** 一次生成的张数 */
+  batchSize?: number
+  steps?: number
+  cfgScale?: number
+  seed?: number
+  /** 参考图/垫图 URL */
+  referenceImageUrls?: string[]
+  /** 模型特有参数，键值对应 ModelParamSpec.key */
+  params?: Record<string, unknown>
+}
+
+export interface ImageGenerationResult {
+  taskId: string
+  status: TaskStatus
+  /** 同步返回时直接带上产物，异步场景为空数组 */
+  images: TaskAsset[]
+}
+
+/** 提交图片生成任务 */
+export function generateImage(input: ImageGenerationInput) {
+  return post<ImageGenerationResult>(BASE_URL, input)
+}
+
+/** 查询图片生成任务列表 */
+export function fetchImageTasks(query: PageQuery & Record<string, unknown> = {}) {
+  return get<PagedResult<GenerationTask>>(BASE_URL, query)
+}
+
+/** 查询单条图片生成任务 */
+export function fetchImageTask(id: string) {
+  return get<GenerationTask>(`${BASE_URL}/${id}`)
+}
+
+/** 取消图片生成任务 */
+export function cancelImageTask(id: string) {
+  return post<void>(`${BASE_URL}/${id}/cancel`)
+}
+
+/** 删除图片生成记录 */
+export function deleteImageTask(id: string) {
+  return del<void>(`${BASE_URL}/${id}`)
+}

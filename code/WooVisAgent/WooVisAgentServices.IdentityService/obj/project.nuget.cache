@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "iYYbCVoXyT8=",
+  "dgSpecHash": "MzYMVSXpRWQ=",
   "success": true,
   "projectFilePath": "D:\\WooProject\\AIVidio\\code\\WooVisAgent\\WooVisAgentServices.IdentityService\\WooVisAgentServices.IdentityService.csproj",
   "expectedPackageFiles": [
@@ -16,6 +16,8 @@
     "C:\\Users\\user\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\10.0.13\\microsoft.extensions.dependencyinjection.abstractions.10.0.13.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\microsoft.extensions.diagnostics\\10.0.13\\microsoft.extensions.diagnostics.10.0.13.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\microsoft.extensions.diagnostics.abstractions\\10.0.13\\microsoft.extensions.diagnostics.abstractions.10.0.13.nupkg.sha512",
+    "C:\\Users\\user\\.nuget\\packages\\microsoft.extensions.fileproviders.abstractions\\10.0.13\\microsoft.extensions.fileproviders.abstractions.10.0.13.nupkg.sha512",
+    "C:\\Users\\user\\.nuget\\packages\\microsoft.extensions.hosting.abstractions\\10.0.13\\microsoft.extensions.hosting.abstractions.10.0.13.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\microsoft.extensions.identity.core\\10.0.13\\microsoft.extensions.identity.core.10.0.13.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\microsoft.extensions.identity.stores\\10.0.13\\microsoft.extensions.identity.stores.10.0.13.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\microsoft.extensions.logging\\10.0.13\\microsoft.extensions.logging.10.0.13.nupkg.sha512",

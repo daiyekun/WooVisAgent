@@ -1,0 +1,33 @@
+{
+  "name": "woovisagent-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "WooVisAgent 前端控制台 - Vue3 + Vite + TS + Pinia + NaiveUI + TailwindCSS",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "build:only": "vite build",
+    "preview": "vite preview",
+    "type-check": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@microsoft/signalr": "^10.0.11",
+    "axios": "^1.20.0",
+    "dayjs": "^1.11.23",
+    "naive-ui": "^2.45.3",
+    "pinia": "^4.1.0",
+    "vue": "^3.5.44",
+    "vue-router": "^5.4.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.6.5",
+    "@vitejs/plugin-vue": "^6.0.10",
+    "@vue/tsconfig": "^0.9.1",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.4",
+    "vue-tsc": "^3.3.13"
+  }
+}

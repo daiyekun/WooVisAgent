@@ -8,8 +8,11 @@
     ".NETCoreApp,Version=v10.0": {
       "WooVisAgentServices.IdentityService/1.0.0": {
         "dependencies": {
+          "MediatR": "14.2.0",
+          "Microsoft.Extensions.Hosting.Abstractions": "10.0.13",
           "Microsoft.Extensions.Identity.Core": "10.0.13",
           "Microsoft.Extensions.Identity.Stores": "10.0.13",
+          "Microsoft.IdentityModel.JsonWebTokens": "8.14.0",
           "WooVisAgent.Services.Common": "1.0.0",
           "WooVisAgent.SharedLib": "1.0.0"
         },
@@ -143,6 +146,32 @@
         },
         "runtime": {
           "lib/net10.0/Microsoft.Extensions.Diagnostics.Abstractions.dll": {
+            "assemblyVersion": "10.0.0.0",
+            "fileVersion": "10.0.1326.50504"
+          }
+        }
+      },
+      "Microsoft.Extensions.FileProviders.Abstractions/10.0.13": {
+        "dependencies": {
+          "Microsoft.Extensions.Primitives": "10.0.13"
+        },
+        "runtime": {
+          "lib/net10.0/Microsoft.Extensions.FileProviders.Abstractions.dll": {
+            "assemblyVersion": "10.0.0.0",
+            "fileVersion": "10.0.1326.50504"
+          }
+        }
+      },
+      "Microsoft.Extensions.Hosting.Abstractions/10.0.13": {
+        "dependencies": {
+          "Microsoft.Extensions.Configuration.Abstractions": "10.0.13",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.13",
+          "Microsoft.Extensions.Diagnostics.Abstractions": "10.0.13",
+          "Microsoft.Extensions.FileProviders.Abstractions": "10.0.13",
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.13"
+        },
+        "runtime": {
+          "lib/net10.0/Microsoft.Extensions.Hosting.Abstractions.dll": {
             "assemblyVersion": "10.0.0.0",
             "fileVersion": "10.0.1326.50504"
           }
@@ -389,6 +418,20 @@
       "sha512": "sha512-oZzqZze8ed1fLS20HtIrkPxQXGRG/koq09srIw2ptnDHm9RHfwB++d35hosB/cXc55TH7Pshv85O0txongjCIg==",
       "path": "microsoft.extensions.diagnostics.abstractions/10.0.13",
       "hashPath": "microsoft.extensions.diagnostics.abstractions.10.0.13.nupkg.sha512"
+    },
+    "Microsoft.Extensions.FileProviders.Abstractions/10.0.13": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-BZDwtN3uoWRghDi5lRRZPDjMMCg2Ds7J6YEYjqka/TLjqnzquEpXyvchrIMeoubwT1ns23ow6PPeAoBHJO81Rw==",
+      "path": "microsoft.extensions.fileproviders.abstractions/10.0.13",
+      "hashPath": "microsoft.extensions.fileproviders.abstractions.10.0.13.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Hosting.Abstractions/10.0.13": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-zIrbe9vkIFXxW3mOApIOWXw+xMwX7Cgsptr3ZSlglJt4hW2qp4fB/JU1NHgAevteBNH4PicvU9DsFPHxlnnloA==",
+      "path": "microsoft.extensions.hosting.abstractions/10.0.13",
+      "hashPath": "microsoft.extensions.hosting.abstractions.10.0.13.nupkg.sha512"
     },
     "Microsoft.Extensions.Identity.Core/10.0.13": {
       "type": "package",

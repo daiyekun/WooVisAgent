@@ -1,0 +1,8 @@
+{
+  "WooVisAgent.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "D:\\WooProject\\AIVidio\\code\\WooVisAgent\\WooVisAgent.Api",
+  "WooVisAgent.EntityFrameworkCore, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "D:\\WooProject\\AIVidio\\code\\WooVisAgent\\WooVisAgent.EntityFrameworkCore",
+  "WooVisAgent.ServiceDefaults, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "D:\\WooProject\\AIVidio\\code\\WooVisAgent\\WooVisAgent.ServiceDefaults",
+  "WooVisAgent.Services.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "D:\\WooProject\\AIVidio\\code\\WooVisAgent\\WooVisAgent.Services.Common",
+  "WooVisAgent.SharedLib, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "D:\\WooProject\\AIVidio\\code\\WooVisAgent\\WooVisAgent.SharedLib",
+  "WooVisAgentServices.IdentityService, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "D:\\WooProject\\AIVidio\\code\\WooVisAgent\\WooVisAgentServices.IdentityService"
+}

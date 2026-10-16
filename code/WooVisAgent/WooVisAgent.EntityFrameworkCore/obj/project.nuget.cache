@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "t3JgIG26n/U=",
+  "dgSpecHash": "RzvipfiCyCE=",
   "success": true,
   "projectFilePath": "D:\\WooProject\\AIVidio\\code\\WooVisAgent\\WooVisAgent.EntityFrameworkCore\\WooVisAgent.EntityFrameworkCore.csproj",
   "expectedPackageFiles": [
@@ -13,6 +13,7 @@
     "C:\\Users\\user\\.nuget\\packages\\microsoft.entityframeworkcore\\10.0.13\\microsoft.entityframeworkcore.10.0.13.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\microsoft.entityframeworkcore.abstractions\\10.0.13\\microsoft.entityframeworkcore.abstractions.10.0.13.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\microsoft.entityframeworkcore.analyzers\\10.0.13\\microsoft.entityframeworkcore.analyzers.10.0.13.nupkg.sha512",
+    "C:\\Users\\user\\.nuget\\packages\\microsoft.entityframeworkcore.inmemory\\10.0.13\\microsoft.entityframeworkcore.inmemory.10.0.13.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\microsoft.entityframeworkcore.relational\\10.0.13\\microsoft.entityframeworkcore.relational.10.0.13.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\microsoft.extensions.caching.abstractions\\10.0.13\\microsoft.extensions.caching.abstractions.10.0.13.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\microsoft.extensions.caching.memory\\10.0.13\\microsoft.extensions.caching.memory.10.0.13.nupkg.sha512",

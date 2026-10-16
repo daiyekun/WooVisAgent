@@ -152,6 +152,24 @@
       "Microsoft.EntityFrameworkCore.Analyzers/10.0.13": {
         "type": "package"
       },
+      "Microsoft.EntityFrameworkCore.InMemory/10.0.13": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "10.0.13",
+          "Microsoft.Extensions.Caching.Memory": "10.0.13",
+          "Microsoft.Extensions.Logging": "10.0.13"
+        },
+        "compile": {
+          "lib/net10.0/Microsoft.EntityFrameworkCore.InMemory.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net10.0/Microsoft.EntityFrameworkCore.InMemory.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "Microsoft.EntityFrameworkCore.Relational/10.0.13": {
         "type": "package",
         "dependencies": {
@@ -1006,6 +1024,21 @@
         "docs/PACKAGE.md",
         "microsoft.entityframeworkcore.analyzers.10.0.13.nupkg.sha512",
         "microsoft.entityframeworkcore.analyzers.nuspec"
+      ]
+    },
+    "Microsoft.EntityFrameworkCore.InMemory/10.0.13": {
+      "sha512": "A63iVWLSlVPjzNrbgHIrMBF/z9cEJgxNmYbDu1TzUIc5yhcAoVIfFJ94ev3L4lQ1Kd43wJUtZ0bqy1vs6iCDJQ==",
+      "type": "package",
+      "path": "microsoft.entityframeworkcore.inmemory/10.0.13",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Icon.png",
+        "PACKAGE.md",
+        "lib/net10.0/Microsoft.EntityFrameworkCore.InMemory.dll",
+        "lib/net10.0/Microsoft.EntityFrameworkCore.InMemory.xml",
+        "microsoft.entityframeworkcore.inmemory.10.0.13.nupkg.sha512",
+        "microsoft.entityframeworkcore.inmemory.nuspec"
       ]
     },
     "Microsoft.EntityFrameworkCore.Relational/10.0.13": {
@@ -2012,6 +2045,7 @@
       "Aspire.Npgsql.EntityFrameworkCore.PostgreSQL >= 13.6.1",
       "Microsoft.AspNetCore.Identity.EntityFrameworkCore >= 10.0.13",
       "Microsoft.EntityFrameworkCore >= 10.0.13",
+      "Microsoft.EntityFrameworkCore.InMemory >= 10.0.13",
       "Microsoft.Extensions.DependencyInjection.Abstractions >= 10.0.13",
       "Microsoft.Extensions.Hosting.Abstractions >= 10.0.13",
       "Npgsql.EntityFrameworkCore.PostgreSQL >= 10.0.3",
@@ -2087,6 +2121,10 @@
             "version": "[10.0.13, )"
           },
           "Microsoft.EntityFrameworkCore": {
+            "target": "Package",
+            "version": "[10.0.13, )"
+          },
+          "Microsoft.EntityFrameworkCore.InMemory": {
             "target": "Package",
             "version": "[10.0.13, )"
           },

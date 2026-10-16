@@ -1,16 +1,23 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using WooVisAgent.SharedLib.Messaging;
 using WooVisAgent.SharedLib.Result;
 using WooVisAgentServices.IdentityService.Contracts;
 
-
 namespace WooVisAgentServices.IdentityService.Commands;
 
-public record LoginUserDto(string UserName, string Token);
+public record LoginUserDto(
+    string UserId,
+    string UserName,
+    string? Email,
+    string Role,
+    string Token,
+    DateTime ExpiresAt);
 
-public record LoginUserCommand(string UserName, string Password) : ICommand<Result<LoginUserDto>>;
+/// <summary>Account 支持邮箱或用户名</summary>
+public record LoginUserCommand(string Account, string Password) : ICommand<Result<LoginUserDto>>;
 
 public class LoginUserCommandHandler(
     UserManager<IdentityUser> userManager,
@@ -19,18 +26,29 @@ public class LoginUserCommandHandler(
 {
     public async Task<Result<LoginUserDto>> Handle(LoginUserCommand command, CancellationToken cancellationToken)
     {
-        // 1. 查找用户
-        var user = await userManager.FindByNameAsync(command.UserName);
-        if (user == null) return Result.Unauthorized("用户名或密码无效。");
+        // 1. 查找用户：带 @ 的按邮箱查，否则按用户名查
+        var account = command.Account?.Trim() ?? string.Empty;
+        var user = account.Contains('@')
+            ? await userManager.FindByEmailAsync(account)
+            : await userManager.FindByNameAsync(account);
 
-        // 2. 验证密码
-        var result = await userManager.CheckPasswordAsync(user, command.Password);
-        if (!result) return Result.Unauthorized("用户名或密码无效。");
+        if (user == null)
+            return Result.Unauthorized("账号或密码无效。");
 
-        // 3. 登录成功，生成 Token
-        var token = await tokenGenerator.GenerateTokenAsync(user);
+        // 2. 校验密码
+        if (!await userManager.CheckPasswordAsync(user, command.Password ?? string.Empty))
+            return Result.Unauthorized("账号或密码无效。");
 
-        // 4. 返回结果
-        return Result.Success(new LoginUserDto(command.UserName, token));
+        // 3. 生成 Token
+        var authToken = await tokenGenerator.GenerateTokenAsync(user, cancellationToken);
+        var roles = await userManager.GetRolesAsync(user);
+
+        return Result.Success(new LoginUserDto(
+            user.Id,
+            user.UserName!,
+            user.Email,
+            roles.FirstOrDefault() ?? string.Empty,
+            authToken.Token,
+            authToken.ExpiresAt));
     }
 }

@@ -3,6 +3,7 @@
   <ImportGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
     <Import Project="$(NuGetPackageRoot)microsoft.extensions.telemetry.abstractions\10.1.0\buildTransitive\net8.0\Microsoft.Extensions.Telemetry.Abstractions.targets" Condition="Exists('$(NuGetPackageRoot)microsoft.extensions.telemetry.abstractions\10.1.0\buildTransitive\net8.0\Microsoft.Extensions.Telemetry.Abstractions.targets')" />
     <Import Project="$(NuGetPackageRoot)microsoft.extensions.http.resilience\10.1.0\buildTransitive\net8.0\Microsoft.Extensions.Http.Resilience.targets" Condition="Exists('$(NuGetPackageRoot)microsoft.extensions.http.resilience\10.1.0\buildTransitive\net8.0\Microsoft.Extensions.Http.Resilience.targets')" />
+    <Import Project="$(NuGetPackageRoot)aspire.npgsql.entityframeworkcore.postgresql\13.6.1\buildTransitive\net10.0\Aspire.Npgsql.EntityFrameworkCore.PostgreSQL.targets" Condition="Exists('$(NuGetPackageRoot)aspire.npgsql.entityframeworkcore.postgresql\13.6.1\buildTransitive\net10.0\Aspire.Npgsql.EntityFrameworkCore.PostgreSQL.targets')" />
     <Import Project="$(NuGetPackageRoot)microsoft.aspnetcore.openapi\10.0.8\build\Microsoft.AspNetCore.OpenApi.targets" Condition="Exists('$(NuGetPackageRoot)microsoft.aspnetcore.openapi\10.0.8\build\Microsoft.AspNetCore.OpenApi.targets')" />
   </ImportGroup>
 </Project>

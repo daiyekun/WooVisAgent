@@ -17,4 +17,7 @@
   <Folder Name="/Shared/">
     <Project Path="WooVisAgent.SharedLib/WooVisAgent.SharedLib.csproj" />
   </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="tests/WooVisAgent.Api.Tests/WooVisAgent.Api.Tests.csproj" />
+  </Folder>
 </Solution>

@@ -23,7 +23,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WooVisAgent.AppHost")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0e559bb2baee0427d2cff34dc3912132a5ef44d0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3700224943ef0113fac75a6a1facc476b876c269")]
 [assembly: System.Reflection.AssemblyProductAttribute("WooVisAgent.AppHost")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WooVisAgent.AppHost")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
