@@ -14,3 +14,5 @@ D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Infrastructure\obj\Debug\net1
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Infrastructure\obj\Debug\net10.0\refint\WooVisAgent.Infrastructure.dll
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Infrastructure\obj\Debug\net10.0\WooVisAgent.Infrastructure.pdb
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Infrastructure\obj\Debug\net10.0\ref\WooVisAgent.Infrastructure.dll
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Infrastructure\bin\Debug\net10.0\WooVisAgent.SharedLib.dll
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Infrastructure\bin\Debug\net10.0\WooVisAgent.SharedLib.pdb

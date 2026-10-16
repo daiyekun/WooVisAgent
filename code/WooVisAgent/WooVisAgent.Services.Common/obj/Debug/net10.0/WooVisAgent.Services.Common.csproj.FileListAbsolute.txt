@@ -10,3 +10,7 @@ D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Services.Common\obj\Debug\net
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Services.Common\obj\Debug\net10.0\refint\WooVisAgent.Services.Common.dll
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Services.Common\obj\Debug\net10.0\WooVisAgent.Services.Common.pdb
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Services.Common\obj\Debug\net10.0\ref\WooVisAgent.Services.Common.dll
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Services.Common\obj\Debug\net10.0\WooVisAgent.Services.Common.csproj.AssemblyReference.cache
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Services.Common\bin\Debug\net10.0\WooVisAgent.SharedLib.dll
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Services.Common\bin\Debug\net10.0\WooVisAgent.SharedLib.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Services.Common\obj\Debug\net10.0\WooVisAg.59999A63.Up2Date

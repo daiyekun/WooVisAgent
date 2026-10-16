@@ -6,10 +6,15 @@
     <Project Path="WooVisAgent.ServiceDefaults/WooVisAgent.ServiceDefaults.csproj" />
   </Folder>
   <Folder Name="/Infrastructure/">
+    <Project Path="WooVisAgent.EntityFrameworkCore/WooVisAgent.EntityFrameworkCore.csproj" />
     <Project Path="WooVisAgent.EventBus/WooVisAgent.EventBus.csproj" />
     <Project Path="WooVisAgent.Infrastructure/WooVisAgent.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/Services/">
     <Project Path="WooVisAgent.Services.Common/WooVisAgent.Services.Common.csproj" />
+    <Project Path="WooVisAgentServices.IdentityService/WooVisAgentServices.IdentityService.csproj" />
+  </Folder>
+  <Folder Name="/Shared/">
+    <Project Path="WooVisAgent.SharedLib/WooVisAgent.SharedLib.csproj" />
   </Folder>
 </Solution>
