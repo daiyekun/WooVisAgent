@@ -90,6 +90,20 @@ public class TaskController(ISender sender) : ControllerBase
         return result.ToActionResult();
     }
 
+    /// <summary>
+    /// 选秀：把已完成任务的产物收录进「我的作品」。
+    /// 仅成功完成且尚未入选的任务可调用，重复调用会被后端拒绝。
+    /// </summary>
+    [HttpPost("{id:long}/select")]
+    [ProducesResponseType<SelectGenerationTaskResultDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Select(long id, CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(new SelectGenerationTaskCommand(id), cancellationToken);
+        return result.ToActionResult();
+    }
+
     /// <summary>批量删除任务</summary>
     [HttpPost("batch-delete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

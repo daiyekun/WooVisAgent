@@ -36,3 +36,9 @@ D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgentServices.ModelServ
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgentServices.ModelService.deps.json
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgentServices.ModelService.dll
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgentServices.ModelService.pdb
+C:\Users\user\AppData\Local\Temp\woobuild_check\WooVisAgentServices.ModelService.deps.json
+C:\Users\user\AppData\Local\Temp\woobuild_check\WooVisAgentServices.ModelService.dll
+C:\Users\user\AppData\Local\Temp\woobuild_check\WooVisAgentServices.ModelService.pdb
+C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgentServices.ModelService.deps.json
+C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgentServices.ModelService.dll
+C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgentServices.ModelService.pdb

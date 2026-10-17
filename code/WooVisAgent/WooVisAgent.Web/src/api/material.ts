@@ -1,34 +1,31 @@
-import { del, get, post, upload } from './http'
+import { del, get, post } from './http'
 import type { MaterialAsset, MaterialQuery, PagedResult } from '@/types'
 
 const BASE_URL = '/api/materials'
 
-/** 分页查询素材 */
+/**
+ * 分页查询作品（我的产品）。
+ *
+ * 作品的写入只有一个入口——任务列表的「选秀」按钮（POST /api/tasks/{id}/select），
+ * 因此这里只有读与删，没有 upload / archive。
+ */
+
+/** 分页查询作品列表 */
 export function fetchMaterials(query: MaterialQuery = {}) {
   return get<PagedResult<MaterialAsset>>(BASE_URL, query)
 }
 
-/** 素材分组列表 */
+/** 作品分组列表，用于筛选页签 */
 export function fetchMaterialGroups() {
   return get<string[]>(`${BASE_URL}/groups`)
 }
 
-/** 上传素材 */
-export function uploadMaterial(file: File, groupName?: string) {
-  return upload(BASE_URL, file, groupName ? { groupName } : undefined)
-}
-
-/** 删除素材 */
+/** 删除作品 */
 export function deleteMaterial(id: string) {
   return del<void>(`${BASE_URL}/${id}`)
 }
 
-/** 批量删除素材 */
+/** 批量删除作品 */
 export function batchDeleteMaterials(ids: string[]) {
   return post<void>(`${BASE_URL}/batch-delete`, { ids })
-}
-
-/** 把任务产物归档到素材库 */
-export function archiveTaskOutput(taskId: string, assetIds: string[], groupName?: string) {
-  return post<void>(`${BASE_URL}/archive`, { taskId, assetIds, groupName })
 }

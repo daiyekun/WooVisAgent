@@ -35,3 +35,12 @@ D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgentServices.ImageServ
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgentServices.ImageService.deps.json
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgentServices.ImageService.dll
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgentServices.ImageService.pdb
+C:\Users\user\AppData\Local\Temp\woobuild_check\WooVisAgentServices.ImageService.deps.json
+C:\Users\user\AppData\Local\Temp\woobuild_check\WooVisAgentServices.ImageService.dll
+C:\Users\user\AppData\Local\Temp\woobuild_check\WooVisAgentServices.ImageService.pdb
+C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgentServices.ImageService.deps.json
+C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgentServices.ImageService.dll
+C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgentServices.ImageService.pdb
+C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgentServices.ImageService.deps.json
+C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgentServices.ImageService.dll
+C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgentServices.ImageService.pdb

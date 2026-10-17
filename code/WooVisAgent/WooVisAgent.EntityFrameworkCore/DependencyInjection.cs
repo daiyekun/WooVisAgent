@@ -63,6 +63,12 @@ public static class DependencyInjection
     /// 注意 EnsureCreated 只在「整个数据库不存在」时建表，数据库一旦存在（哪怕缺表）就直接返回，
     /// 因此后续版本新增的实体表不会被自动创建；这里额外做一次「缺表补建」兜底。
     /// </para>
+    /// <para>
+    /// 缺表补建只解决「新表」，解决不了「新列」：给已存在的表加字段时，
+    /// EF 生成的 CREATE TABLE 不会被执行（表已存在，不在 missingTables 里），
+    /// 而所有查询都会带上这个新列，于是直接报 column does not exist。
+    /// 因此这里再补一步「缺列补建」，从模型与库内实际列的差集里生成 ALTER TABLE ADD COLUMN。
+    /// </para>
     /// </summary>
     public static async Task InitializeDatabaseAsync(this IServiceProvider services,
         CancellationToken cancellationToken = default)
@@ -78,6 +84,13 @@ public static class DependencyInjection
         {
             logger.LogInformation("检测到缺失的表，已补建 {Count} 张：{Tables}",
                 createdTables.Count, string.Join(", ", createdTables));
+        }
+
+        var addedColumns = await EnsureMissingColumnsAsync(dbContext, cancellationToken);
+        if (addedColumns.Count > 0)
+        {
+            logger.LogInformation("检测到缺失的列，已补建 {Count} 个：{Columns}",
+                addedColumns.Count, string.Join(", ", addedColumns));
         }
 
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
@@ -134,6 +147,195 @@ public static class DependencyInjection
 
         return missingTables.OrderBy(name => name, StringComparer.OrdinalIgnoreCase).ToList();
     }
+
+    /// <summary>
+    /// 补建「模型中有、数据库里没有」的列。
+    ///
+    /// 实现方式：直接从 EF 的关系型模型元数据读取每张表的列定义
+    /// （列名、存储类型、可空性、默认值），再与 information_schema 里的实际列做差集，
+    /// 只对缺失的列发 ALTER TABLE ... ADD COLUMN。
+    /// <para>
+    /// 这里刻意不解析 GenerateCreateScript() 的文本：EF 生成的 SQL 里列名带双引号、
+    /// 类型带长度括号，按逗号自行切分极易把 <c>varying(256)</c> 误当成一条列定义，
+    /// 拼出 <c>ADD COLUMN (256)</c> 这种语法错误的语句。用元数据天然规避这些问题，
+    /// 也自动覆盖 EF 的值转换（枚举存成字符串）。
+    /// </para>
+    /// </summary>
+    private static async Task<IReadOnlyList<string>> EnsureMissingColumnsAsync(
+        AiCopilotDbContext dbContext, CancellationToken cancellationToken)
+    {
+        // InMemory 等非关系型存储没有列结构概念
+        if (!dbContext.Database.IsRelational())
+            return [];
+
+        var modelColumns = BuildModelColumns(dbContext);
+        if (modelColumns.Count == 0)
+            return [];
+
+        var existingColumns = await GetExistingColumnsAsync(dbContext, cancellationToken);
+        var added = new List<string>();
+
+        foreach (var (table, columns) in modelColumns)
+        {
+            // 表不存在的情况已由 EnsureMissingTablesAsync 处理，这里不重复建表
+            if (!existingColumns.TryGetValue(table, out var actualColumns))
+                continue;
+
+            foreach (var (column, definition) in columns)
+            {
+                if (actualColumns.Contains(column))
+                    continue;
+
+                var statement = $"ALTER TABLE {QuoteIdentifier(table)} ADD COLUMN {definition};";
+                await dbContext.Database.ExecuteSqlRawAsync(statement, cancellationToken);
+                added.Add($"{table}.{column}");
+            }
+        }
+
+        return added;
+    }
+
+    /// <summary>
+    /// 从 EF 关系型模型元数据里读出「表名 -> (列名 -> 可直接执行的 ADD COLUMN 定义)」。
+    /// 只处理我们自己映射的业务表，Identity 的表交给框架自身演进。
+    /// </summary>
+    private static Dictionary<string, Dictionary<string, string>> BuildModelColumns(AiCopilotDbContext dbContext)
+    {
+        var result = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var entityType in dbContext.Model.GetEntityTypes())
+        {
+            var tableName = entityType.GetTableName();
+            if (string.IsNullOrWhiteSpace(tableName) || !IsBusinessTable(tableName))
+                continue;
+
+            var columns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var property in entityType.GetProperties())
+            {
+                var columnName = property.GetColumnName();
+                var storeType = property.GetColumnType();
+
+                // 存储类型读不到时跳过，交由后续正式迁移处理
+                if (string.IsNullOrWhiteSpace(columnName) || string.IsNullOrWhiteSpace(storeType))
+                    continue;
+
+                columns[columnName] = BuildAddColumnDefinition(property, columnName, storeType);
+            }
+
+            if (columns.Count > 0)
+                result[tableName] = columns;
+        }
+
+        return result;
+    }
+
+    /// <summary>拼出单列的 ADD COLUMN 定义：列名 + 类型 + NOT NULL + DEFAULT。</summary>
+    private static string BuildAddColumnDefinition(
+        Microsoft.EntityFrameworkCore.Metadata.IProperty property,
+        string columnName,
+        string storeType)
+    {
+        var builder = new StringBuilder();
+        builder.Append(QuoteIdentifier(columnName)).Append(' ').Append(storeType);
+
+        // 补列时列一定是"新"的，库里可能已有存量行。
+        // 只要能给出默认值，就必须带上 DEFAULT 并允许为空——否则 NOT NULL 加列会被存量行直接顶失败
+        // （PostgreSQL 报 23502: column contains null values）。
+        var defaultValueSql = property.GetDefaultValueSql();
+        if (!string.IsNullOrWhiteSpace(defaultValueSql))
+        {
+            builder.Append(" DEFAULT ").Append(defaultValueSql);
+            return builder.ToString();
+        }
+
+        // 没有 SQL 默认值时，尝试用 CLR 侧配置的默认值（如 bool 的 false）
+        var configuredDefault = property.GetDefaultValue();
+        if (configuredDefault is not null && !property.IsNullable)
+        {
+            builder.Append(" DEFAULT ").Append(FormatDefaultValue(configuredDefault, storeType));
+            return builder.ToString();
+        }
+
+        if (!property.IsNullable)
+            builder.Append(" NOT NULL");
+
+        return builder.ToString();
+    }
+
+    /// <summary>
+    /// 把 CLR 默认值转成 SQL 字面量。
+    /// 只覆盖本项目实际用到的类型；遇到不认识的就直接跳过（不加 DEFAULT），
+    /// 交由正式迁移处理，避免在这里写出错误的字面量。
+    /// </summary>
+    private static string FormatDefaultValue(object value, string storeType)
+    {
+        var text = value switch
+        {
+            bool boolValue => boolValue ? "TRUE" : "FALSE",
+            string stringValue => $"'{stringValue.Replace("'", "''")}'",
+            char charValue => $"'{charValue}'",
+            Guid guidValue => $"'{guidValue}'",
+            int or long or short or byte => Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture),
+            double or float or decimal => Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture),
+            Enum enumValue => $"'{enumValue}'",
+            _ => null,
+        };
+
+        return text ?? "NULL";
+    }
+
+    /// <summary>
+    /// 判断是不是本项目自己映射的业务表。
+    /// Identity 的表（AspNetUsers 等）由框架负责演进，交给它自己处理更稳妥。
+    /// </summary>
+    private static bool IsBusinessTable(string tableName)
+        => !tableName.StartsWith("AspNet", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>读取数据库中每张表实际存在的列（小写化，便于大小写不敏感比较）。</summary>
+    private static async Task<Dictionary<string, HashSet<string>>> GetExistingColumnsAsync(
+        AiCopilotDbContext dbContext, CancellationToken cancellationToken)
+    {
+        var columns = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+
+        var connection = dbContext.Database.GetDbConnection();
+        var openedHere = connection.State != ConnectionState.Open;
+        if (openedHere)
+            await connection.OpenAsync(cancellationToken);
+
+        try
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = "SELECT table_name, column_name FROM information_schema.columns";
+
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                if (reader.IsDBNull(0) || reader.IsDBNull(1))
+                    continue;
+
+                var table = reader.GetString(0);
+                var column = reader.GetString(1);
+
+                if (!columns.TryGetValue(table, out var set))
+                {
+                    set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    columns[table] = set;
+                }
+
+                set.Add(column);
+            }
+        }
+        finally
+        {
+            if (openedHere)
+                await connection.CloseAsync();
+        }
+
+        return columns;
+    }
+
+    private static string QuoteIdentifier(string identifier) => $"\"{identifier.Replace("\"", "\"\"")}\"";
 
     /// <summary>读取当前数据库中已存在的表名。</summary>
     private static async Task<HashSet<string>> GetExistingTableNamesAsync(

@@ -34,3 +34,9 @@ D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgentServices.IdentityS
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgentServices.IdentityService.deps.json
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgentServices.IdentityService.dll
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgentServices.IdentityService.pdb
+C:\Users\user\AppData\Local\Temp\woobuild_check\WooVisAgentServices.IdentityService.deps.json
+C:\Users\user\AppData\Local\Temp\woobuild_check\WooVisAgentServices.IdentityService.dll
+C:\Users\user\AppData\Local\Temp\woobuild_check\WooVisAgentServices.IdentityService.pdb
+C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgentServices.IdentityService.deps.json
+C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgentServices.IdentityService.dll
+C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgentServices.IdentityService.pdb

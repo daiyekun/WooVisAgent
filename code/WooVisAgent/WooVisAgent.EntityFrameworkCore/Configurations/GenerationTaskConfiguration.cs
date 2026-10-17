@@ -31,6 +31,7 @@ public class GenerationTaskConfiguration : IEntityTypeConfiguration<GenerationTa
         builder.Property(x => x.InputsJson).IsRequired();
         builder.Property(x => x.OutputsJson).IsRequired();
         builder.Property(x => x.ErrorMessage).HasMaxLength(2000);
+        builder.Property(x => x.IsSelected).HasDefaultValue(false);
 
         // 列表查询固定按「当前用户 + 可选类型/状态」过滤，并按创建时间倒序
         builder.HasIndex(x => new { x.OwnerId, x.Status });

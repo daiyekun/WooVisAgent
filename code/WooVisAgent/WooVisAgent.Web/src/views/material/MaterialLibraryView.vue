@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { NButton, NCheckbox, NModal, NPagination, NSpin, NUpload, type UploadCustomRequestOptions } from 'naive-ui'
+import { NCheckbox, NModal, NPagination, NSpin } from 'naive-ui'
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 import { materialApi } from '@/api'
 import AppIcon from '@/components/common/AppIcon.vue'
@@ -10,6 +11,7 @@ import { PAGE_SIZE_OPTIONS } from '@/constants'
 import type { MaterialAsset } from '@/types'
 import { copyText, dialog, downloadUrl, formatDateTime, formatFileSize, message } from '@/utils'
 
+const router = useRouter()
 const loading = ref(false)
 const materials = ref<MaterialAsset[]>([])
 const total = ref(0)
@@ -87,25 +89,6 @@ function setGroup(value: string | null): void {
   search()
 }
 
-/** 覆盖 NaiveUI 默认的 XHR 上传，改走统一封装的 http 客户端 */
-async function handleUpload(options: UploadCustomRequestOptions): Promise<void> {
-  const raw = options.file.file
-  if (!raw) {
-    options.onError()
-    return
-  }
-
-  try {
-    await materialApi.uploadMaterial(raw, groupFilter.value ?? undefined)
-    options.onFinish()
-    message.success(`${options.file.name} 上传成功`)
-    await loadGroups()
-    await loadData()
-  } catch {
-    options.onError()
-  }
-}
-
 function handlePreview(asset: MaterialAsset): void {
   previewAsset.value = asset
   previewVisible.value = true
@@ -164,26 +147,14 @@ onMounted(async () => {
     <div class="page-head">
       <h1>
         我的作品
-        <small>共 {{ total }} 个作品 · 生成的图片与视频都会出现在这里</small>
+        <small>共 {{ total }} 个作品 · 在任务列表点「选秀」即可把生成结果收录到这里</small>
       </h1>
 
       <div class="flex flex-wrap items-center gap-2">
-        <n-button size="small" quaternary :loading="loading" @click="loadData">
-          <template #icon><app-icon name="refresh" :size="15" /></template>
+        <button class="btn btn-ghost btn-sm" type="button" :disabled="loading" @click="loadData">
+          <app-icon name="refresh" :size="15" />
           刷新
-        </n-button>
-
-        <n-upload
-          :show-file-list="false"
-          multiple
-          accept="image/*,video/*"
-          :custom-request="handleUpload"
-        >
-          <button class="btn btn-primary btn-sm" type="button">
-            <app-icon name="upload" :size="15" />
-            上传素材
-          </button>
-        </n-upload>
+        </button>
       </div>
     </div>
 
@@ -286,7 +257,7 @@ onMounted(async () => {
           </div>
 
           <div class="info">
-            <div class="t">{{ asset.fileName || asset.id }}</div>
+            <div class="t">{{ asset.fileName || asset.sourceTaskName || '未命名作品' }}</div>
             <div class="m">
               <span>{{ formatFileSize(asset.fileSize) }}</span>
               <span class="dot" />
@@ -301,8 +272,13 @@ onMounted(async () => {
         v-else-if="!loading"
         icon="images"
         title="还没有作品"
-        description="上传图片或视频，或把任务生成的结果归档到这里"
-      />
+        description="去任务列表找到已完成的生成结果，点「选秀」即可收录到这里"
+      >
+        <button class="btn btn-primary btn-sm" type="button" @click="router.push({ name: 'TaskList' })">
+          <app-icon name="list" :size="15" />
+          去任务列表
+        </button>
+      </empty-state>
 
       <div v-else class="py-24" />
     </n-spin>
@@ -349,6 +325,14 @@ onMounted(async () => {
           :file-size="previewAsset.fileSize"
           :file-name="previewAsset.fileName"
         />
+
+        <div class="mt-3 flex flex-wrap items-center gap-3 text-xs t-dim">
+          <span v-if="previewAsset.width && previewAsset.height">
+            {{ previewAsset.width }} × {{ previewAsset.height }}
+          </span>
+          <span v-if="previewAsset.fileSize">{{ formatFileSize(previewAsset.fileSize) }}</span>
+          <span v-if="previewAsset.sourceTaskName">来自任务「{{ previewAsset.sourceTaskName }}」</span>
+        </div>
       </template>
     </n-modal>
   </div>

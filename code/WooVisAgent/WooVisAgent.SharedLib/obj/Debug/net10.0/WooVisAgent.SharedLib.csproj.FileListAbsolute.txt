@@ -32,3 +32,12 @@ D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.SharedLib.pdb
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.SharedLib.deps.json
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.SharedLib.dll
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.SharedLib.pdb
+C:\Users\user\AppData\Local\Temp\woobuild_check\WooVisAgent.SharedLib.deps.json
+C:\Users\user\AppData\Local\Temp\woobuild_check\WooVisAgent.SharedLib.dll
+C:\Users\user\AppData\Local\Temp\woobuild_check\WooVisAgent.SharedLib.pdb
+C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgent.SharedLib.deps.json
+C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgent.SharedLib.dll
+C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgent.SharedLib.pdb
+C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgent.SharedLib.deps.json
+C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgent.SharedLib.dll
+C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgent.SharedLib.pdb

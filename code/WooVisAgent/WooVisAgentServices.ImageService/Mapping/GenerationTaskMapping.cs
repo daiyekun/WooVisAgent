@@ -36,7 +36,8 @@ public static class GenerationTaskMapping
         entity.CreatedAt,
         entity.StartedAt,
         entity.FinishedAt,
-        entity.OwnerId);
+        entity.OwnerId,
+        entity.IsSelected);
 
     public static TaskStatusDto ToStatusDto(this GenerationTask entity) => new(
         entity.Id.ToString(CultureInfo.InvariantCulture),

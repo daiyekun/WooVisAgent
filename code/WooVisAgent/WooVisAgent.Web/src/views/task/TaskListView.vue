@@ -102,6 +102,19 @@ async function handleRetry(task: GenerationTask): Promise<void> {
   message.success('已按原参数重新提交')
 }
 
+/**
+ * 选秀：把任务产物收录进「我的作品」。
+ *
+ * 成功后卡片会立刻置灰并出现星标（后端返回的任务快照已写回 store），
+ * 同时提示用户可以去看看作品，不直接跳转——连续选秀多个任务时少点几下。
+ */
+async function handleSelect(task: GenerationTask): Promise<void> {
+  const result = await taskStore.selectTask(task.id)
+  if (!result) return
+
+  message.success(`已将 ${result.addedCount} 件产物加入我的作品`)
+}
+
 function handleRemove(task: GenerationTask): void {
   dialog.error({
     title: '删除任务',
@@ -274,6 +287,7 @@ onBeforeUnmount(stopPolling)
           @update:selected="(value: boolean) => toggleSelect(task.id, value)"
           @cancel="handleCancel"
           @retry="handleRetry"
+          @select="handleSelect"
           @remove="handleRemove"
           @preview="handlePreview"
           @copy-prompt="handleCopyPrompt"

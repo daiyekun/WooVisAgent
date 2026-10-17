@@ -43,6 +43,12 @@ public class RetryGenerationTaskCommandHandler(
         if (source is null)
             return Result.NotFound("任务不存在或无权访问。");
 
+        // 已入选「我的作品」的任务不再允许重试：
+        // 重试会生成一份新产物，而作品库里已经躺着旧产物的引用，
+        // 两份产物同名同源会让用户分不清哪张才是自己选中的那件。
+        if (source.IsSelected)
+            return Result.Invalid("该任务已入选我的作品，请先在作品库中移除后再重试。");
+
         if (!source.Status.IsFinal())
             return Result.Invalid("任务尚未结束，请先取消或等待完成。");
 

@@ -65,6 +65,8 @@ export interface GenerationTask {
   startedAt?: string
   finishedAt?: string
   createdBy?: string
+  /** 是否已被「选秀」收录进我的作品；为 true 时前端禁用选秀与重试并显示星标角标 */
+  isSelected?: boolean
 }
 
 /** 新建任务入参 */
@@ -140,16 +142,31 @@ export interface ModelTestResult {
 
 /** ==================== 素材库 ==================== */
 
+/** 作品（我的产品）。由任务「选秀」收录，或在作品库手动上传 */
 export interface MaterialAsset extends TaskAsset {
   /** 所属分组/文件夹 */
   groupName?: string
   tags?: string[]
+  /** 生成该作品的提示词快照 */
+  prompt?: string
+  /** 来源任务 ID；手动上传的作品没有来源 */
+  sourceTaskId?: string
+  /** 来源任务名快照 */
+  sourceTaskName?: string
   createdAt: string
 }
 
 export interface MaterialQuery extends PageQuery {
   type?: 'image' | 'video'
   groupName?: string
+}
+
+/** 选秀接口返回结构 */
+export interface SelectTaskResult {
+  /** 本次入库的作品条数 */
+  addedCount: number
+  /** 选秀后的任务最新状态 */
+  task: GenerationTask
 }
 
 /** ==================== 身份与鉴权 ==================== */

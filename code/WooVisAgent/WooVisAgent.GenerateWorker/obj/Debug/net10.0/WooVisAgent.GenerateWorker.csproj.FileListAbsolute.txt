@@ -261,3 +261,8 @@ D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.GenerateWorker\bin\Debug\net1
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.GenerateWorker\bin\Debug\net10.0\tr\Microsoft.CodeAnalysis.Workspaces.resources.dll
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.GenerateWorker\bin\Debug\net10.0\zh-Hans\Microsoft.CodeAnalysis.Workspaces.resources.dll
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.GenerateWorker\bin\Debug\net10.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgent.GenerateWorker.exe
+C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgent.GenerateWorker.deps.json
+C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgent.GenerateWorker.runtimeconfig.json
+C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgent.GenerateWorker.dll
+C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgent.GenerateWorker.pdb

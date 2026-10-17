@@ -23,6 +23,7 @@ const emit = defineEmits<{
   (e: 'update:selected', value: boolean): void
   (e: 'cancel', task: GenerationTask): void
   (e: 'retry', task: GenerationTask): void
+  (e: 'select', task: GenerationTask): void
   (e: 'remove', task: GenerationTask): void
   (e: 'preview', asset: TaskAsset, task: GenerationTask): void
   (e: 'copy-prompt', task: GenerationTask): void
@@ -45,8 +46,21 @@ const statusClass = computed(() => STATUS_CLASS[props.task.status])
 
 /** 未结束的任务才允许取消 */
 const cancellable = computed(() => !statusMeta.value.isFinal)
-/** 已结束的任务才允许重试 */
-const retryable = computed(() => statusMeta.value.isFinal)
+
+/** 是否已入选「我的作品」——入选后按钮置灰、重试一并禁用、卡片右上角显示星标 */
+const isPicked = computed(() => props.task.isSelected === true)
+
+/** 只有成功完成且尚未入选的任务才能选秀 */
+const selectable = computed(
+  () => props.task.status === 'succeeded' && !isPicked.value && (props.task.outputs?.length ?? 0) > 0,
+)
+
+/**
+ * 已结束且未入选的任务才允许重试。
+ * 已入选的同样禁掉——重试会产出新图，而作品库里已经引用着旧产物，
+ * 用户分不清哪张才是自己选中的那件。
+ */
+const retryable = computed(() => statusMeta.value.isFinal && !isPicked.value)
 
 const elapsed = computed(() =>
   formatElapsed(props.task.startedAt ?? props.task.createdAt, props.task.finishedAt),
@@ -72,6 +86,9 @@ const restCount = computed(() => Math.max(0, (props.task.outputs?.length ?? 0) -
         <div class="flex items-center gap-2">
           <app-icon :name="typeMeta.icon" :size="15" class="t-sub" />
           <span class="truncate text-sm font-semibold">{{ task.name || '未命名任务' }}</span>
+          <span v-if="isPicked" class="pick-star" title="已入选我的作品">
+            <app-icon name="star" :size="12" />
+          </span>
         </div>
         <div class="mt-1 flex items-center gap-2 text-xs t-dim">
           <span>{{ typeMeta.label }}</span>
@@ -158,6 +175,24 @@ const restCount = computed(() => Math.max(0, (props.task.outputs?.length ?? 0) -
           @click="emit('cancel', task)"
         >
           取消
+        </button>
+        <button
+          v-if="selectable"
+          class="btn btn-ghost btn-sm"
+          type="button"
+          title="把生成结果收录进我的作品"
+          @click="emit('select', task)"
+        >
+          选秀
+        </button>
+        <button
+          v-else-if="isPicked"
+          class="btn btn-ghost btn-sm is-disabled"
+          type="button"
+          disabled
+          title="已入选我的作品"
+        >
+          选秀
         </button>
         <button
           v-if="retryable"

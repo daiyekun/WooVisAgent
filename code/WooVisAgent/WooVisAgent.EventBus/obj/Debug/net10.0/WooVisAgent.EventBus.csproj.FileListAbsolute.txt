@@ -29,3 +29,12 @@ D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.EventBus.pdb
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.EventBus.deps.json
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.EventBus.dll
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.EventBus.pdb
+C:\Users\user\AppData\Local\Temp\woobuild_check\WooVisAgent.EventBus.deps.json
+C:\Users\user\AppData\Local\Temp\woobuild_check\WooVisAgent.EventBus.dll
+C:\Users\user\AppData\Local\Temp\woobuild_check\WooVisAgent.EventBus.pdb
+C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgent.EventBus.deps.json
+C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgent.EventBus.dll
+C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgent.EventBus.pdb
+C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgent.EventBus.deps.json
+C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgent.EventBus.dll
+C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgent.EventBus.pdb

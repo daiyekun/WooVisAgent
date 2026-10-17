@@ -32,3 +32,12 @@ D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.ServiceDefaults.p
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.ServiceDefaults.deps.json
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.ServiceDefaults.dll
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.ServiceDefaults.pdb
+C:\Users\user\AppData\Local\Temp\woobuild_check\WooVisAgent.ServiceDefaults.deps.json
+C:\Users\user\AppData\Local\Temp\woobuild_check\WooVisAgent.ServiceDefaults.dll
+C:\Users\user\AppData\Local\Temp\woobuild_check\WooVisAgent.ServiceDefaults.pdb
+C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgent.ServiceDefaults.deps.json
+C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgent.ServiceDefaults.dll
+C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgent.ServiceDefaults.pdb
+C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgent.ServiceDefaults.deps.json
+C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgent.ServiceDefaults.dll
+C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgent.ServiceDefaults.pdb

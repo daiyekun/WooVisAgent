@@ -82,6 +82,13 @@ public class GenerationTask : BaseEntity<long>, IAggregateRoot, IAggregateRoot<l
     /// <summary>生成产物 JSON（<see cref="TaskAsset" /> 数组），由 Worker 生成后回写</summary>
     public string OutputsJson { get; set; } = "[]";
 
+    /// <summary>
+    /// 是否已被「选秀」收录进我的作品库。
+    /// 一旦置位前端就不再允许重复选秀，同时禁用重试——重试会生成新产物，
+    /// 与已入库的作品语义冲突，交给用户先在作品库处理。
+    /// </summary>
+    public bool IsSelected { get; set; }
+
     public string? ErrorMessage { get; set; }
 
     /// <summary>重试次数，供后续做重试上限控制</summary>

@@ -6,6 +6,7 @@ import { DEFAULT_PAGE_SIZE, TASK_STATUS_META } from '@/constants'
 import type {
   CreateTaskInput,
   GenerationTask,
+  SelectTaskResult,
   TaskAsset,
   TaskProgressPayload,
   TaskQuery,
@@ -96,6 +97,26 @@ export const useTaskStore = defineStore('task', () => {
   async function cancelTask(id: string): Promise<void> {
     await taskApi.cancelTask(id)
     patchTask(id, { status: 'canceled' })
+  }
+
+  /**
+   * 选秀：把已完成任务的产物收录进「我的作品」。
+   *
+   * 成功后直接把后端返回的任务快照写回列表，
+   * 这样 isSelected 立即变 true，卡片上的按钮随之置灰、角标出现，
+   * 不需要等下一轮列表刷新。
+   */
+  async function selectTask(id: string): Promise<SelectTaskResult | null> {
+    try {
+      const result = await taskApi.selectTask(id)
+      if (result?.task) {
+        patchTask(id, { ...result.task })
+      }
+      return result
+    } catch {
+      // 错误提示由 http 拦截器统一处理
+      return null
+    }
   }
 
   /** 复用参数重新提交 */
@@ -212,6 +233,7 @@ export const useTaskStore = defineStore('task', () => {
     loadTaskDetail,
     createTask,
     cancelTask,
+    selectTask,
     retryTask,
     removeTask,
     removeTasks,

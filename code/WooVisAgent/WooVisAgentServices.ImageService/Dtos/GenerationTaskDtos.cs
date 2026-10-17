@@ -74,7 +74,8 @@ public sealed record GenerationTaskDto(
     DateTimeOffset CreatedAt,
     DateTimeOffset? StartedAt,
     DateTimeOffset? FinishedAt,
-    string? CreatedBy);
+    string? CreatedBy,
+    bool IsSelected);
 
 /// <summary>任务状态轻量出参，供前端轮询兜底使用</summary>
 public sealed record TaskStatusDto(
@@ -89,3 +90,29 @@ public sealed record PagedResultDto<T>(
     int Total,
     int Page,
     int PageSize);
+
+/// <summary>
+/// 作品出参，字段与前端 MaterialAsset 对齐。
+/// 继承自 TaskAssetDto 是因为作品同样有类型 / 地址 / 缩略图 / 文件名 / 尺寸 / 时长，
+/// 差异只在多出的分组、提示词与来源信息。
+/// </summary>
+public sealed record MaterialAssetDto(
+    string Id,
+    string Type,
+    string Url,
+    string? ThumbnailUrl,
+    string? FileName,
+    long? FileSize,
+    int? Width,
+    int? Height,
+    double? Duration,
+    string? GroupName,
+    string? Prompt,
+    string? SourceTaskId,
+    string? SourceTaskName,
+    DateTimeOffset CreatedAt);
+
+/// <summary>选秀结果：本次入库的作品条数与任务最新状态</summary>
+public sealed record SelectGenerationTaskResultDto(
+    int AddedCount,
+    GenerationTaskDto Task);

@@ -31,3 +31,12 @@ D:\WooProject\AIVidio\code\WooVisAgent\.verify\out\WooVisAgent.Infrastructure.pd
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.Infrastructure.deps.json
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.Infrastructure.dll
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.Infrastructure.pdb
+C:\Users\user\AppData\Local\Temp\woobuild_check\WooVisAgent.Infrastructure.deps.json
+C:\Users\user\AppData\Local\Temp\woobuild_check\WooVisAgent.Infrastructure.dll
+C:\Users\user\AppData\Local\Temp\woobuild_check\WooVisAgent.Infrastructure.pdb
+C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgent.Infrastructure.deps.json
+C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgent.Infrastructure.dll
+C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgent.Infrastructure.pdb
+C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgent.Infrastructure.deps.json
+C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgent.Infrastructure.dll
+C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgent.Infrastructure.pdb

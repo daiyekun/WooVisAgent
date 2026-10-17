@@ -14,6 +14,9 @@ public class AiCopilotDbContext(DbContextOptions<AiCopilotDbContext> options) : 
     /// <summary>图片 / 视频生成任务（映射见 Configurations/GenerationTaskConfiguration.cs）</summary>
     public DbSet<GenerationTask> GenerationTasks => Set<GenerationTask>();
 
+    /// <summary>用户的作品 / 产品（映射见 Configurations/MaterialAssetConfiguration.cs）</summary>
+    public DbSet<MaterialAsset> MaterialAssets => Set<MaterialAsset>();
+
     // AiGateway 实体模型
     //public DbSet<LanguageModel> LanguageModels => Set<LanguageModel>();
     //public DbSet<ConversationTemplate> ConversationTemplates => Set<ConversationTemplate>();

@@ -1454,6 +1454,19 @@ html:not(.dark) {
     box-shadow: 0 0 0 1px rgba(18, 181, 229, 0.35);
   }
 
+  /* 「已入选我的作品」的星标角标：跟在任务名后面，提示这条任务不能再重试 */
+  .pick-star {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    border-radius: var(--r-full);
+    background: rgba(250, 204, 21, 0.16);
+    color: #eab308;
+  }
+
   .prompt-box {
     background: var(--bg-2);
     border: 1px solid var(--line);

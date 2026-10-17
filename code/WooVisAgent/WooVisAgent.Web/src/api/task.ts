@@ -4,6 +4,7 @@ import type {
   GenerationTask,
   PageQuery,
   PagedResult,
+  SelectTaskResult,
   TaskAsset,
   TaskStatus,
 } from '@/types'
@@ -33,6 +34,11 @@ export function cancelTask(id: string) {
 /** 复用原任务参数重新提交 */
 export function retryTask(id: string) {
   return post<GenerationTask>(`${BASE_URL}/${id}/retry`)
+}
+
+/** 选秀：把已完成任务的产物收录进「我的作品」，返回入库条数与任务最新状态 */
+export function selectTask(id: string, groupName?: string) {
+  return post<SelectTaskResult>(`${BASE_URL}/${id}/select`, groupName ? { groupName } : {})
 }
 
 /** 删除单个任务 */
