@@ -118,6 +118,21 @@ function openEdit(model: ModelConfig): void {
   modalVisible.value = true
 }
 
+/**
+ * 模型标识是否为「图片翻译」模型。
+ *
+ * 这类模型（qwen-mt-image 系列）名字里带 image，极易被误当成文生图模型，
+ * 而它实际只能「上传图片 → 翻译图中文字」。用户在表单里就能看到提醒，
+ * 避免配好之后提交任务才报一句看不懂的接口错误。
+ *
+ * 判断规则与后端 AliyunDashScopeEndpoints.IsImageTranslateModel 保持一致。
+ */
+const isImageTranslateModelKey = computed(() => {
+  const key = (draft.modelKey ?? '').trim().toLowerCase()
+  if (!key.includes('image')) return false
+  return key.includes('qwen-mt') || key.includes('image-translate') || key.includes('image_translate')
+})
+
 function addParam(): void {
   draft.params = [
     ...(draft.params ?? []),
@@ -397,6 +412,11 @@ onMounted(() => {
 
         <n-form-item label="模型标识">
           <n-input v-model:value="draft.modelKey" placeholder="调用后端接口时使用的模型 key" />
+          <div v-if="isImageTranslateModelKey" class="field-warning">
+            ⚠ 这是<b>图片翻译模型</b>（如 qwen-mt-image），只能「上传图片 → 翻译图中文字」，
+            <b>不能用提示词从零生成图片</b>。若你的目的是文生图，请改用
+            qwen-image-2.1-pro / qwen-image-2.0-pro / wan2.6-t2i。
+          </div>
         </n-form-item>
 
         <n-form-item label="接口地址">
@@ -548,3 +568,18 @@ onMounted(() => {
     </n-modal>
   </div>
 </template>
+
+<style scoped>
+/* 图片翻译模型的警示块：用暖色底 + 左侧竖条，和普通说明文字区分开，
+   让用户在保存之前就意识到「这个模型不能文生图」。 */
+.field-warning {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-left: 3px solid #d97706;
+  border-radius: 4px;
+  background: rgba(217, 119, 6, 0.08);
+  color: #92400e;
+  font-size: 13px;
+  line-height: 1.6;
+}
+</style>

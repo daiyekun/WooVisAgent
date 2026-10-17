@@ -27,6 +27,8 @@ const emit = defineEmits<{
   (e: 'remove', task: GenerationTask): void
   (e: 'preview', asset: TaskAsset, task: GenerationTask): void
   (e: 'copy-prompt', task: GenerationTask): void
+  /** 双击卡片：带着任务 id 跳进聊天窗口并定位高亮 */
+  (e: 'locate', task: GenerationTask): void
 }>()
 
 const statusMeta = computed(() => TASK_STATUS_META[props.task.status])
@@ -72,7 +74,17 @@ const restCount = computed(() => Math.max(0, (props.task.outputs?.length ?? 0) -
 </script>
 
 <template>
-  <div class="task-card card card-pad flex h-full flex-col gap-3" :class="{ 'is-selected': selected }">
+  <!--
+    双击卡片跳进聊天窗口的定位入口。
+    title 里写清双击的作用，因为双击没有 hover 提示之外的可发现性。
+    卡片内部的按钮各自 stopPropagation，不会被这里的双击误触发。
+  -->
+  <div
+    class="task-card card card-pad flex h-full flex-col gap-3"
+    :class="{ 'is-selected': selected }"
+    :title="'双击可跳到该任务所在的会话并定位到它'"
+    @dblclick="emit('locate', task)"
+  >
     <!-- 头部：类型 / 状态 / 勾选 -->
     <div class="flex items-start gap-2">
       <n-checkbox

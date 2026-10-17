@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using WooVisAgent.Services.Common.Contracts;
 using WooVisAgent.SharedLib.Domain;
@@ -28,6 +29,8 @@ public record SubmitImageGenerationCommand(ImageGenerationInput Input)
 public class SubmitImageGenerationCommandHandler(
     IRepository<GenerationTask> taskRepository,
     IRepository<ModelConfig> modelRepository,
+    IRepository<Conversation> conversationRepository,
+    IRepository<ConversationMessage> messageRepository,
     ICurrentUser currentUser,
     ISnowflakeIdGenerator idGenerator,
     IGenerationTaskDispatcher dispatcher,
@@ -75,6 +78,21 @@ public class SubmitImageGenerationCommandHandler(
             })
             .ToList();
 
+        // 解析所属会话。传了就必须校验归属：否则可以往别人的会话里塞消息。
+        Conversation? conversation = null;
+        if (!string.IsNullOrWhiteSpace(input.ConversationId))
+        {
+            if (!long.TryParse(input.ConversationId.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var conversationId))
+                return Result.Invalid("会话标识不合法。");
+
+            conversation = await conversationRepository.GetAsync(
+                x => x.Id == conversationId && x.OwnerId == ownerId,
+                cancellationToken: cancellationToken);
+
+            if (conversation is null)
+                return Result.NotFound("会话不存在或无权访问。");
+        }
+
         var task = new GenerationTask
         {
             Id = idGenerator.NextId(),
@@ -95,12 +113,78 @@ public class SubmitImageGenerationCommandHandler(
                 ImageGenerationInputValidator.BuildParamsSnapshot(input)),
             InputsJson = GenerationTaskSerialization.SerializeAssets(referenceImages),
             OutputsJson = "[]",
+            ConversationId = conversation?.Id,
             CreatedAt = now,
             QueuedAt = now,
             UpdatedAt = now,
         };
 
         taskRepository.Add(task);
+
+        // 会话内的一次生成 = 一对消息（用户需求 + 助手结果）。
+        // 两者的 id 互指，前端既能顺着 pairMessageId 找配对消息，
+        // 也能顺着 taskId 从任务反查它对应的那条助手消息（双击任务定位靠这条链路）。
+        if (conversation is not null)
+        {
+            var nextSeq = await messageRepository.GetQueryable()
+                .Where(x => x.ConversationId == conversation.Id)
+                .Select(x => (int?)x.Seq)
+                .MaxAsync(cancellationToken) ?? 0;
+
+            var paramsJson = GenerationTaskSerialization.SerializeParams(
+                ImageGenerationInputValidator.BuildParamsSnapshot(input));
+
+            // 两条消息的雪花 id 先算出来互指，再各自入库
+            var userMessageId = idGenerator.NextId();
+            var assistantMessageId = idGenerator.NextId();
+
+            messageRepository.Add(new ConversationMessage
+            {
+                Id = userMessageId,
+                ConversationId = conversation.Id,
+                OwnerId = ownerId,
+                Role = "user",
+                Text = input.Prompt.Trim(),
+                PairMessageId = assistantMessageId.ToString(CultureInfo.InvariantCulture),
+                AssetsJson = GenerationTaskSerialization.SerializeAssets(referenceImages),
+                ParamsJson = paramsJson,
+                Seq = nextSeq + 1,
+                CreatedAt = now,
+                UpdatedAt = now,
+            });
+
+            messageRepository.Add(new ConversationMessage
+            {
+                Id = assistantMessageId,
+                ConversationId = conversation.Id,
+                OwnerId = ownerId,
+                Role = "assistant",
+                Text = referenceImages.Count > 0
+                    ? $"收到 {referenceImages.Count} 张参考图，正在按你的描述改这张图…"
+                    : "正在按你的描述生成…",
+                TaskId = task.Id,
+                PairMessageId = userMessageId.ToString(CultureInfo.InvariantCulture),
+                AssetsJson = "[]",
+                ParamsJson = paramsJson,
+                Seq = nextSeq + 2,
+                CreatedAt = now,
+                UpdatedAt = now,
+            });
+
+            conversation.MessageCount += 2;
+            conversation.TaskCount += 1;
+            conversation.UpdatedAt = now;
+
+            // 首条消息进来时把占位标题换成提示词摘要，
+            // 否则侧边栏会一排"新建创作"，用户根本分不清哪条是哪条。
+            if (conversation.MessageCount == 2 && conversation.Title == "新建创作")
+            {
+                conversation.Title = GenerationTaskNaming.FromPrompt(input.Prompt);
+            }
+
+            conversationRepository.Update(conversation);
+        }
+
         await taskRepository.SaveChangesAsync(cancellationToken);
 
         try

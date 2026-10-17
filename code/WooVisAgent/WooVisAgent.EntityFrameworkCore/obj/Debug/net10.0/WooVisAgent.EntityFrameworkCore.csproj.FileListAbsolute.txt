@@ -46,3 +46,9 @@ C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgent.EntityFrameworkCore
 C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgent.EntityFrameworkCore.deps.json
 C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgent.EntityFrameworkCore.dll
 C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgent.EntityFrameworkCore.pdb
+C:\Users\user\AppData\Local\Temp\wb_conv1\WooVisAgent.EntityFrameworkCore.deps.json
+C:\Users\user\AppData\Local\Temp\wb_conv1\WooVisAgent.EntityFrameworkCore.dll
+C:\Users\user\AppData\Local\Temp\wb_conv1\WooVisAgent.EntityFrameworkCore.pdb
+C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.EntityFrameworkCore.deps.json
+C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.EntityFrameworkCore.dll
+C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.EntityFrameworkCore.pdb

@@ -949,6 +949,80 @@ html:not(.dark) {
   }
 
   /* 最近任务列表 */
+  /* ---------- 会话列表页 ---------- */
+  .conv-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .conv-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 13px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--card);
+    cursor: pointer;
+    transition: var(--t);
+  }
+
+  .conv-row:hover {
+    border-color: rgba(18, 181, 229, 0.4);
+    transform: translateY(-1px);
+  }
+
+  .conv-row.on {
+    border-color: rgba(18, 181, 229, 0.6);
+    box-shadow: 0 0 0 1px rgba(18, 181, 229, 0.25);
+  }
+
+  .conv-row .ci {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--r-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--card-2);
+    color: var(--brand);
+    flex-shrink: 0;
+  }
+
+  .conv-row .cm {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .conv-row .cm b {
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* 创建 / 修改时间靠右固定宽度，避免不同会话的时间戳长短不一只撑宽度 */
+  .conv-row .ct {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    align-items: flex-end;
+    flex-shrink: 0;
+    font-size: 12px;
+    color: var(--dim);
+  }
+
+  @media (max-width: 900px) {
+    .conv-row .ct {
+      display: none;
+    }
+  }
+
+  /* ---------- 侧边栏最近会话 ---------- */
   .conv {
     display: flex;
     align-items: center;
@@ -970,6 +1044,43 @@ html:not(.dark) {
   .conv.on {
     background: var(--card-2);
     color: var(--text);
+  }
+
+  /* 还没有会话时的占位：不可点，只是告诉用户下一步做什么 */
+  .conv-empty {
+    color: var(--dim);
+    font-size: 12px;
+    cursor: default;
+    justify-content: center;
+    padding: 10px 11px;
+  }
+
+  .conv-empty:hover {
+    background: transparent;
+    color: var(--dim);
+  }
+
+  /* 「更多会话(N)」入口：跟在 5 条最近会话下面，通向完整列表页 */
+  .conv-more {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 7px 11px;
+    margin-top: 2px;
+    border: 0;
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--brand);
+    font-size: 12.5px;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: var(--t);
+  }
+
+  .conv-more:hover {
+    background: var(--card);
   }
 
   .conv .ic {
@@ -2246,6 +2357,30 @@ html:not(.dark) {
 
   .msg.user {
     flex-direction: row-reverse;
+  }
+
+  /*
+   * 双击任务列表某项跳进聊天页时，定位到的那条消息短暂高亮。
+   * 用 outline 而不是 box-shadow：气泡内部有子元素，描边不会把它们裁掉。
+   */
+  .msg.is-highlight {
+    position: relative;
+    animation: msg-flash 2.4s ease-out;
+  }
+
+  @keyframes msg-flash {
+    0%,
+    35% {
+      outline: 2px solid rgba(18, 181, 229, 0.75);
+      outline-offset: 8px;
+      border-radius: 12px;
+    }
+
+    100% {
+      outline: 2px solid transparent;
+      outline-offset: 8px;
+      border-radius: 12px;
+    }
   }
 
   .msg .ava {

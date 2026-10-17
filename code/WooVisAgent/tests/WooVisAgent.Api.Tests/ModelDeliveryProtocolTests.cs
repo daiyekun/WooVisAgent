@@ -101,18 +101,21 @@ public class ModelDeliveryProtocolTests
         Assert.DoesNotContain("/services/aigc/", url);
     }
 
-    /// <summary>兼容入口若不可用，必须能自动落到百炼原生接口上（qwen-image 走同步原生）</summary>
+    /// <summary>
+    /// 兼容入口若不可用，必须能自动落到百炼原生接口上（qwen-image 走同步原生）。
+    ///
+    /// 首选方案已是原生同步，所以兜底链里应当<b>不含</b>原生同步自身，只剩异步入口。
+    /// </summary>
     [Fact]
-    public void Fallbacks_AliyunCompatibleMode_QwenModel_ShouldIncludeNativeSyncThenAsync()
+    public void Fallbacks_AliyunCompatibleMode_QwenModel_ShouldIncludeNativeAsyncOnly()
     {
         var fallbacks = FallbackUrls(Model("通义万相", "https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen-image-3.0-pro"));
 
-        Assert.Contains("https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation", fallbacks);
-        Assert.Contains("https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis", fallbacks);
-        // qwen-image 系列优先原生同步
-        Assert.True(
-            fallbacks.IndexOf("https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation")
-            < fallbacks.IndexOf("https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis"));
+        Assert.Equal("https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis", fallbacks[0]);
+        // 首选已是原生同步，不该把它重复列进兜底链
+        Assert.DoesNotContain(
+            "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
+            fallbacks);
     }
 
     /// <summary>wan / wanx 系列则优先原生异步（提交 + 轮询）</summary>
@@ -182,12 +185,31 @@ public class ModelDeliveryProtocolTests
             resolution!.Url);
     }
 
-    /// <summary>兼容入口填到完整路径时，同样保持兼容入口（不越权改成原生）</summary>
+    /// <summary>
+    /// 兼容入口填到完整路径时，<b>模型名优先于地址形态</b>。
+    ///
+    /// 踩过的坑：qwen-image 系列并没有 compatible-mode 的图生图入口，
+    /// 一旦按地址形态优先派到 /images/edits，公共域名会在收到 multipart 请求体之前
+    /// 直接断开连接，客户端只看到一句无从下手的 "Error while copying content to a stream."。
+    /// 因此模型名能判定时一律以模型名为准（原生同步 multimodal 入口）。
+    /// </summary>
     [Fact]
-    public void Resolve_AliyunCompatibleFullPath_ShouldKeepCompatibleEntry()
+    public void Resolve_AliyunCompatibleFullPath_QwenModel_ShouldPreferNativeSync()
     {
         var url = _resolver.ResolveRequestUrl(
             Model("通义万相", "https://dashscope.aliyuncs.com/compatible-mode/v1/images/generations", "qwen-image-3.0-pro"),
+            out var protocol);
+
+        Assert.Equal("aliyun-dashscope-sync", protocol);
+        Assert.Equal("https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation", url);
+    }
+
+    /// <summary>模型名看不出系列（既非 qwen-image 也非 wan/wanx）时，才按地址形态走兼容入口</summary>
+    [Fact]
+    public void Resolve_AliyunCompatibleFullPath_UnknownModel_ShouldKeepCompatibleEntry()
+    {
+        var url = _resolver.ResolveRequestUrl(
+            Model("通义万相", "https://dashscope.aliyuncs.com/compatible-mode/v1/images/generations", "some-image-model"),
             out var protocol);
 
         Assert.Equal("aliyun-dashscope-compatible", protocol);
@@ -259,15 +281,20 @@ public class ModelDeliveryProtocolTests
         Assert.Contains("\"size\":\"1024*1024\"", body);
     }
 
-    /// <summary>兼容入口：参数平铺顶层、尺寸用字母 x、不含 steps / cfg_scale</summary>
+    /// <summary>
+    /// 兼容入口：参数平铺顶层、尺寸用字母 x、不含 steps / cfg_scale。
+    ///
+    /// 用<b>模型名看不出系列</b>的模型来验证——只有这种情况下才会按地址形态派到兼容入口。
+    /// </summary>
     [Fact]
     public void BuildRequestBody_AliyunCompatible_ShouldUseTopLevelOpenAiShape()
     {
-        var model = Model("通义万相", "https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen-image-3.0-pro");
+        var model = Model("通义万相", "https://dashscope.aliyuncs.com/compatible-mode/v1", "some-image-model");
         var resolution = _resolver.Resolve(model);
         Assert.NotNull(resolution);
+        Assert.Equal("aliyun-dashscope-compatible", resolution!.Protocol.Name);
 
-        var body = resolution!.Protocol.BuildRequestBody(Request("qwen-image-3.0-pro"));
+        var body = resolution.Protocol.BuildRequestBody(Request("some-image-model"));
 
         Assert.Contains("\"size\":\"1024x1024\"", body);
         Assert.DoesNotContain("*", body);
@@ -276,6 +303,119 @@ public class ModelDeliveryProtocolTests
         Assert.DoesNotContain("\"input\"", body);
         Assert.Contains("\"negative_prompt\"", body);
         Assert.False(resolution.Protocol.IsAsynchronous);
+    }
+
+    // ───────────────────── 图片翻译模型（qwen-mt-image） ─────────────────────
+
+    /// <summary>
+    /// qwen-mt-image 是<b>图片翻译</b>模型，必须走 image2image/image-synthesis。
+    ///
+    /// 回归点：它的模型名同时含 "qwen" 和 "image"，若只按 "qwen" 分派会被送到
+    /// multimodal-generation/generation，而该模型的请求体里根本没有 prompt 字段，
+    /// 百炼只会回一句 InvalidParameter: url error，真实原因完全被掩盖。
+    /// </summary>
+    [Fact]
+    public void Resolve_QwenMtImage_ShouldUseImage2ImageSynthesis()
+    {
+        var resolution = _resolver.Resolve(Model("AliyunBailian", "https://dashscope.aliyuncs.com/compatible-mode/v1", "qwen-mt-image-2.0"));
+
+        Assert.NotNull(resolution);
+        Assert.Equal("aliyun-dashscope-image2image", resolution!.Protocol.Name);
+        Assert.Equal(
+            "https://dashscope.aliyuncs.com/api/v1/services/aigc/image2image/image-synthesis",
+            resolution.Url);
+    }
+
+    /// <summary>图片翻译模型不支持纯文生图：声明后框架才能在发请求前拦下来</summary>
+    [Fact]
+    public void Resolve_QwenMtImage_ShouldNotSupportTextToImage()
+    {
+        var resolution = _resolver.Resolve(Model("AliyunBailian", "https://dashscope.aliyuncs.com/api/v1", "qwen-mt-image-2.0"));
+
+        Assert.NotNull(resolution);
+        Assert.False(resolution!.Protocol.SupportsTextToImage);
+        // 但图生图（即"上传图片翻译"）是支持的
+        Assert.True(resolution.Protocol.SupportsImageToImage);
+    }
+
+    /// <summary>翻译模型只有唯一一条路，不应挂兜底方案（挂了在图生图时反而会误导排查方向）</summary>
+    [Fact]
+    public void Fallbacks_QwenMtImage_ShouldBeEmpty()
+    {
+        var model = Model("AliyunBailian", "https://dashscope.aliyuncs.com/api/v1", "qwen-mt-image-2.0");
+        var resolution = _resolver.Resolve(model);
+
+        Assert.NotNull(resolution);
+        Assert.Empty(resolution!.Protocol.GetFallbackProtocols(model));
+    }
+
+    /// <summary>翻译接口请求体：input.image_url + 两种语言，没有 prompt / size</summary>
+    [Fact]
+    public void BuildRequestBody_QwenMtImage_ShouldUseImageUrlAndLanguages()
+    {
+        var model = Model("AliyunBailian", "https://dashscope.aliyuncs.com/api/v1", "qwen-mt-image-2.0");
+        var resolution = _resolver.Resolve(model);
+        Assert.NotNull(resolution);
+
+        var request = new ImageDeliveryRequest(
+            ModelKey: "qwen-mt-image-2.0",
+            Prompt: "把这张图翻译成英文",
+            NegativePrompt: null,
+            Width: 1024,
+            Height: 1024,
+            Steps: 30,
+            CfgScale: 7,
+            Seed: 42,
+            Index: 0,
+            ReferenceImages:
+            [
+                new ImageDeliveryReference(
+                    "https://example.com/source.png",
+                    [1, 2, 3],
+                    "image/png",
+                    "source.png"),
+            ]);
+
+        var body = resolution!.Protocol.BuildRequestBody(request);
+
+        Assert.Contains("\"model\":\"qwen-mt-image-2.0\"", body);
+        Assert.Contains("\"image_url\":\"https://example.com/source.png\"", body);
+        Assert.Contains("\"target_lang\":\"en\"", body);
+        // 源语言没在提示词里说明 → auto 自动检测
+        Assert.Contains("\"source_lang\":\"auto\"", body);
+        // 关键：翻译接口不吃绘图提示词
+        Assert.DoesNotContain("翻译成英文", body);
+        Assert.DoesNotContain("\"size\"", body);
+    }
+
+    /// <summary>提示词里说明了源语言时，应正确识别出来</summary>
+    [Theory]
+    [InlineData("中文翻译成日文", "zh", "ja")]
+    [InlineData("英文翻译成中文", "en", "zh")]
+    public void BuildRequestBody_QwenMtImage_ShouldResolveLanguagesFromPrompt(string prompt, string source, string target)
+    {
+        var model = Model("AliyunBailian", "https://dashscope.aliyuncs.com/api/v1", "qwen-mt-image-2.0");
+        var resolution = _resolver.Resolve(model);
+
+        var request = new ImageDeliveryRequest(
+            ModelKey: "qwen-mt-image-2.0",
+            Prompt: prompt,
+            NegativePrompt: null,
+            Width: 1024,
+            Height: 1024,
+            Steps: 30,
+            CfgScale: 7,
+            Seed: 42,
+            Index: 0,
+            ReferenceImages:
+            [
+                new ImageDeliveryReference("https://example.com/a.png", [1], "image/png", "a.png"),
+            ]);
+
+        var body = resolution!.Protocol.BuildRequestBody(request);
+
+        Assert.Contains($"\"source_lang\":\"{source}\"", body);
+        Assert.Contains($"\"target_lang\":\"{target}\"", body);
     }
 
     /// <summary>同步协议不应提供任务轮询地址</summary>

@@ -3,10 +3,11 @@
  * 侧边栏 · IA 对齐原型 docs/prot/app.html
  *
  * 结构：品牌 + 折叠 → 新建创作 → 工作区导航 → 最近会话 → 底部账户。
- * 「最近会话」读的是真实任务数据（taskStore），版式与原型 1:1；
- * 等会话模型落地后再换成按会话聚合的结果。
+ *
+ * 「最近会话」读的是真实会话数据（conversationStore），固定只展示 5 条：
+ * 侧边栏空间有限，多了会把导航挤到需要滚动；要看全部走下面的「更多会话(N)」。
  */
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import AppIcon from '@/components/common/AppIcon.vue'
@@ -14,6 +15,7 @@ import { APP_NAME, APP_SLOGAN } from '@/constants'
 import { menuRoutes } from '@/router/routes'
 import { useAppStore } from '@/stores/appStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useConversationStore } from '@/stores/conversationStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useTaskStore } from '@/stores/taskStore'
 import { formatDateTime, message } from '@/utils'
@@ -22,6 +24,7 @@ defineProps<{ collapsed?: boolean }>()
 
 const appStore = useAppStore()
 const authStore = useAuthStore()
+const conversationStore = useConversationStore()
 const modelStore = useModelStore()
 const taskStore = useTaskStore()
 const route = useRoute()
@@ -66,11 +69,29 @@ const worksCount = computed(() =>
 /** 「任务列表」角标：未结束的任务数，有任务在跑时提示用户可以点进去看进度 */
 const runningCount = computed(() => taskStore.runningCount)
 
-/** 最近会话：先展示最近若干条任务，点击回到任务列表查看全部 */
-const recentTasks = computed(() => taskStore.tasks.slice(0, 5))
+/**
+ * 最近会话：按最后修改时间倒序取 5 条。
+ * 数量由 store 侧的 RECENT_CONVERSATION_LIMIT 决定，这里只做展示兜底。
+ */
+const recentConversations = computed(() => conversationStore.recent)
 
+/** 「更多会话(N)」的 N，直接用总数，不再单独发一次 summary 请求 */
+const conversationTotal = computed(() => conversationStore.summary.total)
+
+/** 当前打开的会话，用于高亮侧边栏里对应的那一条 */
+const activeConversationId = computed(() => {
+  const queryId = route.query?.conversation
+  return typeof queryId === 'string' ? queryId : ''
+})
+
+/** 新建创作：让聊天页自己申请一个空会话，避免在侧边栏塞业务逻辑 */
 function startNewChat(): void {
   void router.push({ name: 'Chat', query: { new: String(Date.now()) } })
+}
+
+/** 点击某个会话：进聊天窗口并加载它的全部历史 */
+function openConversation(id: string): void {
+  void router.push({ name: 'Chat', query: { conversation: id } })
 }
 
 function handleLogout(): void {
@@ -78,6 +99,13 @@ function handleLogout(): void {
   message.success('已退出登录')
   void router.replace({ name: 'Login' })
 }
+
+onMounted(() => {
+  // 侧边栏是最近会话的唯一入口，布局一挂载就该把数据拉起来；
+  // 布局本身因 AppLayout 复用而不会重复挂载，这里不需要额外去重。
+  void conversationStore.loadRecent()
+  void conversationStore.loadSummary()
+})
 </script>
 
 <template>
@@ -147,26 +175,39 @@ function handleLogout(): void {
         <span v-else-if="item.name === 'TaskList' && runningCount" class="badge">{{ runningCount }}</span>
       </router-link>
 
-      <template v-if="recentTasks.length">
-        <div class="side-label">
-          <span>最近会话</span>
-          <span class="mini" @click="router.push({ name: 'TaskList' })">全部</span>
-        </div>
+      <div class="side-label">
+        <span>最近会话</span>
+      </div>
 
+      <template v-if="recentConversations.length">
         <div
-          v-for="task in recentTasks"
-          :key="task.id"
+          v-for="conv in recentConversations"
+          :key="conv.id"
           class="conv"
-          :title="task.name || task.id"
-          @click="router.push({ name: 'TaskList' })"
+          :class="{ on: conv.id === activeConversationId }"
+          :title="conv.title"
+          @click="openConversation(conv.id)"
         >
           <span class="ic">
-            <app-icon :name="task.type === 'video' ? 'video' : 'image'" :size="13" />
+            <app-icon :name="conv.type === 'video' ? 'video' : 'image'" :size="13" />
           </span>
-          <span class="tt">{{ task.name || task.prompt || '未命名任务' }}</span>
-          <span class="tm">{{ formatDateTime(task.createdAt, 'MM-DD HH:mm') }}</span>
+          <span class="tt">{{ conv.title || '未命名会话' }}</span>
+          <span class="tm">{{ formatDateTime(conv.updatedAt, 'MM-DD HH:mm') }}</span>
         </div>
       </template>
+
+      <div v-else class="conv conv-empty">暂无会话，去「新建创作」开始</div>
+
+      <!-- 有会话时才显示更多入口；总数来自 store，不用再发一次请求 -->
+      <button
+        v-if="conversationTotal > 0"
+        class="conv-more"
+        type="button"
+        @click="router.push({ name: 'Conversations' })"
+      >
+        <app-icon name="list" :size="13" />
+        <span>更多会话({{ conversationTotal }})</span>
+      </button>
     </div>
 
     <!-- 底部账户 -->

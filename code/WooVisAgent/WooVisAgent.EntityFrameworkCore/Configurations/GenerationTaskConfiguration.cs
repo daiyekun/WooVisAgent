@@ -36,6 +36,8 @@ public class GenerationTaskConfiguration : IEntityTypeConfiguration<GenerationTa
         // 列表查询固定按「当前用户 + 可选类型/状态」过滤，并按创建时间倒序
         builder.HasIndex(x => new { x.OwnerId, x.Status });
         builder.HasIndex(x => new { x.OwnerId, x.CreatedAt });
+        // 聊天页加载历史时按会话取全部任务；删除会话时也要按会话批量删
+        builder.HasIndex(x => new { x.OwnerId, x.ConversationId });
         // Worker 侧按主键回查，无需额外索引（主键即索引）
     }
 }

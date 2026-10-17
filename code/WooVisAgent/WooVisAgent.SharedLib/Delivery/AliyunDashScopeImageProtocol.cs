@@ -30,6 +30,23 @@ public enum DashScopeImageMode
     /// <c>{base}/api/v1/tasks/{task_id}</c>。
     /// </summary>
     AsyncText2Image,
+
+    /// <summary>
+    /// <b>图片翻译</b>专用入口：<c>{base}/api/v1/services/aigc/image2image/image-synthesis</c>。
+    /// <para>
+    /// <c>qwen-mt-image</c> 系列（qwen-mt-image-2.0 / qwen-mt-image）走这里。
+    /// </para>
+    /// <para>
+    /// 这个模型<b>不是文生图模型</b>，名字里的 image 很容易被误当成"图像生成"。
+    /// 它的输入模态只有「图片 → 图片」：必须提供一张待翻译的原图
+    /// （<c>input.image_url</c>）+ 源语言 + 目标语言，
+    /// 请求体里<b>根本没有 prompt 字段</b>。
+    /// 因此若按普通文生图去构造请求体并打到多模态入口，百炼返回的
+    /// 是一句 <c>InvalidParameter: url error, please check url</c> ——
+    /// 真实原因（模型与入口不匹配）被完全掩盖，排查成本极高。
+    /// </para>
+    /// </summary>
+    Image2ImageTranslate,
 }
 
 /// <summary>
@@ -46,6 +63,7 @@ public sealed class AliyunDashScopeImageProtocol : IModelDeliveryProtocol
     private const string CompatibleEditPath = "/compatible-mode/v1/images/edits";
     private const string SyncPath = "/api/v1/services/aigc/multimodal-generation/generation";
     private const string AsyncPath = "/api/v1/services/aigc/text2image/image-synthesis";
+    private const string TranslatePath = "/api/v1/services/aigc/image2image/image-synthesis";
 
     public AliyunDashScopeImageProtocol(DashScopeImageMode mode) => Mode = mode;
 
@@ -55,6 +73,7 @@ public sealed class AliyunDashScopeImageProtocol : IModelDeliveryProtocol
     {
         DashScopeImageMode.CompatibleOpenAi => "aliyun-dashscope-compatible",
         DashScopeImageMode.SyncMultimodal => "aliyun-dashscope-sync",
+        DashScopeImageMode.Image2ImageTranslate => "aliyun-dashscope-image2image",
         _ => "aliyun-dashscope-async",
     };
 
@@ -83,6 +102,7 @@ public sealed class AliyunDashScopeImageProtocol : IModelDeliveryProtocol
         {
             DashScopeImageMode.CompatibleOpenAi => $"{baseUrl}{CompatiblePath}",
             DashScopeImageMode.SyncMultimodal => $"{baseUrl}{SyncPath}",
+            DashScopeImageMode.Image2ImageTranslate => $"{baseUrl}{TranslatePath}",
             _ => $"{baseUrl}{AsyncPath}",
         };
     }
@@ -96,7 +116,13 @@ public sealed class AliyunDashScopeImageProtocol : IModelDeliveryProtocol
     /// 客户端只会拿到一句无从下手的 "Error while copying content to a stream."。
     /// 与其让用户撞上这个错误，不如明确声明不支持，由框架给出可读的错误。
     /// </summary>
-    public bool SupportsImageToImage => Mode == DashScopeImageMode.SyncMultimodal;
+    public bool SupportsImageToImage => Mode is DashScopeImageMode.SyncMultimodal or DashScopeImageMode.Image2ImageTranslate;
+
+    /// <summary>
+    /// 图片翻译模型只接受「图片 → 图片」，没有纯提示词入口，
+    /// 因此声明为不支持文生图，让框架在发请求前就给出可读的提示。
+    /// </summary>
+    public bool SupportsTextToImage => Mode != DashScopeImageMode.Image2ImageTranslate;
 
     /// <summary>
     /// 走原生同步入口的图生图用 JSON 里的 data URI 传图，不需要 multipart。
@@ -139,6 +165,9 @@ public sealed class AliyunDashScopeImageProtocol : IModelDeliveryProtocol
         // 原生同步（qwen-image）：input.messages 结构，尺寸用星号
         DashScopeImageMode.SyncMultimodal => ImageDeliveryPayloads.DashScopeSync(request),
 
+        // 图片翻译（qwen-mt-image）：input.image_url + 语种，没有 prompt / size
+        DashScopeImageMode.Image2ImageTranslate => ImageDeliveryPayloads.DashScopeImageTranslate(request),
+
         // 原生异步（wan / wanx）：input.prompt 结构，尺寸用星号
         _ => ImageDeliveryPayloads.DashScopeAsync(request),
     };
@@ -148,6 +177,10 @@ public sealed class AliyunDashScopeImageProtocol : IModelDeliveryProtocol
         DashScopeImageMode.CompatibleOpenAi
             => ImageDeliveryPayloads.OpenAiImagesMinimal(request, request.OpenAiSize),
         DashScopeImageMode.SyncMultimodal => ImageDeliveryPayloads.DashScopeSyncMinimal(request),
+
+        // 翻译接口字段本就极简（model / image_url / 两种语言），没有可再删的
+        DashScopeImageMode.Image2ImageTranslate => ImageDeliveryPayloads.DashScopeImageTranslate(request),
+
         _ => ImageDeliveryPayloads.DashScopeAsync(request),
     };
 

@@ -67,6 +67,68 @@ export interface GenerationTask {
   createdBy?: string
   /** 是否已被「选秀」收录进我的作品；为 true 时前端禁用选秀与重试并显示星标角标 */
   isSelected?: boolean
+  /** 所属创作会话；不在任何会话下（从任务列表直接提交）时为空 */
+  conversationId?: string
+  /** 由哪个任务重试 / 迭代而来；会话里标注"改自上一轮"用 */
+  sourceTaskId?: string
+}
+
+/** ==================== 会话 ==================== */
+
+/** 会话摘要，侧边栏最近会话与列表页共用 */
+export interface Conversation {
+  id: string
+  title: string
+  /** 会话内出现过的生成类型，用于按图片 / 视频分类 */
+  type: TaskType
+  messageCount: number
+  /** 会话内的生成任务数，一次会话可对应多个任务 */
+  taskCount: number
+  createdAt: string
+  /** 最后修改时间，最近会话按它倒序 */
+  updatedAt: string
+}
+
+/** 会话内的单条消息 */
+export interface ConversationMessage {
+  id: string
+  role: 'user' | 'assistant'
+  text: string
+  /** 用户消息上是参考图，助手消息上是产物 */
+  assets: TaskAsset[]
+  /** 本轮生成参数快照，用于重跑 / 作为参考图继续 */
+  params: Record<string, unknown>
+  /** 关联任务 id；用户消息为空 */
+  taskId?: string
+  /** 同一次生成里的配对消息 id */
+  pairMessageId?: string
+  /** 图生图来源任务 id */
+  sourceTaskId?: string
+  seq: number
+  errorMessage?: string
+  createdAt: string
+}
+
+/** 会话详情：会话 + 消息 + 任务 */
+export interface ConversationDetail {
+  conversation: Conversation
+  messages: ConversationMessage[]
+  tasks: GenerationTask[]
+}
+
+/** 会话总数与分类计数 */
+export interface ConversationSummary {
+  total: number
+  imageCount: number
+  videoCount: number
+}
+
+/** 删除会话的影响面 */
+export interface DeleteConversationResult {
+  deletedMessages: number
+  deletedTasks: number
+  /** 已选秀、因而在作品库中保留下来的任务数 */
+  keptMaterials: number
 }
 
 /** 新建任务入参 */

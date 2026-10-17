@@ -5,14 +5,12 @@ import { useRoute } from 'vue-router'
 import { useTaskRealtime } from '@/hooks/useSignalR'
 import { useAppStore } from '@/stores/appStore'
 import { useModelStore } from '@/stores/modelStore'
-import { useTaskStore } from '@/stores/taskStore'
 
 import AppHeader from './AppHeader.vue'
 import AppSidebar from './AppSidebar.vue'
 
 const appStore = useAppStore()
 const modelStore = useModelStore()
-const taskStore = useTaskStore()
 const route = useRoute()
 
 const collapsed = computed(() => appStore.siderCollapsed)
@@ -31,10 +29,11 @@ const { start } = useTaskRealtime()
 onMounted(async () => {
   void start()
 
-  // 侧边栏底部的模型计数与「最近会话」需要在任意页面都可用，
-  // 这里做一次兜底加载，已加载过则跳过。
+  // 侧边栏底部的模型计数需要在任意页面都可用，这里做一次兜底加载，已加载过则跳过。
+  //
+  // 注意不要再在这里预热任务列表：侧边栏的「最近会话」已改读会话数据，
+  // 而 taskStore 的 query 是全局共享的，预热留下的分页大小会污染任务列表页。
   if (!modelStore.models.length) void modelStore.loadModels()
-  if (!taskStore.tasks.length) void taskStore.loadTasks({ page: 1, pageSize: 8 })
 })
 </script>
 

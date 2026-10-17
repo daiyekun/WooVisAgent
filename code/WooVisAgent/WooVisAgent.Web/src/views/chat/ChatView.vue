@@ -26,10 +26,12 @@ import ImagePreview from '@/components/ImagePreview.vue'
 import { cancelImageTask, fetchImageTask, generateImage } from '@/api/image'
 import { uploadFiles } from '@/api/file'
 import { ensureTaskHubStarted, useTaskEvents } from '@/hooks/useSignalR'
+import { TASK_STATUS_META } from '@/constants'
 import { useAuthStore } from '@/stores/authStore'
+import { useConversationStore } from '@/stores/conversationStore'
 import { useModelStore } from '@/stores/modelStore'
-import { createTempId, downloadUrl, formatElapsed, message } from '@/utils'
-import type { GenerationTask, TaskAsset, TaskStatus } from '@/types'
+import { createTempId, downloadUrl, formatDateTime, formatElapsed, message } from '@/utils'
+import type { ConversationDetail, GenerationTask, TaskAsset, TaskStatus } from '@/types'
 
 import {
   BATCH_OPTIONS,
@@ -48,6 +50,7 @@ import {
 } from './chatMock'
 
 const authStore = useAuthStore()
+const conversationStore = useConversationStore()
 const modelStore = useModelStore()
 const route = useRoute()
 const router = useRouter()
@@ -59,10 +62,49 @@ const messages = ref<ChatMessage[]>([])
 const draft = ref('')
 const mode = ref<ChatMode>('image')
 
+/**
+ * 当前会话 id。
+ *
+ * 会话是持久化的：进入聊天页先拿一个（或打开指定的），之后每次提交生成都带上它，
+ * 后端会把这一轮的用户消息 + 助手消息 + 任务一起挂到该会话下。
+ * 这样"一次会话多个任务"和历史回放才成立。
+ */
+const conversationId = ref('')
+
+/**
+ * 需要高亮并滚动定位到的任务 id。
+ * 双击任务列表某一项时由 query 传进来，加载完历史后滚到对应消息并短暂高亮。
+ */
+const highlightTaskId = ref('')
+
+/**
+ * taskId → 消息 DOM，用于双击任务后滚动定位。
+ * 用 Map 而不是 ref 数组：模板里挂 ref 时 Vue 会按 v-for 顺序塞进数组，
+ * 拿不到"哪个元素属于哪个任务"，而双击定位必须精确到具体那条消息。
+ */
+const messageRefs = new Map<string, HTMLElement>()
+
+/** 当前处于高亮态的消息 id，双击任务定位后短暂展示再自动取消 */
+const highlightedMessageId = ref('')
+
+function setMessageRef(taskId: string, el: unknown): void {
+  if (el instanceof HTMLElement) messageRefs.set(taskId, el)
+  else messageRefs.delete(taskId)
+}
+
 /** 用户头像取登录用户首字，与侧边栏底部保持一致 */
 const avatarText = computed(() => authStore.displayName.slice(0, 1) || '我')
 
 const isEmpty = computed(() => messages.value.length === 0)
+
+/**
+ * 当前会话内的任务数。
+ * 一次会话可以对应多个任务（多轮对话每轮生成算一个），
+ * 顶栏显式写出来，避免用户以为"这个会话只生成了这一张"。
+ */
+const taskCountInChat = computed(
+  () => messages.value.filter((item) => Boolean(item.card?.taskId)).length,
+)
 
 /** ==================== 模型 ==================== */
 
@@ -542,11 +584,15 @@ async function submit(payload: {
       cfgScale: payload.cfgScale,
       seed: payload.seed,
       referenceImageUrls: isEdit ? payload.references : undefined,
+      conversationId: conversationId.value || undefined,
     })
 
     card.taskId = result.taskId
     card.status = result.status
     watchTask(result.taskId, assistantId)
+
+    // 后端会把这一轮写进会话，提交成功后刷新侧边栏的「最近会话」与角标
+    void conversationStore.loadRecent()
   } catch {
     // 错误提示已由拦截器统一弹出，这里只把卡片收尾，避免留下一个永远转圈的进度条
     card.status = 'failed'
@@ -641,21 +687,171 @@ function onKeydown(event: KeyboardEvent): void {
 function resetSession(): void {
   watchers.forEach((_messageId, taskId) => stopWatch(taskId))
   messages.value = []
+  messageRefs.clear()
+  highlightedMessageId.value = ''
   title.value = NEW_CHAT_TITLE
   draft.value = ''
   attachments.value = []
   void fitTextarea()
 }
 
-function newChat(): void {
+/**
+ * 从后端会话详情把消息流还原到前端。
+ *
+ * 关键在"消息 + 任务"两条数据要重新缝合成前端用的 ChatMessage：
+ * 消息只存了文本与地址，尺寸 / 张数 / 模型 / 用时都在任务上，
+ * 所以每条助手消息都要按 taskId 去 tasks 里找对应任务来补齐卡片信息。
+ * 找不到任务的（例如任务已被删但消息还在）就退化成一张无卡的纯文本消息，
+ * 而不是直接丢消息 —— 用户的历史不该因为一次删除操作凭空少一块。
+ */
+function restoreFromDetail(detail: ConversationDetail): void {
   resetSession()
+
+  title.value = detail.conversation.title || NEW_CHAT_TITLE
+
+  const taskMap = new Map(detail.tasks.map((task) => [task.id, task]))
+  const restored: ChatMessage[] = []
+
+  detail.messages.forEach((item) => {
+    const task = item.taskId ? taskMap.get(item.taskId) : undefined
+
+    const messageItem: ChatMessage = {
+      id: item.id,
+      role: item.role === 'assistant' ? 'assistant' : 'user',
+      time: formatDateTime(item.createdAt, 'MM-DD HH:mm'),
+      text: item.text,
+    }
+
+    if (messageItem.role === 'user' && item.assets.length) {
+      messageItem.attachments = item.assets.map((asset, index) => ({
+        id: `${item.id}-${index}`,
+        name: asset.fileName || '参考图',
+        size: asset.fileSize ?? 0,
+        previewUrl: asset.url,
+        url: asset.url,
+        sourceMessageId: task?.id,
+      }))
+    }
+
+    if (messageItem.role === 'assistant' && task) {
+      const params = task.params ?? {}
+      const width = Number(params.width ?? 0)
+      const height = Number(params.height ?? 0)
+      const batchSize = Number(params.batchSize ?? task.outputs.length ?? 1)
+
+      messageItem.card = {
+        kind: 'image',
+        taskId: task.id,
+        status: task.status,
+        progress: task.progress,
+        model: task.modelName || '未知模型',
+        meta: `${width && height ? `${width}×${height} · ` : ''}${batchSize || 1} 张`,
+        images: task.outputs.map((asset) => ({
+          id: asset.id,
+          url: asset.url,
+          fileName: asset.fileName,
+        })),
+        error: task.errorMessage,
+        // 历史消息不再显示"生成中"的秒表，避免打开旧会话时满屏跳秒
+        startedAt: undefined,
+        stage: task.status === 'succeeded' ? undefined : task.errorMessage,
+        sizeLabel: width && height ? `${width}×${height}` : '默认尺寸',
+        count: batchSize || task.outputs.length || 1,
+        references: task.inputs.map((asset) => asset.url),
+        fromMessageId: task.sourceTaskId,
+        payload: {
+          modelId: task.modelId,
+          prompt: task.prompt,
+          negativePrompt: task.negativePrompt ?? undefined,
+          width: width || 1024,
+          height: height || 1024,
+          batchSize: batchSize || 1,
+          steps: Number(params.steps ?? 30),
+          cfgScale: Number(params.cfgScale ?? 7),
+          seed: Number(params.seed ?? 0),
+        },
+      }
+
+      // 历史里仍在跑的任务重新接上实时推送，
+      // 否则关掉页面再回来就看不到进度了
+      if (!TASK_STATUS_META[task.status].isFinal) {
+        watchTask(task.id, messageItem.id)
+      }
+    }
+
+    restored.push(messageItem)
+  })
+
+  messages.value = restored
+}
+
+async function newChat(): Promise<void> {
+  resetSession()
+  highlightTaskId.value = ''
+
+  // 拿一个（或复用）空会话，提交生成时才有归属
+  const detail = await conversationStore.open()
+  conversationId.value = detail?.conversation.id ?? ''
+
   void nextTick(() => promptEl.value?.focus())
   message.success('已创建新会话，描述你的想法即可开始')
 }
 
-function clearChat(): void {
+/**
+ * 打开一个已有会话（来自最近会话、更多会话，或双击任务定位）。
+ *
+ * highlightTaskId 非空时，加载完历史会滚动到对应消息并短暂高亮，
+ * 让用户一眼看到"这个任务是在这轮对话里生成的"。
+ */
+async function openConversation(id: string, highlight = ''): Promise<void> {
   resetSession()
-  message.success('已清空当前会话')
+  highlightTaskId.value = highlight
+
+  const detail = await conversationStore.open(id, highlight || undefined)
+  if (!detail) {
+    message.error('会话不存在或无权访问')
+    return
+  }
+
+  conversationId.value = detail.conversation.id
+  restoreFromDetail(detail)
+
+  await nextTick()
+
+  if (highlight) {
+    scrollToHighlight(highlight)
+  } else {
+    void scrollToBottom()
+  }
+}
+
+/**
+ * 删除当前会话并回到空白状态。
+ * 后端会级联删掉该会话下的消息与任务，已选秀的作品保留。
+ */
+async function clearChat(): Promise<void> {
+  const id = conversationId.value
+
+  if (!id) {
+    resetSession()
+    message.success('已清空当前会话')
+    return
+  }
+
+  const result = await conversationStore.remove(id)
+  if (!result) return
+
+  resetSession()
+  conversationId.value = ''
+  await conversationStore.loadRecent()
+
+  if (result.keptMaterials > 0) {
+    message.success(
+      `已删除会话及 ${result.deletedTasks} 个任务，作品库中的 ${result.keptMaterials} 件产物已保留`,
+    )
+  } else {
+    message.success(`已删除会话及 ${result.deletedTasks} 个任务`)
+  }
 }
 
 function applyStarter(item: (typeof starterCards)[number]): void {
@@ -664,6 +860,31 @@ function applyStarter(item: (typeof starterCards)[number]): void {
   void fitTextarea()
   void nextTick(() => promptEl.value?.focus())
 }
+
+/**
+ * 滚动定位到指定任务对应的消息，并短暂高亮。
+ *
+ * 找不到对应消息时不滚动也不报错：任务可能已从会话里移除，
+ * 这时把整段历史看完比弹一个"没找到"更有用。
+ */
+function scrollToHighlight(taskId: string): void {
+  const el = chatEl.value
+  const target = messageRefs.get(taskId)
+  if (!el || !target) return
+
+  el.scrollTo({
+    top: Math.max(0, target.offsetTop - el.clientHeight / 2 + target.clientHeight / 2),
+    behavior: 'smooth',
+  })
+
+  highlightedMessageId.value = target.dataset.messageId ?? ''
+  window.setTimeout(() => {
+    if (highlightedMessageId.value === target.dataset.messageId) {
+      highlightedMessageId.value = ''
+    }
+  }, 2400)
+}
+
 
 /**
  * 侧边栏「新建创作」和「工作台」的入口卡片都用 query 触发，避免为此引入全局状态。
@@ -675,9 +896,32 @@ function applyStarter(item: (typeof starterCards)[number]): void {
 watch(
   () => route.query,
   (query) => {
-    if (query.new) newChat()
+    if (query.new) {
+      void newChat()
+      return
+    }
+
     // 工作台的「视频创作」入口直接带 mode=video 进来，省得用户再切一次
     if (query.mode === 'image' || query.mode === 'video') mode.value = query.mode
+
+    // 从最近会话 / 更多会话 / 双击任务跳进来：带 conversation 指定打开哪个会话，
+    // taskId 用于定位高亮。conversation 变了才重新加载，
+    // 否则 query 里其它字段（如 mode）变化也会把已加载的历史刷掉。
+    const targetConversation = typeof query.conversation === 'string' ? query.conversation : ''
+    const targetTask = typeof query.taskId === 'string' ? query.taskId : ''
+
+    if (targetConversation && targetConversation !== conversationId.value) {
+      void openConversation(targetConversation, targetTask)
+      return
+    }
+
+    // 直接进 /chat 且还没绑定会话时，先拿一个空会话占位，
+    // 这样用户一提交生成就直接挂在会话下，不会产生游离任务
+    if (!targetConversation && !conversationId.value) {
+      void conversationStore.open().then((detail) => {
+        conversationId.value = detail?.conversation.id ?? ''
+      })
+    }
   },
   { immediate: true },
 )
@@ -801,7 +1045,12 @@ onBeforeUnmount(() => {
   <header class="topbar">
     <div class="tt">
       <b>{{ title }}</b>
-      <small>对话创作 · 文生图与图生图共用同一会话</small>
+      <small>
+        对话创作 · 文生图与图生图共用同一会话
+        <template v-if="messages.length">
+          · 本次会话共 {{ taskCountInChat }} 个任务
+        </template>
+      </small>
     </div>
 
     <div class="spacer" />
@@ -878,7 +1127,13 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- 助手 -->
-        <div v-else class="msg">
+        <div
+          v-else
+          ref="(el) => item.card?.taskId && setMessageRef(item.card.taskId, el)"
+          :data-message-id="item.id"
+          class="msg"
+          :class="{ 'is-highlight': highlightedMessageId === item.id }"
+        >
           <div class="ava">
             <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
               <path

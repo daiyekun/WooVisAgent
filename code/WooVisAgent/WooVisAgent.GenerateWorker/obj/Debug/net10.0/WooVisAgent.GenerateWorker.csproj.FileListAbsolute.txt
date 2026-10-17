@@ -266,3 +266,8 @@ C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgent.GenerateWorker.deps
 C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgent.GenerateWorker.runtimeconfig.json
 C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgent.GenerateWorker.dll
 C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgent.GenerateWorker.pdb
+C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.GenerateWorker.exe
+C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.GenerateWorker.deps.json
+C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.GenerateWorker.runtimeconfig.json
+C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.GenerateWorker.dll
+C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.GenerateWorker.pdb

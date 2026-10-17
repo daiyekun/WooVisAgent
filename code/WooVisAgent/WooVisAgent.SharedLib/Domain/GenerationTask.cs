@@ -89,6 +89,18 @@ public class GenerationTask : BaseEntity<long>, IAggregateRoot, IAggregateRoot<l
     /// </summary>
     public bool IsSelected { get; set; }
 
+    /// <summary>
+    /// 所属创作会话。为空表示从「任务列表」直接提交的任务（不经过对话页），
+    /// 这类任务不出现在任何会话下，删除会话时也不会被牵连。
+    /// </summary>
+    public long? ConversationId { get; set; }
+
+    /// <summary>
+    /// 由哪个任务重试而来。用于在会话里标出"这一轮是上一轮的延续"，
+    /// 也让删除会话时可以顺藤摸瓜把重试链一起清掉。
+    /// </summary>
+    public long? SourceTaskId { get; set; }
+
     public string? ErrorMessage { get; set; }
 
     /// <summary>重试次数，供后续做重试上限控制</summary>

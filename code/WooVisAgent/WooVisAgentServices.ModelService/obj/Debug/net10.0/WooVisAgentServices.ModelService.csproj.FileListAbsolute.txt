@@ -42,3 +42,9 @@ C:\Users\user\AppData\Local\Temp\woobuild_check\WooVisAgentServices.ModelService
 C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgentServices.ModelService.deps.json
 C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgentServices.ModelService.dll
 C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgentServices.ModelService.pdb
+C:\Users\user\AppData\Local\Temp\wb_conv1\WooVisAgentServices.ModelService.deps.json
+C:\Users\user\AppData\Local\Temp\wb_conv1\WooVisAgentServices.ModelService.dll
+C:\Users\user\AppData\Local\Temp\wb_conv1\WooVisAgentServices.ModelService.pdb
+C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgentServices.ModelService.deps.json
+C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgentServices.ModelService.dll
+C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgentServices.ModelService.pdb

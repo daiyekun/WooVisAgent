@@ -71,6 +71,12 @@ public class RetryGenerationTaskCommandHandler(
             InputsJson = source.InputsJson,
             OutputsJson = "[]",
             RetryCount = source.RetryCount + 1,
+            // 重试是"同一件事再来一次"，必须留在原会话里，
+            // 否则它在会话历史里会变成一个查无来由的孤立任务
+            ConversationId = source.ConversationId,
+            // 指向直接来源（而不是最初的源头），
+            // 这样会话里的"改自上一轮"始终指向前一次生成，链路才是连续的
+            SourceTaskId = source.Id,
             CreatedAt = now,
             QueuedAt = now,
             UpdatedAt = now,

@@ -54,6 +54,18 @@ public interface IModelDeliveryProtocol
     bool SupportsImageToImage => false;
 
     /// <summary>
+    /// 是否支持「文生图」（不带参考图，直接用提示词出图）。
+    ///
+    /// 大多数模型都支持，但<b>图片翻译模型</b>（如 <c>qwen-mt-image</c>）是个例外：
+    /// 它的输入模态只有「图片 → 图片」，必须提供一张待处理的原图，
+    /// 拿提示词去调用只会得到一个无从下手的 400。
+    ///
+    /// 声明为 <c>false</c> 后，框架会在<b>发请求之前</b>就拦下来，
+    /// 用一句中文说明"这个模型是什么、该怎么用"，而不是把云端的英文错误抛给用户。
+    /// </summary>
+    bool SupportsTextToImage => true;
+
+    /// <summary>
     /// 按「是否带参考图」解析请求地址。默认忽略该标志。
     ///
     /// 需要覆写的典型场景：OpenAI 系的图生图走 <c>/images/edits</c> 而不是

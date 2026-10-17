@@ -149,6 +149,26 @@ async function handleCopyPrompt(task: GenerationTask): Promise<void> {
   ok ? message.success('提示词已复制') : message.error('复制失败')
 }
 
+/**
+ * 双击任务：跳进聊天窗口并定位到它所在的那一轮。
+ *
+ * 带 conversationId 时直接打开那个会话；不带（从任务列表直接提交的游离任务）
+ * 就退化成打开一个空白会话，并在提示里说明它不属于任何会话——
+ * 而不是静默跳到无关的历史里让用户自己找。
+ */
+function handleLocate(task: GenerationTask): void {
+  if (task.conversationId) {
+    void router.push({
+      name: 'Chat',
+      query: { conversation: task.conversationId, taskId: task.id },
+    })
+    return
+  }
+
+  message.info('该任务不在任何会话中（从任务列表直接提交），已打开空白会话')
+  void router.push({ name: 'Chat', query: { new: String(Date.now()) } })
+}
+
 function handlePreview(asset: TaskAsset): void {
   previewAsset.value = asset
   previewVisible.value = true
@@ -291,6 +311,7 @@ onBeforeUnmount(stopPolling)
           @remove="handleRemove"
           @preview="handlePreview"
           @copy-prompt="handleCopyPrompt"
+          @locate="handleLocate"
         />
       </div>
 

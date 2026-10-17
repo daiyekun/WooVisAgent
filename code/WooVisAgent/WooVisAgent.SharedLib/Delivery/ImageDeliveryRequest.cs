@@ -251,7 +251,7 @@ public static class ImageDeliveryPayloads
     }
 
     /// <summary>
-    /// DashScope 原生异步接口的请求体：
+    /// DashScope 原生<b>异步</b>接口的请求体：
     /// <c>{"model": "...", "input": {"prompt": "..."}, "parameters": {"size": "1024*1024", "n": 1}}</c>
     /// </summary>
     public static string DashScopeAsync(ImageDeliveryRequest request)
@@ -282,4 +282,145 @@ public static class ImageDeliveryPayloads
 
         return JsonSerializer.Serialize(payload, ModelDeliveryJson.Options);
     }
+
+    /// <summary>
+    /// 百炼「图片翻译」接口（<c>image2image/image-synthesis</c>，qwen-mt-image 系列）的请求体：
+    /// <code>
+    /// {
+    ///   "model": "qwen-mt-image-2.0",
+    ///   "input": {
+    ///     "image_url": "https://.../source.png",
+    ///     "source_lang": "auto",
+    ///     "target_lang": "en"
+    ///   }
+    /// }
+    /// </code>
+    ///
+    /// 与其他入口的三点关键差异（每一条都会直接决定 400 还是成功）：
+    /// <list type="number">
+    ///   <item><b>没有 prompt 字段</b>。这个接口翻译的是「图里的文字」，
+    ///         不是「按描述画一张图」，因此 <see cref="ImageDeliveryRequest.Prompt" />
+    ///         不能作为绘图提示词发出去；</item>
+    ///   <item>图片走 <c>input.image_url</c>（<b>公网可访问地址</b>），不是 base64 data URI；
+    ///         本站 <c>/uploads</c> 下的文件公网访问不到，必须换成本站对外可访问的地址；</li>
+    ///   <item>没有 <c>size</c> / <c>n</c> / <c>seed</c> 等参数，输出尺寸与原图一致。</item>
+    /// </list>
+    ///
+    /// 语种从提示词里解析（形如"翻译成英文""中译日"）；
+    /// 解析不出来时源语言用 <c>auto</c> 自动检测，目标语言默认英文。
+    /// </summary>
+    public static string DashScopeImageTranslate(ImageDeliveryRequest request)
+    {
+        var input = new Dictionary<string, object?>
+        {
+            // 翻译模型只认公网 URL。这里把本地相对地址原样送出，
+            // 由上层在发请求前校验是否为公网地址（IsPubliclyAccessibleReference）。
+            ["image_url"] = request.References.FirstOrDefault()?.Url ?? string.Empty,
+            ["source_lang"] = ResolveSourceLang(request.Prompt),
+            ["target_lang"] = ResolveTargetLang(request.Prompt),
+        };
+
+        return JsonSerializer.Serialize(
+            new Dictionary<string, object?>
+            {
+                ["model"] = request.ModelKey ?? string.Empty,
+                ["input"] = input,
+            },
+            ModelDeliveryJson.Options);
+    }
+
+    /// <summary>
+    /// 从提示词里识别源语言。<c>auto</c> 表示由模型自动检测，
+    /// 这是默认值——大多数翻译请求只说了目标语言，没说源语言。
+    /// </summary>
+    private static string ResolveSourceLang(string? prompt)
+        => prompt is null ? "auto" : FindLanguage(prompt, beforeMarker: true) ?? "auto";
+
+    /// <summary>
+    /// 从提示词里识别目标语言。识别不到时默认英文（百炼示例里最常见的目标语言）。
+    /// </summary>
+    private static string ResolveTargetLang(string? prompt)
+        => prompt is null ? "en" : FindLanguage(prompt, beforeMarker: false) ?? "en";
+
+    /// <summary>
+    /// 「把 A 翻译成 B」里的分界词。以它的位置区分谁是源语言、谁是目标语言。
+    ///
+    /// 不做自然语言理解，只按"分界词前后各找一个语种关键词"来判断——
+    /// 对翻译指令这种高度模板化的说法已经足够，且绝不会把
+    /// "翻译成英文"里的"英文"误判成源语言。
+    /// </summary>
+    private static readonly string[] TranslateMarkers =
+    [
+        "翻译成", "翻译为", "译成", "译为", "转成", "转为",
+        "翻译", "into", "to ",
+    ];
+
+    /// <summary>语种关键词 → ISO 语言码。只收全称，不收 "en"/"zh" 这类两字母码</summary>
+    private static readonly (string Code, string[] Words)[] LanguageWords =
+    [
+        ("zh", ["中文", "汉语", "简体", "繁体", "chinese"]),
+        ("en", ["英文", "英语", "english"]),
+        ("ja", ["日文", "日语", "japanese"]),
+        ("ko", ["韩文", "韩语", "韩文", "korean"]),
+        ("fr", ["法文", "法语", "french"]),
+        ("de", ["德文", "德语", "german"]),
+        ("es", ["西班牙文", "西班牙语", "西语", "spanish"]),
+        ("ru", ["俄文", "俄语", "russian"]),
+        ("it", ["意大利文", "意大利语", "意语", "italian"]),
+        ("pt", ["葡萄牙文", "葡萄牙语", "葡语", "portuguese"]),
+        ("th", ["泰文", "泰语", "thai"]),
+        ("vi", ["越南文", "越南语", "vietnamese"]),
+        ("ar", ["阿拉伯文", "阿拉伯语", "arabic"]),
+    ];
+
+    /// <summary>
+    /// 在提示词的指定半区里找语种关键词。
+    /// <paramref name="beforeMarker" /> 为真时只搜分界词之前（源语言），否则只搜之后（目标语言）。
+    /// </summary>
+    private static string? FindLanguage(string prompt, bool beforeMarker)
+    {
+        if (string.IsNullOrWhiteSpace(prompt))
+            return null;
+
+        // 找不到分界词时，把整句当作同一半区处理
+        var split = IndexOfTranslateMarker(prompt);
+        var region = split < 0
+            ? prompt
+            : (beforeMarker ? prompt[..split] : prompt[(split + TranslateMarkerLength(prompt, split))..]);
+
+        return LanguageWords
+            .Select(pair => (pair.Code, Index: IndexOfAnyWord(region, pair.Words)))
+            .Where(found => found.Index >= 0)
+            .OrderByDescending(found => found.Index)
+            .Select(found => found.Code)
+            .FirstOrDefault();
+    }
+
+    /// <summary>找第一个出现的分界词位置；都没出现返回 -1</summary>
+    private static int IndexOfTranslateMarker(string prompt)
+        => TranslateMarkers
+            .Select(marker => prompt.IndexOf(marker, StringComparison.OrdinalIgnoreCase))
+            .Where(index => index >= 0)
+            .DefaultIfEmpty(-1)
+            .Min();
+
+    /// <summary>取当前位置命中的分界词长度（多词匹配时取最长的那个）</summary>
+    private static int TranslateMarkerLength(string prompt, int index)
+    {
+        var match = TranslateMarkers
+            .Where(marker => index + marker.Length <= prompt.Length
+                             && prompt.AsSpan(index, marker.Length).Equals(marker, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(marker => marker.Length)
+            .FirstOrDefault();
+
+        return match?.Length ?? 0;
+    }
+
+    /// <summary>找任一关键词首次出现的位置；都没出现返回 -1</summary>
+    private static int IndexOfAnyWord(string text, string[] words)
+        => words
+            .Select(word => text.IndexOf(word, StringComparison.OrdinalIgnoreCase))
+            .Where(index => index >= 0)
+            .DefaultIfEmpty(-1)
+            .Min();
 }

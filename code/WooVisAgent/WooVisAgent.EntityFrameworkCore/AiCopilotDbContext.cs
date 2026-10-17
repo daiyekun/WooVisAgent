@@ -17,6 +17,12 @@ public class AiCopilotDbContext(DbContextOptions<AiCopilotDbContext> options) : 
     /// <summary>用户的作品 / 产品（映射见 Configurations/MaterialAssetConfiguration.cs）</summary>
     public DbSet<MaterialAsset> MaterialAssets => Set<MaterialAsset>();
 
+    /// <summary>创作会话，一条对话流（映射见 Configurations/ConversationConfiguration.cs）</summary>
+    public DbSet<Conversation> Conversations => Set<Conversation>();
+
+    /// <summary>会话内的消息（映射见 Configurations/ConversationMessageConfiguration.cs）</summary>
+    public DbSet<ConversationMessage> ConversationMessages => Set<ConversationMessage>();
+
     // AiGateway 实体模型
     //public DbSet<LanguageModel> LanguageModels => Set<LanguageModel>();
     //public DbSet<ConversationTemplate> ConversationTemplates => Set<ConversationTemplate>();

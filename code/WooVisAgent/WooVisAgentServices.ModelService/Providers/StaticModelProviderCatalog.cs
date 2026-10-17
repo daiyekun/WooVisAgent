@@ -26,8 +26,17 @@ public sealed class StaticModelProviderCatalog : IModelProviderCatalog
             ],
             ["AliyunBailian"] =
             [
+                // 百炼的文生图 / 图生图模型（都走 multimodal-generation 入口）
+                new("qwen-image-2.1-pro", "千问图像 2.1 Pro（文生图 / 图生图）"),
+                new("qwen-image-2.1-turbo", "千问图像 2.1 Turbo（文生图 / 图生图）"),
+                new("qwen-image-2.0-pro", "千问图像 2.0 Pro（文生图 / 图生图）"),
+                new("wan2.6-t2i", "通义万相 2.6 文生图"),
                 new("wanx2.1-t2i-turbo", "通义万相 文生图 Turbo"),
                 new("wanx2.1-i2v-turbo", "通义万相 图生视频 Turbo"),
+
+                // 图片翻译：只能「上传图片 → 翻译图中文字」，不能文生图
+                new("qwen-mt-image-2.0", "千问图片翻译 2.0（⚠ 仅图片翻译，不支持文生图）"),
+
                 new("qwen-max", "通义千问 Max"),
             ],
             ["VolcengineJimeng"] =

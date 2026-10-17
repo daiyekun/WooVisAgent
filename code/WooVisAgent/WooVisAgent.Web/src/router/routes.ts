@@ -90,6 +90,19 @@ export const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'conversations',
+        name: 'Conversations',
+        component: () => import('@/views/conversation/ConversationListView.vue'),
+        meta: {
+          title: '会话列表',
+          desc: '全部创作会话，可按图片与视频分类检索',
+          icon: 'list',
+          // 入口在侧边栏「更多会话(N)」，不占左侧导航位
+          hidden: true,
+          order: 5,
+        },
+      },
+      {
         path: 'tasks/create',
         name: 'TaskCreate',
         component: () => import('@/views/task/TaskCreateView.vue'),
@@ -98,7 +111,7 @@ export const routes: RouteRecordRaw[] = [
           desc: '填写提示词与参数，提交图片或视频生成',
           icon: 'plus-circle',
           hidden: true,
-          order: 5,
+          order: 6,
         },
       },
       // 旧路径兜底：素材库改名为「我的作品」后，避免历史收藏 / 外链 404

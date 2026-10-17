@@ -83,6 +83,23 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
         var references = await ResolveReferenceImagesAsync(request, cancellationToken);
         var hasReferences = references.Count > 0;
 
+        // 图片翻译接口要求参考图是「公网可访问的 http(s) 地址」，
+        // 本站 /uploads 下的文件模型服务取不到，必须在发请求前就说清楚，
+        // 否则百炼只会回一句含糊的 url error。
+        if (references.Count > 0 && AliyunDashScopeEndpoints.IsImageTranslateModel(request.Model.ModelKey))
+        {
+            var reference = references[0];
+
+            if (!Uri.TryCreate(reference.Url, UriKind.Absolute, out var referenceUri)
+                || referenceUri.Scheme is not ("http" or "https"))
+            {
+                throw new InvalidOperationException(
+                    $"模型「{request.Model.Name}」要求参考图必须是<b>公网可访问的 http(s) 地址</b>，当前参考图是本站相对地址" +
+                    $"（{reference.Url}），百炼服务访问不到。请改用可直接访问的图片链接作为参考图。" +
+                    "若你的目的是生成图片而非翻译图片，请改用文生图模型，例如 qwen-image-2.1-pro。");
+            }
+        }
+
         // 解析时同时拿到命中的协议，后续日志与错误信息都要带上，方便排查 404 / 协议不符这类问题。
         // 是否带参考图会影响入口路径（OpenAI 系图生图走 /images/edits），必须在这一步就告知解析器。
         var resolution = _protocolResolver.Resolve(request.Model, hasReferences);
@@ -108,6 +125,21 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
                     $"模型「{request.Model.Name}」命中的协议 {protocol.Name} 不支持图生图（参考图）。" +
                     "请改用支持图生图的模型（如 OpenAI 系 /images/edits、百炼 qwen-image 多模态入口），" +
                     "或去掉参考图改为纯文生图。");
+            }
+
+            // 图片翻译模型（qwen-mt-image）没有纯文生图入口：它只能拿一张已有的图，
+            // 把图里的文字翻译成另一种语言。用提示词去调它，百炼会回一句
+            // "url error, please check url"，真实原因（模型与入口不匹配）完全看不出来。
+            // 所以在发请求前拦下来，把真实原因讲清楚。
+            if (!hasReferences && !protocol.SupportsTextToImage)
+            {
+                throw new InvalidOperationException(
+                    $"模型「{request.Model.Name}」（{request.Model.ModelKey}）是<b>图片翻译模型</b>，不是文生图模型。" +
+                    "它的输入模态只有「图片 → 图片」：必须上传一张待翻译的原图，再指定源语言与目标语言，" +
+                    "请求体里没有 prompt 字段，因此无法用一句提示词从零生成图片。" +
+                    "若你的目的是生成图片，请改用文生图模型，例如百炼的 " +
+                    "qwen-image-2.1-pro / qwen-image-2.0-pro / wan2.6-t2i。" +
+                    "若确实要做图片翻译，请先在对话中上传一张图片作为参考图。");
             }
         }
         else
@@ -388,7 +420,7 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
                 request.Model.Provider,
                 Truncate(responseBody, 500));
 
-            var error = $"模型接口返回 {(int)response.StatusCode}（请求地址：{url}，协议：{protocol.Name}）：{Truncate(responseBody, 300)}";
+            var error = ExplainFailure((int)response.StatusCode, responseBody, url, protocol.Name);
 
             // 只有"路径不存在"与"模型不属于这套接口"才值得换方案；
             // 鉴权失败、限流、内容审核不通过等换方案也没用，直接如实报错。
@@ -439,6 +471,47 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
 
         var resultBody = await PollTaskUntilCompletedAsync(request, protocol, statusUrl, progress, cancellationToken);
         return await ExtractImageAsync(resultBody, null, cancellationToken);
+    }
+
+    /// <summary>
+    /// 把云端返回的错误翻译成"能据此采取行动"的中文说明。
+    ///
+    /// 百炼有几类错误的英文原文完全看不出该做什么：
+    /// <list type="bullet">
+    ///   <item><c>AllocationQuota.FreeTierOnly</c> —— 免费额度用尽且账号开启了"仅用免费额度"。
+    ///       英文里只说 "add funds"，用户根本不知道去哪个控制台开关；</item>
+    ///   <item><c>Throttling</c> —— 触发限流，需要退避重试；</item>
+    ///   <item><c>InvalidApiKey</c> —— 密钥无效。</item>
+    /// </list>
+    /// 认不出来的错误才原样透传，保证不丢失信息。
+    /// </summary>
+    private static string ExplainFailure(int statusCode, string body, string url, string protocolName)
+    {
+        var prefix = $"模型接口返回 {statusCode}（请求地址：{url}，协议：{protocolName}）";
+
+        if (body.Contains("AllocationQuota.FreeTierOnly", StringComparison.OrdinalIgnoreCase)
+            || body.Contains("Free quota exhausted", StringComparison.OrdinalIgnoreCase))
+        {
+            return prefix +
+                "：账号的<b>免费额度已用尽</b>，且当前开启了「仅使用免费额度」模式，因此付费调用被拒绝。" +
+                "这不是程序问题，也换模型解决不了。请到百炼控制台的模型广场 → 该模型 → " +
+                "「开通服务 / 资源管理」里二选一：" +
+                "① 充值后关闭「仅使用免费额度」开关；② 切换到有额度的模型。";
+        }
+
+        if (body.Contains("Throttling", StringComparison.OrdinalIgnoreCase)
+            || body.Contains("RateLimit", StringComparison.OrdinalIgnoreCase))
+        {
+            return prefix + "：触发了模型侧的<b>限流</b>。请稍等几秒后重试，或降低并发提交频率。";
+        }
+
+        if (body.Contains("InvalidApiKey", StringComparison.OrdinalIgnoreCase)
+            || body.Contains("Unauthorized", StringComparison.OrdinalIgnoreCase))
+        {
+            return prefix + "：<b>API Key 无效或未授权</b>。请到模型配置里检查密钥是否填错、是否已失效。";
+        }
+
+        return $"{prefix}：{Truncate(body, 300)}";
     }
 
     /// <summary>
@@ -869,6 +942,13 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
 
         if (root.TryGetProperty("output", out var output) && output.ValueKind == JsonValueKind.Object)
         {
+            // 百炼图片翻译（qwen-mt-image）：同步返回 output.image_url，
+            // 异步任务成功后同样把结果放在 output.image_url（不是 results 数组）。
+            if (output.TryGetProperty("image_url", out var translatedUrl)
+                && translatedUrl.ValueKind == JsonValueKind.String
+                && translatedUrl.GetString() is { Length: > 0 } imageUrlValue)
+                return await DownloadAsync(imageUrlValue, cancellationToken);
+
             // DashScope 原生异步：output.results[].url
             if (output.TryGetProperty("results", out var results)
                 && results.ValueKind == JsonValueKind.Array

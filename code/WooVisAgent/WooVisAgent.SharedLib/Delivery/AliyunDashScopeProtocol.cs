@@ -25,10 +25,12 @@ public static class AliyunDashScopeEndpoints
     [
         "/api/v1/services/aigc/multimodal-generation/generation",
         "/api/v1/services/aigc/image-generation/generation",
+        "/api/v1/services/aigc/image2image/image-synthesis",
         "/api/v1/services/aigc/text2image/image-synthesis",
         "/compatible-mode/v1/images/generations",
         "/compatible-mode/images/generations",
         "/api/v1/services/aigc/text2image",
+        "/api/v1/services/aigc/image2image",
         "/api/v1/services/aigc",
         "/v1/images/generations",
         "/images/generations",
@@ -106,15 +108,46 @@ public static class AliyunDashScopeEndpoints
     ///
     /// qwen-image 系列（多模态同步）与 wan / wanx 系列（文生图异步）的接口完全不同，
     /// 猜错的代价是一次 400，框架会据此自动切到另一套方案，所以这里取"更可能"的一个即可。
+    ///
+    /// <para>
+    /// <b>qwen-mt-image（图片翻译）必须最先判定</b>：它的模型名同时含 "qwen" 和 "image"，
+    /// 若只按 "qwen" 分派会被送到多模态生成入口，而翻译模型的请求体里根本没有 prompt，
+    /// 百炼只会回一句 <c>url error, please check url</c>，真实原因完全被掩盖。
+    /// </para>
     /// </summary>
     public static DashScopeImageMode PreferMode(string? modelKey)
     {
         var key = modelKey?.Trim().ToLowerInvariant() ?? string.Empty;
 
+        // 图片翻译：输入模态只有图片，没有纯文生图入口
+        if (IsImageTranslateModel(key))
+            return DashScopeImageMode.Image2ImageTranslate;
+
         if (key.Contains("qwen", StringComparison.Ordinal))
             return DashScopeImageMode.SyncMultimodal;
 
         return DashScopeImageMode.AsyncText2Image;
+    }
+
+    /// <summary>
+    /// 是否是「图片翻译」模型（qwen-mt-image / qwen-mt-image-2.0）。
+    ///
+    /// 模型名里 <c>mt</c> = machine translation，这是百炼自己的命名习惯
+    /// （与文本翻译模型 qwen-mt 同源）。除此之外，名称里出现
+    /// <c>image-translate</c> / <c>image_translate</c> 也一并视为翻译模型。
+    /// </summary>
+    public static bool IsImageTranslateModel(string? modelKey)
+    {
+        var key = modelKey?.Trim().ToLowerInvariant();
+        if (string.IsNullOrEmpty(key))
+            return false;
+
+        if (!key.Contains("image", StringComparison.Ordinal))
+            return false;
+
+        return key.Contains("qwen-mt", StringComparison.Ordinal)
+               || key.Contains("image-translate", StringComparison.Ordinal)
+               || key.Contains("image_translate", StringComparison.Ordinal);
     }
 
     /// <summary>公共域名、国际站域名，以及业务空间专属域名 *.maas.aliyuncs.com</summary>
@@ -174,6 +207,13 @@ public sealed class AliyunDashScopeProtocol : IModelDeliveryProtocol
     internal static List<AliyunDashScopeImageProtocol> BuildPlans(ModelConfig model)
     {
         var preferred = AliyunDashScopeEndpoints.PreferMode(model.ModelKey);
+
+        // 图片翻译模型只有唯一一条路：image2image/image-synthesis。
+        // 给它挂兜底方案反而有害——翻译模型拿提示词去别的入口一定失败，
+        // 会把「模型选错了」掩盖成「试了 3 套方案都失败」。
+        if (preferred == DashScopeImageMode.Image2ImageTranslate)
+            return [new AliyunDashScopeImageProtocol(DashScopeImageMode.Image2ImageTranslate)];
+
         var isNative = preferred == DashScopeImageMode.SyncMultimodal;
 
         var nativeOrder = isNative

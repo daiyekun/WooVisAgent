@@ -181,3 +181,8 @@ D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.AppHost.deps.jso
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.AppHost.runtimeconfig.json
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.AppHost.dll
 D:\WooProject\AIVidio\code\WooVisAgent\.verify\out2\WooVisAgent.AppHost.pdb
+C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.AppHost.exe
+C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.AppHost.deps.json
+C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.AppHost.runtimeconfig.json
+C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.AppHost.dll
+C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.AppHost.pdb

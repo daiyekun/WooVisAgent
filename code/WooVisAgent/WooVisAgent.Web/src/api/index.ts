@@ -18,6 +18,7 @@ export * as videoApi from './video'
 export * as taskApi from './task'
 export * as modelApi from './model'
 export * as materialApi from './material'
+export * as conversationApi from './conversation'
 
 export type { AuthSession, AuthUser, EmailCodeResult, LoginInput, RegisterInput } from './auth'
 export type { ImageGenerationInput, ImageGenerationResult } from './image'

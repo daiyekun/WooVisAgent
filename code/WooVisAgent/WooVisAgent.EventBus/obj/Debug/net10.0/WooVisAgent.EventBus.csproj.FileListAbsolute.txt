@@ -38,3 +38,9 @@ C:\Users\user\AppData\Local\Temp\woobuild_check2\WooVisAgent.EventBus.pdb
 C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgent.EventBus.deps.json
 C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgent.EventBus.dll
 C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgent.EventBus.pdb
+C:\Users\user\AppData\Local\Temp\wb_conv1\WooVisAgent.EventBus.deps.json
+C:\Users\user\AppData\Local\Temp\wb_conv1\WooVisAgent.EventBus.dll
+C:\Users\user\AppData\Local\Temp\wb_conv1\WooVisAgent.EventBus.pdb
+C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.EventBus.deps.json
+C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.EventBus.dll
+C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.EventBus.pdb

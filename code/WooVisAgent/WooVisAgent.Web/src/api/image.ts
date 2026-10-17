@@ -20,6 +20,11 @@ export interface ImageGenerationInput {
   seed?: number
   /** 参考图/垫图 URL */
   referenceImageUrls?: string[]
+  /**
+   * 所属创作会话。不传则任务不归属任何会话（不出现在最近会话里）；
+   * 聊天页始终会带上，这样多轮对话的历史才能完整回放。
+   */
+  conversationId?: string
   /** 模型特有参数，键值对应 ModelParamSpec.key */
   params?: Record<string, unknown>
 }

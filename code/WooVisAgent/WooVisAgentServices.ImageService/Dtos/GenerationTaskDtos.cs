@@ -31,6 +31,12 @@ public sealed class ImageGenerationInput
     /// <summary>参考图 / 垫图 URL</summary>
     public List<string>? ReferenceImageUrls { get; set; }
 
+    /// <summary>
+    /// 所属会话主键。为空表示这是"无会话"的独立提交（例如从任务列表直接发起），
+    /// 不会出现在最近会话里。有值则任务挂到该会话下，聊天历史可完整回放。
+    /// </summary>
+    public string? ConversationId { get; set; }
+
     /// <summary>模型特有参数，键值对应 ModelParamSpec.key</summary>
     public Dictionary<string, object?>? Params { get; set; }
 }
@@ -75,7 +81,11 @@ public sealed record GenerationTaskDto(
     DateTimeOffset? StartedAt,
     DateTimeOffset? FinishedAt,
     string? CreatedBy,
-    bool IsSelected);
+    bool IsSelected,
+    /// <summary>所属会话主键；不在任何会话下的独立任务为 null</summary>
+    string? ConversationId,
+    /// <summary>由哪个任务重试 / 迭代而来</summary>
+    string? SourceTaskId);
 
 /// <summary>任务状态轻量出参，供前端轮询兜底使用</summary>
 public sealed record TaskStatusDto(
@@ -116,3 +126,51 @@ public sealed record MaterialAssetDto(
 public sealed record SelectGenerationTaskResultDto(
     int AddedCount,
     GenerationTaskDto Task);
+
+/** ==================== 会话 ==================== */
+
+/// <summary>会话列表项，字段与前端 Conversation 对齐</summary>
+public sealed record ConversationDto(
+    string Id,
+    string Title,
+    string Type,
+    int MessageCount,
+    int TaskCount,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt);
+
+/// <summary>会话内的单条消息，字段与前端 ChatMessage 对齐</summary>
+public sealed record ConversationMessageDto(
+    string Id,
+    string Role,
+    string Text,
+    IReadOnlyList<TaskAssetDto> Assets,
+    IReadOnlyDictionary<string, object?> Params,
+    /// <summary>关联任务 id；用户消息为空</summary>
+    string? TaskId,
+    /// <summary>同一次生成里的配对消息 id（图生图时用于标注"改自第几轮"）</summary>
+    string? PairMessageId,
+    /// <summary>图生图来源任务 id</summary>
+    string? SourceTaskId,
+    int Seq,
+    string? ErrorMessage,
+    DateTimeOffset CreatedAt);
+
+/// <summary>
+/// 会话详情：会话本身 + 全部消息 + 该会话下的任务。
+///
+/// 任务单独带出来（而不是只挂在消息上）是因为聊天页要在每张结果卡上
+/// 展示尺寸 / 张数 / 模型 / 用时，这些都是任务的属性；
+/// 消息里的 AssetsJson 只存地址，够画图但不够画卡。
+/// </summary>
+public sealed record ConversationDetailDto(
+    ConversationDto Conversation,
+    IReadOnlyList<ConversationMessageDto> Messages,
+    IReadOnlyList<GenerationTaskDto> Tasks);
+
+/// <summary>删除会话的影响面提示，让前端能告诉用户"关联任务也一起删了，但作品保留"</summary>
+public sealed record DeleteConversationResultDto(
+    int DeletedMessages,
+    int DeletedTasks,
+    /// <summary>因已选秀而保留在作品库里的产物条数</summary>
+    int KeptMaterials);

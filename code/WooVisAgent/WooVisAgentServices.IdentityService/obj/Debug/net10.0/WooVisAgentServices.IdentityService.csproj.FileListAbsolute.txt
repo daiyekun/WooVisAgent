@@ -40,3 +40,9 @@ C:\Users\user\AppData\Local\Temp\woobuild_check\WooVisAgentServices.IdentityServ
 C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgentServices.IdentityService.deps.json
 C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgentServices.IdentityService.dll
 C:\Users\user\AppData\Local\Temp\woobuild_check3\WooVisAgentServices.IdentityService.pdb
+C:\Users\user\AppData\Local\Temp\wb_conv1\WooVisAgentServices.IdentityService.deps.json
+C:\Users\user\AppData\Local\Temp\wb_conv1\WooVisAgentServices.IdentityService.dll
+C:\Users\user\AppData\Local\Temp\wb_conv1\WooVisAgentServices.IdentityService.pdb
+C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgentServices.IdentityService.deps.json
+C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgentServices.IdentityService.dll
+C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgentServices.IdentityService.pdb
