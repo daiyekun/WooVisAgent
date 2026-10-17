@@ -2024,6 +2024,22 @@
           }
         }
       },
+      "OpenTelemetry.Exporter.Console/1.14.0": {
+        "type": "package",
+        "dependencies": {
+          "OpenTelemetry": "1.14.0"
+        },
+        "compile": {
+          "lib/net10.0/OpenTelemetry.Exporter.Console.dll": {
+            "related": ".dll.sigstore.json;.xml"
+          }
+        },
+        "runtime": {
+          "lib/net10.0/OpenTelemetry.Exporter.Console.dll": {
+            "related": ".dll.sigstore.json;.xml"
+          }
+        }
+      },
       "OpenTelemetry.Exporter.OpenTelemetryProtocol/1.14.0": {
         "type": "package",
         "dependencies": {
@@ -2506,6 +2522,7 @@
         "dependencies": {
           "Microsoft.Extensions.Http.Resilience": "10.1.0",
           "Microsoft.Extensions.ServiceDiscovery": "10.1.0",
+          "OpenTelemetry.Exporter.Console": "1.14.0",
           "OpenTelemetry.Exporter.OpenTelemetryProtocol": "1.14.0",
           "OpenTelemetry.Extensions.Hosting": "1.14.0",
           "OpenTelemetry.Instrumentation.AspNetCore": "1.14.0",
@@ -2539,7 +2556,8 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v10.0",
         "dependencies": {
-          "MediatR": "14.2.0"
+          "MediatR": "14.2.0",
+          "OpenTelemetry.Api": "1.14.0"
         },
         "compile": {
           "bin/placeholder/WooVisAgent.SharedLib.dll": {}
@@ -5832,6 +5850,36 @@
         "opentelemetry-icon-color.png",
         "opentelemetry.api.providerbuilderextensions.1.17.0.nupkg.sha512",
         "opentelemetry.api.providerbuilderextensions.nuspec"
+      ]
+    },
+    "OpenTelemetry.Exporter.Console/1.14.0": {
+      "sha512": "u0ekKB603NBrll76bK/wkLTnD/bl+5QMrXZKOA6oW+H383E2z5gfaWSrwof94URuvTFrtWRQcLKH+hhPykfM2w==",
+      "type": "package",
+      "path": "opentelemetry.exporter.console/1.14.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE.TXT",
+        "README.md",
+        "THIRD-PARTY-NOTICES.TXT",
+        "lib/net10.0/OpenTelemetry.Exporter.Console.dll",
+        "lib/net10.0/OpenTelemetry.Exporter.Console.dll.sigstore.json",
+        "lib/net10.0/OpenTelemetry.Exporter.Console.xml",
+        "lib/net462/OpenTelemetry.Exporter.Console.dll",
+        "lib/net462/OpenTelemetry.Exporter.Console.dll.sigstore.json",
+        "lib/net462/OpenTelemetry.Exporter.Console.xml",
+        "lib/net8.0/OpenTelemetry.Exporter.Console.dll",
+        "lib/net8.0/OpenTelemetry.Exporter.Console.dll.sigstore.json",
+        "lib/net8.0/OpenTelemetry.Exporter.Console.xml",
+        "lib/net9.0/OpenTelemetry.Exporter.Console.dll",
+        "lib/net9.0/OpenTelemetry.Exporter.Console.dll.sigstore.json",
+        "lib/net9.0/OpenTelemetry.Exporter.Console.xml",
+        "lib/netstandard2.0/OpenTelemetry.Exporter.Console.dll",
+        "lib/netstandard2.0/OpenTelemetry.Exporter.Console.dll.sigstore.json",
+        "lib/netstandard2.0/OpenTelemetry.Exporter.Console.xml",
+        "opentelemetry-icon-color.png",
+        "opentelemetry.exporter.console.1.14.0.nupkg.sha512",
+        "opentelemetry.exporter.console.nuspec"
       ]
     },
     "OpenTelemetry.Exporter.OpenTelemetryProtocol/1.14.0": {

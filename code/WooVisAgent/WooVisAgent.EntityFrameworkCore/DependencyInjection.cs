@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using WooVisAgent.EntityFrameworkCore.Diagnostics;
 using WooVisAgent.EntityFrameworkCore.Repository;
 using WooVisAgent.Services.Common.Contracts;
 using WooVisAgent.SharedLib.Repository;
@@ -24,15 +25,22 @@ public static class DependencyInjection
     /// </summary>
     public static void AddEfCore(this IHostApplicationBuilder builder)
     {
+        // SQL 追踪拦截器。官方埋点包只有 beta 版（见 EfCoreTracingInterceptor 的说明），
+        // 这里自己埋。每条 DbCommand 都会成为一个 span，面板上能看到
+        // 「这个接口慢在哪条 SQL 上」——排查接口超时时最缺的就是这一段。
+        var sqlTracer = new EfCoreTracingInterceptor(builder.Configuration);
+
         if (string.Equals(builder.Configuration["Database:Provider"], "InMemory", StringComparison.OrdinalIgnoreCase))
         {
             var databaseName = builder.Configuration["Database:Name"] ?? "woovisagent";
             builder.Services.AddDbContext<AiCopilotDbContext>(options =>
-                options.UseInMemoryDatabase(databaseName));
+                options.UseInMemoryDatabase(databaseName)
+                    .AddInterceptors(sqlTracer));
         }
         else
         {
-            builder.AddNpgsqlDbContext<AiCopilotDbContext>("woovisagent");
+            builder.AddNpgsqlDbContext<AiCopilotDbContext>("woovisagent", configureDbContextOptions: options =>
+                options.AddInterceptors(sqlTracer));
         }
 
         builder.Services.AddScoped(typeof(IReadRepository<>), typeof(EfReadRepository<>));

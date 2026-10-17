@@ -9,6 +9,7 @@ using Polly.Timeout;
 using WooVisAgent.Services.Common.Contracts;
 using WooVisAgent.Services.Common.Storage;
 using WooVisAgent.SharedLib.Delivery;
+using WooVisAgent.SharedLib.Diagnostics;
 using WooVisAgent.SharedLib.Domain;
 using WooVisAgent.SharedLib.Ids;
 using WooVisAgentServices.ImageService.Contracts;
@@ -387,6 +388,38 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
         // 图生图在 OpenAI 系必须走 multipart 文件字段，其余仍是 JSON
         var multipart = protocol.RequiresMultipart(deliveryRequest);
 
+        // 大模型调用 span。这里放在 TryDeliverAsync 而不是 SendAsync，有两个原因：
+        //   1. 一次任务可能按「主方案 → 兜底方案」试好几轮，每轮各自成一个 span，
+        //      面板上能看到"换了 3 套接口才成功"，而不是一条被拉长的模糊 span；
+        //   2. 这里能同时看到命中的协议名与实际 URL —— 排查"为什么打到了错误的接口"时，
+        //      这两个字段是最直接的证据。
+        var operation = deliveryRequest.ReferenceImages.Count > 0
+            ? "image2image"
+            : (protocol.Name.Contains("translate", StringComparison.OrdinalIgnoreCase)
+                ? "image_translate"
+                : "text2image");
+
+        using var llmSpan = TraceSources.ModelSource.StartLlmCall(
+            operation,
+            provider: request.Model.Provider ?? "unknown",
+            model: request.Model.ModelKey ?? request.Model.Name ?? "unknown",
+            prompt: request.Prompt,
+            endpoint: url,
+            hasReferenceImages: deliveryRequest.ReferenceImages.Count > 0);
+
+        llmSpan?.SetTag("wv.delivery.protocol", protocol.Name);
+        llmSpan?.SetTag("wv.delivery.multipart", multipart);
+        llmSpan?.SetTag("wv.delivery.width", deliveryRequest.Width);
+        llmSpan?.SetTag("wv.delivery.height", deliveryRequest.Height);
+        llmSpan?.SetTag("wv.delivery.steps", deliveryRequest.Steps);
+        llmSpan?.SetTag("wv.delivery.cfg_scale", deliveryRequest.CfgScale);
+        llmSpan?.SetTag("wv.delivery.seed", deliveryRequest.EffectiveSeed);
+        // Index 是同批次内的第几张。出多张图时，「只有第 2 张失败」这类问题
+        // 靠它才能定位到具体那次调用。
+        llmSpan?.SetTag("wv.delivery.batch_index", deliveryRequest.Index);
+        llmSpan?.SetTag("wv.delivery.reference_count", deliveryRequest.References.Count);
+        llmSpan?.SetTag("wv.delivery.attempt", 1);
+
         var attempt = await SendAsync(request, url, protocol, deliveryRequest, multipart, false, cancellationToken);
 
         // 异构网关对可选字段的容忍度差异很大（例如百炼的 negative_prompt 仅部分模型支持）。
@@ -401,6 +434,10 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
                 multipart ? "multipart" : "json",
                 Truncate(attempt.Body, 300));
 
+            llmSpan?.SetTag("wv.delivery.retried_with_minimal_body", true);
+            llmSpan?.SetTag("wv.delivery.first_attempt_status", (int)attempt.Response.StatusCode);
+            llmSpan?.SetTag("wv.delivery.first_attempt_body", Truncate(attempt.Body, 300));
+
             attempt.Response.Dispose();
             attempt = await SendAsync(request, url, protocol, deliveryRequest, multipart, true, cancellationToken);
         }
@@ -408,8 +445,15 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
         using var response = attempt.Response;
         var responseBody = attempt.Body;
 
+        llmSpan?.SetTag("wv.delivery.status_code", (int)response.StatusCode);
+        llmSpan?.SetTag("wv.delivery.asynchronous", protocol.IsAsynchronous);
+
         if (!response.IsSuccessStatusCode)
         {
+            // 错误响应体是排查的**首要线索**：百炼的 quota 用尽、model_not_supported、
+            // 参数非法都写在正文里，不把它带进 span 就等于只能看到一句「耗时 3000ms」。
+            llmSpan?.SetTag("wv.delivery.error_body", Truncate(responseBody, 500));
+
             // 错误信息带上"实际请求的地址 + 命中的协议"，这样 404 之类的地址类问题一眼可查，
             // 不用再去翻日志定位到底拼成了什么 URL。
             _logger.LogError(
@@ -427,6 +471,8 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
             var canFallback = response.StatusCode == System.Net.HttpStatusCode.NotFound
                               || LooksLikeModelMissing(responseBody);
 
+            llmSpan?.SetTag("wv.delivery.will_fallback", canFallback);
+
             return DeliveryOutcome.Failed(error, canFallback);
         }
 
@@ -435,12 +481,18 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
         {
             progress?.ReportRatio(0.75, "模型已返回，正在读取图片");
 
-            return DeliveryOutcome.Success(
-                await ExtractImageAsync(responseBody, response.Content.Headers.ContentType?.MediaType, cancellationToken));
+            var bytes = await ExtractImageAsync(responseBody, response.Content.Headers.ContentType?.MediaType, cancellationToken);
+            llmSpan?.SetTag("wv.delivery.output_bytes", bytes.Bytes.Length);
+            llmSpan.RecordSuccess();
+
+            return DeliveryOutcome.Success(bytes);
         }
 
-        return DeliveryOutcome.Success(
-            await AwaitAsyncTaskResultAsync(request, url, protocol, responseBody, progress, cancellationToken));
+        var asyncResult = await AwaitAsyncTaskResultAsync(request, url, protocol, responseBody, progress, cancellationToken);
+        llmSpan?.SetTag("wv.delivery.output_bytes", asyncResult.Bytes.Length);
+        llmSpan.RecordSuccess();
+
+        return DeliveryOutcome.Success(asyncResult);
     }
 
     /// <summary>
@@ -639,7 +691,6 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
             // 排查时也拿不到任何线索。这里把最内层的真实异常挖出来重写。
             throw new InvalidOperationException(DescribeTransportFailure(url, exception), exception);
         }
-
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
         return (response, body);
     }

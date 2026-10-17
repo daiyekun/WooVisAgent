@@ -97,6 +97,14 @@
           }
         }
       },
+      "OpenTelemetry.Api/1.14.0": {
+        "runtime": {
+          "lib/net10.0/OpenTelemetry.Api.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.14.0.1849"
+          }
+        }
+      },
       "WooVisAgent.Services.Common/1.0.0": {
         "dependencies": {
           "WooVisAgent.SharedLib": "1.0.0"
@@ -110,7 +118,8 @@
       },
       "WooVisAgent.SharedLib/1.0.0": {
         "dependencies": {
-          "MediatR": "14.2.0"
+          "MediatR": "14.2.0",
+          "OpenTelemetry.Api": "1.14.0"
         },
         "runtime": {
           "WooVisAgent.SharedLib.dll": {
@@ -182,6 +191,13 @@
       "sha512": "sha512-lKIZiBiGd36k02TCdMHp1KlNWisyIvQxcYJvIkz7P4gSQ9zi8dgh6S5Grj8NNG7HWYIPfQymGyoZ6JB5d1Lo1g==",
       "path": "microsoft.identitymodel.tokens/8.14.0",
       "hashPath": "microsoft.identitymodel.tokens.8.14.0.nupkg.sha512"
+    },
+    "OpenTelemetry.Api/1.14.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-foHci6viUw1f3gUB8qzz3Rk02xZIWMo299X0rxK0MoOWok/3dUVru+KKdY7WIoSHwRGpxGKkmAz9jIk2RFNbsQ==",
+      "path": "opentelemetry.api/1.14.0",
+      "hashPath": "opentelemetry.api.1.14.0.nupkg.sha512"
     },
     "WooVisAgent.Services.Common/1.0.0": {
       "type": "project",

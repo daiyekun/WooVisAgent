@@ -898,7 +898,8 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v10.0",
         "dependencies": {
-          "MediatR": "14.2.0"
+          "MediatR": "14.2.0",
+          "OpenTelemetry.Api": "1.14.0"
         },
         "compile": {
           "bin/placeholder/WooVisAgent.SharedLib.dll": {}

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "FYMTF8rNcRc=",
+  "dgSpecHash": "5QYGIpccuVk=",
   "success": true,
   "projectFilePath": "D:\\WooProject\\AIVidio\\code\\WooVisAgent\\WooVisAgent.GenerateWorker\\WooVisAgent.GenerateWorker.csproj",
   "expectedPackageFiles": [
@@ -97,6 +97,7 @@
     "C:\\Users\\user\\.nuget\\packages\\opentelemetry\\1.17.0\\opentelemetry.1.17.0.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\opentelemetry.api\\1.17.0\\opentelemetry.api.1.17.0.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\opentelemetry.api.providerbuilderextensions\\1.17.0\\opentelemetry.api.providerbuilderextensions.1.17.0.nupkg.sha512",
+    "C:\\Users\\user\\.nuget\\packages\\opentelemetry.exporter.console\\1.14.0\\opentelemetry.exporter.console.1.14.0.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\opentelemetry.exporter.opentelemetryprotocol\\1.14.0\\opentelemetry.exporter.opentelemetryprotocol.1.14.0.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\opentelemetry.extensions.hosting\\1.17.0\\opentelemetry.extensions.hosting.1.17.0.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\opentelemetry.instrumentation.aspnetcore\\1.14.0\\opentelemetry.instrumentation.aspnetcore.1.14.0.nupkg.sha512",

@@ -1515,6 +1515,10 @@
               "target": "Package",
               "version": "[10.1.0, )"
             },
+            "OpenTelemetry.Exporter.Console": {
+              "target": "Package",
+              "version": "[1.14.0, )"
+            },
             "OpenTelemetry.Exporter.OpenTelemetryProtocol": {
               "target": "Package",
               "version": "[1.14.0, )"
@@ -2369,6 +2373,10 @@
             "MediatR": {
               "target": "Package",
               "version": "[14.2.0, )"
+            },
+            "OpenTelemetry.Api": {
+              "target": "Package",
+              "version": "[1.14.0, )"
             }
           },
           "imports": [

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "HjTs6VjPZ+k=",
+  "dgSpecHash": "vDJX2hLrio8=",
   "success": true,
   "projectFilePath": "D:\\WooProject\\AIVidio\\code\\WooVisAgent\\WooVisAgent.EventBus\\WooVisAgent.EventBus.csproj",
   "expectedPackageFiles": [
@@ -64,6 +64,7 @@
     "C:\\Users\\user\\.nuget\\packages\\microsoft.identitymodel.tokens\\8.14.0\\microsoft.identitymodel.tokens.8.14.0.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\newid\\4.0.1\\newid.4.0.1.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\newtonsoft.json\\13.0.3\\newtonsoft.json.13.0.3.nupkg.sha512",
+    "C:\\Users\\user\\.nuget\\packages\\opentelemetry.api\\1.14.0\\opentelemetry.api.1.14.0.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\polly.core\\8.6.5\\polly.core.8.6.5.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\rabbitmq.client\\7.2.2\\rabbitmq.client.7.2.2.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\spectre.console\\0.55.0\\spectre.console.0.55.0.nupkg.sha512",

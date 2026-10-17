@@ -131,11 +131,25 @@
           }
         }
       },
+      "OpenTelemetry.Api/1.14.0": {
+        "type": "package",
+        "compile": {
+          "lib/net10.0/OpenTelemetry.Api.dll": {
+            "related": ".dll.sigstore.json;.xml"
+          }
+        },
+        "runtime": {
+          "lib/net10.0/OpenTelemetry.Api.dll": {
+            "related": ".dll.sigstore.json;.xml"
+          }
+        }
+      },
       "WooVisAgent.SharedLib/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v10.0",
         "dependencies": {
-          "MediatR": "14.2.0"
+          "MediatR": "14.2.0",
+          "OpenTelemetry.Api": "1.14.0"
         },
         "compile": {
           "bin/placeholder/WooVisAgent.SharedLib.dll": {}
@@ -382,6 +396,36 @@
         "lib/netstandard2.0/Microsoft.IdentityModel.Tokens.xml",
         "microsoft.identitymodel.tokens.8.14.0.nupkg.sha512",
         "microsoft.identitymodel.tokens.nuspec"
+      ]
+    },
+    "OpenTelemetry.Api/1.14.0": {
+      "sha512": "foHci6viUw1f3gUB8qzz3Rk02xZIWMo299X0rxK0MoOWok/3dUVru+KKdY7WIoSHwRGpxGKkmAz9jIk2RFNbsQ==",
+      "type": "package",
+      "path": "opentelemetry.api/1.14.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE.TXT",
+        "README.md",
+        "THIRD-PARTY-NOTICES.TXT",
+        "lib/net10.0/OpenTelemetry.Api.dll",
+        "lib/net10.0/OpenTelemetry.Api.dll.sigstore.json",
+        "lib/net10.0/OpenTelemetry.Api.xml",
+        "lib/net462/OpenTelemetry.Api.dll",
+        "lib/net462/OpenTelemetry.Api.dll.sigstore.json",
+        "lib/net462/OpenTelemetry.Api.xml",
+        "lib/net8.0/OpenTelemetry.Api.dll",
+        "lib/net8.0/OpenTelemetry.Api.dll.sigstore.json",
+        "lib/net8.0/OpenTelemetry.Api.xml",
+        "lib/net9.0/OpenTelemetry.Api.dll",
+        "lib/net9.0/OpenTelemetry.Api.dll.sigstore.json",
+        "lib/net9.0/OpenTelemetry.Api.xml",
+        "lib/netstandard2.0/OpenTelemetry.Api.dll",
+        "lib/netstandard2.0/OpenTelemetry.Api.dll.sigstore.json",
+        "lib/netstandard2.0/OpenTelemetry.Api.xml",
+        "opentelemetry-icon-color.png",
+        "opentelemetry.api.1.14.0.nupkg.sha512",
+        "opentelemetry.api.nuspec"
       ]
     },
     "WooVisAgent.SharedLib/1.0.0": {

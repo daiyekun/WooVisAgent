@@ -1141,6 +1141,10 @@
             "MediatR": {
               "target": "Package",
               "version": "[14.2.0, )"
+            },
+            "OpenTelemetry.Api": {
+              "target": "Package",
+              "version": "[1.14.0, )"
             }
           },
           "imports": [

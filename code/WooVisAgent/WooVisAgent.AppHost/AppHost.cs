@@ -25,7 +25,15 @@ var httpapi = builder.AddProject<Projects.WooVisAgent_Api>("woovisagent-api")
     .WaitFor(postgresdb)
     .WaitFor(rabbitmq)
     .WithReference(postgresdb)
-    .WithReference(rabbitmq);
+    .WithReference(rabbitmq)
+    // 把 OTLP 导出环境变量注入进去，这是 Aspire 面板「追踪」页签有数据的<b>前提</b>：
+    // ServiceDefaults 里的 AddOpenTelemetryExporters 只在解析到端点时才挂 exporter，
+    // 而不挂 WithOtlpExporter 就没有这些变量 —— 于是采集器正常、span 也在建，
+    // 但没有出口，面板永远空白。漏掉这一行的症状就是「配了 OpenTelemetry 却看不到链路」。
+    .WithOtlpExporter(OtlpProtocol.Grpc)
+    // 把 SQL 语句写进 span。本地排查慢 SQL 时很有用，代价是 span 体积变大，
+    // 因此默认关闭，需要时改成 "true" 或去掉这一行。
+    .WithEnvironment("OTEL_RECORD_SQL", "true");
 
 // 图片/视频生成工作服务：消费队列 WooVisAgent.GenerateWorker 中的任务并执行生成。
 // 与 Api 共用同一套 PostgreSQL 与 RabbitMQ，产物落盘目录也一致（见 LocalStorageDefaults）。
@@ -35,7 +43,11 @@ builder.AddProject<Projects.WooVisAgent_GenerateWorker>("woovisagent-generatewor
     .WithReference(rabbitmq)
     .WaitFor(postgresdb)
     .WaitFor(rabbitmq)
-    .WaitFor(httpapi);
+    .WaitFor(httpapi)
+    // 同样需要 OTLP 出口：生成任务的大模型调用全发生在这个进程里，
+    // 不注入的话面板上只能看到 Api 侧的入站 span，看不到真正耗时的模型调用。
+    .WithOtlpExporter(OtlpProtocol.Grpc)
+    .WithEnvironment("OTEL_RECORD_SQL", "true");
 
 // 前端目录 WooVisAgent.Web 目前还是空的（没有 package.json），
 // 直接注册 Vite 会因为 `npm error enoent Could not read package.json` 启动失败，

@@ -580,7 +580,8 @@
       },
       "WooVisAgent.SharedLib/1.0.0": {
         "dependencies": {
-          "MediatR": "14.2.0"
+          "MediatR": "14.2.0",
+          "OpenTelemetry.Api": "1.17.0"
         },
         "runtime": {
           "WooVisAgent.SharedLib.dll": {

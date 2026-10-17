@@ -308,4 +308,5 @@ C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.Api.deps.json
 C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.Api.runtimeconfig.json
 C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.Api.dll
 C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.Api.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Api\bin\Debug\net10.0\OpenTelemetry.Exporter.Console.dll
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.Api\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt

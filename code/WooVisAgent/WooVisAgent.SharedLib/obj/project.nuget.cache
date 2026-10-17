@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "2UkOMOWuZWg=",
+  "dgSpecHash": "xYhgx58vXaU=",
   "success": true,
   "projectFilePath": "D:\\WooProject\\AIVidio\\code\\WooVisAgent\\WooVisAgent.SharedLib\\WooVisAgent.SharedLib.csproj",
   "expectedPackageFiles": [
@@ -11,7 +11,8 @@
     "C:\\Users\\user\\.nuget\\packages\\microsoft.identitymodel.abstractions\\8.14.0\\microsoft.identitymodel.abstractions.8.14.0.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\microsoft.identitymodel.jsonwebtokens\\8.14.0\\microsoft.identitymodel.jsonwebtokens.8.14.0.nupkg.sha512",
     "C:\\Users\\user\\.nuget\\packages\\microsoft.identitymodel.logging\\8.14.0\\microsoft.identitymodel.logging.8.14.0.nupkg.sha512",
-    "C:\\Users\\user\\.nuget\\packages\\microsoft.identitymodel.tokens\\8.14.0\\microsoft.identitymodel.tokens.8.14.0.nupkg.sha512"
+    "C:\\Users\\user\\.nuget\\packages\\microsoft.identitymodel.tokens\\8.14.0\\microsoft.identitymodel.tokens.8.14.0.nupkg.sha512",
+    "C:\\Users\\user\\.nuget\\packages\\opentelemetry.api\\1.14.0\\opentelemetry.api.1.14.0.nupkg.sha512"
   ],
   "logs": []
 }

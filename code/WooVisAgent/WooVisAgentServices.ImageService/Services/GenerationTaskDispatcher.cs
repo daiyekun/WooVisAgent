@@ -2,6 +2,7 @@
 using Wolverine;
 using WooVisAgent.EventBus;
 using WooVisAgent.EventBus.Events;
+using WooVisAgent.SharedLib.Diagnostics;
 using WooVisAgent.SharedLib.Domain;
 using WooVisAgentServices.ImageService.Contracts;
 using WooVisAgentServices.ImageService.Serialization;
@@ -33,6 +34,17 @@ public sealed class GenerationTaskDispatcher(
 
         var parameters = GenerationTaskSerialization.DeserializeParams(task.ParamsJson);
 
+        // 链路上下文随消息一起过队列。
+        //
+        // 这是跨进程追踪唯一可行的做法：RabbitMQ 不会自动传播 Activity，
+        // 不显式带上 traceparent，Worker 侧就会开一条全新的链路，
+        // Api 的「提交任务」和 Worker 的「实际生成」在面板上变成两条互不相干的记录，
+        // 最关键的「从提交到出图总共多久、在哪一步失败」就再也拼不出来了。
+        //
+        // 放在 PublishAsync 之前采集：PublishAsync 之后 Activity.Current 可能已被
+        // Wolverine 的出站埋点换掉，取到的就不再是本次提交的上下文了。
+        var traceHeaders = TraceSources.InjectContext();
+
         var message = new ImageGenerationRequested(
             task.Id,
             task.OwnerId,
@@ -49,11 +61,13 @@ public sealed class GenerationTaskDispatcher(
             GenerationTaskSerialization.ReadNullableLong(parameters, "seed"),
             task.ParamsJson,
             GenerationTaskSerialization.DeserializeAssets(task.InputsJson),
-            DateTimeOffset.UtcNow);
+            DateTimeOffset.UtcNow,
+            MessageId: Guid.NewGuid().ToString("N"),
+            TraceHeaders: traceHeaders);
 
         // Wolverine 的 IMessageBus.PublishAsync 不接受 CancellationToken，只有 DeliveryOptions 可传
-await messageBus.PublishAsync(message);
-cancellationToken.ThrowIfCancellationRequested();
+        await messageBus.PublishAsync(message);
+        cancellationToken.ThrowIfCancellationRequested();
 
         logger.LogInformation(
             "任务 {TaskId} 已投递到队列 {Queue}，生成数量 {BatchSize}",

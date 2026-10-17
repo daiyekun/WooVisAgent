@@ -8,6 +8,9 @@
 
   <ItemGroup>
     <PackageReference Include="MediatR" Version="14.2.0" />
+    <!-- Activity.RecordException / Activity.SetStatus 的扩展方法定义在 OpenTelemetry.Api，
+         SharedLib 需要独立引用，不能依赖 App 侧的 ServiceDefaults 传递。 -->
+    <PackageReference Include="OpenTelemetry.Api" Version="1.14.0" />
   </ItemGroup>
 
 </Project>

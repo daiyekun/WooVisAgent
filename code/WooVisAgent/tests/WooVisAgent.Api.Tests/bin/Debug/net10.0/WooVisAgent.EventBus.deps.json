@@ -1024,6 +1024,14 @@
           }
         }
       },
+      "OpenTelemetry.Api/1.14.0": {
+        "runtime": {
+          "lib/net10.0/OpenTelemetry.Api.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.14.0.1849"
+          }
+        }
+      },
       "Polly.Core/8.6.5": {
         "runtime": {
           "lib/net8.0/Polly.Core.dll": {
@@ -1222,7 +1230,8 @@
       },
       "WooVisAgent.SharedLib/1.0.0": {
         "dependencies": {
-          "MediatR": "14.2.0"
+          "MediatR": "14.2.0",
+          "OpenTelemetry.Api": "1.14.0"
         },
         "runtime": {
           "WooVisAgent.SharedLib.dll": {
@@ -1637,6 +1646,13 @@
       "sha512": "sha512-HrC5BXdl00IP9zeV+0Z848QWPAoCr9P3bDEZguI+gkLcBKAOxix/tLEAAHC+UvDNPv4a2d18lOReHMOagPa+zQ==",
       "path": "newtonsoft.json/13.0.3",
       "hashPath": "newtonsoft.json.13.0.3.nupkg.sha512"
+    },
+    "OpenTelemetry.Api/1.14.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-foHci6viUw1f3gUB8qzz3Rk02xZIWMo299X0rxK0MoOWok/3dUVru+KKdY7WIoSHwRGpxGKkmAz9jIk2RFNbsQ==",
+      "path": "opentelemetry.api/1.14.0",
+      "hashPath": "opentelemetry.api.1.14.0.nupkg.sha512"
     },
     "Polly.Core/8.6.5": {
       "type": "package",

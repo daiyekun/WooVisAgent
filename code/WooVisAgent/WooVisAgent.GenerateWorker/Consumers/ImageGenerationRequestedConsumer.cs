@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using WooVisAgent.EventBus.Events;
+using WooVisAgent.SharedLib.Diagnostics;
 using WooVisAgent.SharedLib.Domain;
 using WooVisAgent.SharedLib.Repository;
 using WooVisAgent.GenerateWorker.Support;
@@ -37,11 +38,27 @@ public class ImageGenerationRequestedConsumer(
     /// </summary>
     public async Task Handle(ImageGenerationRequested message, CancellationToken cancellationToken)
     {
+        // 消费 span。真正耗时的模型调用全在这个 span 之下，
+        // 面板上从「提交任务」到「出图」是一条完整的树，而不是两段互不相干的记录。
+        using var activity = TraceSources.WorkerSource.StartMessageConsume(
+            operation: "image.generate",
+            messageType: nameof(ImageGenerationRequested),
+            parentContext: TraceSources.ExtractContext(message.TraceHeaders),
+            messageId: message.MessageId);
+
+        activity?.SetTag("wv.task_id", message.TaskId.ToString());
+        activity?.SetTag("wv.model_config_id", message.ModelConfigId.ToString());
+        activity.TagCurrentUser(message.OwnerId);
+        activity?.SetTag("wv.request.width", message.Width);
+        activity?.SetTag("wv.request.height", message.Height);
+        activity?.SetTag("wv.request.batch_size", message.BatchSize);
+        activity?.SetTag("wv.request.reference_images", message.ReferenceImages?.Count ?? 0);
 
         var task = await taskRepository.GetByIdAsync(message.TaskId, cancellationToken);
         if (task is null)
         {
             logger.LogWarning("队列消息指向的任务 {TaskId} 不存在，消息直接丢弃", message.TaskId);
+            activity?.SetTag("wv.skipped_reason", "task_not_found");
             return;
         }
 
@@ -49,6 +66,7 @@ public class ImageGenerationRequestedConsumer(
         if (task.Status is GenerationTaskStatus.Succeeded or GenerationTaskStatus.Canceled)
         {
             logger.LogInformation("任务 {TaskId} 当前状态为 {Status}，跳过本次生成", task.Id, task.Status);
+            activity?.SetTag("wv.skipped_reason", $"already_{task.Status}");
             return;
         }
 
@@ -56,6 +74,7 @@ public class ImageGenerationRequestedConsumer(
         if (task.Status == GenerationTaskStatus.Running && task.StartedAt is not null)
         {
             logger.LogInformation("任务 {TaskId} 已在生成中，跳过本次重复消息", task.Id);
+            activity?.SetTag("wv.skipped_reason", "already_running");
             return;
         }
 
@@ -100,16 +119,22 @@ public class ImageGenerationRequestedConsumer(
             await pumpTask;
 
             await MarkSucceededAsync(task, outputs, cancellationToken);
+
+            activity?.SetTag("wv.output_count", outputs.Count);
+            activity.RecordSuccess();
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             // 服务停止（而非业务失败）时保留 Running 状态，等下次重启由重投或手动重试继续
             logger.LogWarning("任务 {TaskId} 因服务停止而中断，状态保持为 {Status}", task.Id, task.Status);
+            activity?.SetTag("wv.skipped_reason", "service_shutdown");
+            activity.RecordFailure(new OperationCanceledException("服务停止，生成中断"));
             throw;
         }
         catch (Exception exception)
         {
             logger.LogError(exception, "任务 {TaskId} 生成失败", task.Id);
+            activity.RecordFailure(exception);
 
             // 失败时直接丢弃泵里的残留进度，避免它继续写状态与终态打架
             pump.Complete();

@@ -1809,3 +1809,4 @@ C:\Users\user\AppData\Local\Temp\wb_conv2\refs\System.Xml.XmlSerializer.dll
 C:\Users\user\AppData\Local\Temp\wb_conv2\refs\System.Xml.XPath.dll
 C:\Users\user\AppData\Local\Temp\wb_conv2\refs\System.Xml.XPath.XDocument.dll
 C:\Users\user\AppData\Local\Temp\wb_conv2\refs\WindowsBase.dll
+D:\WooProject\AIVidio\code\WooVisAgent\tests\WooVisAgent.Api.Tests\bin\Debug\net10.0\OpenTelemetry.Exporter.Console.dll

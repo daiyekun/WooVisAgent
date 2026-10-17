@@ -271,3 +271,4 @@ C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.GenerateWorker.deps.json
 C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.GenerateWorker.runtimeconfig.json
 C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.GenerateWorker.dll
 C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.GenerateWorker.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.GenerateWorker\bin\Debug\net10.0\OpenTelemetry.Exporter.Console.dll

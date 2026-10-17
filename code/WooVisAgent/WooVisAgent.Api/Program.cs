@@ -55,6 +55,11 @@ public class Program
 
             cfg.RegisterServicesFromAssembly(Assembly.GetAssembly(typeof(WooVisAgentServices.IdentityService.DependencyInjection))!);
             cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehavior<,>));
+
+            // 给每个用例（Command / Query）自动套 span。
+            // 挂在管道里而不是逐个手写：新增用例自动获得链路，登录也不例外；
+            // 逐个改既容易漏，新增接口又会退化成「这个接口没有追踪」。
+            cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(TracingBehavior<,>));
         });
 
         builder.Services.AddControllers()

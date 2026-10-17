@@ -13,6 +13,9 @@
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.1.0" />
     <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" Version="10.1.0" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.14.0" />
+    <!-- 控制台 exporter：脱离 AppHost 单独 dotnet run 时没有 OTLP 端点，
+         用它让 span 至少能打到控制台。否则「链路没数据」这件事完全静悄悄，无从排查。 -->
+    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.14.0" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.14.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.14.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.14.0" />

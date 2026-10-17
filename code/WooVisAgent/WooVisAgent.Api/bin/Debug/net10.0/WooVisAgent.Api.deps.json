@@ -937,6 +937,17 @@
           }
         }
       },
+      "OpenTelemetry.Exporter.Console/1.14.0": {
+        "dependencies": {
+          "OpenTelemetry": "1.17.0"
+        },
+        "runtime": {
+          "lib/net10.0/OpenTelemetry.Exporter.Console.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.14.0.1849"
+          }
+        }
+      },
       "OpenTelemetry.Exporter.OpenTelemetryProtocol/1.14.0": {
         "dependencies": {
           "OpenTelemetry": "1.17.0"
@@ -1226,6 +1237,7 @@
         "dependencies": {
           "Microsoft.Extensions.Http.Resilience": "10.1.0",
           "Microsoft.Extensions.ServiceDiscovery": "10.1.0",
+          "OpenTelemetry.Exporter.Console": "1.14.0",
           "OpenTelemetry.Exporter.OpenTelemetryProtocol": "1.14.0",
           "OpenTelemetry.Extensions.Hosting": "1.17.0",
           "OpenTelemetry.Instrumentation.AspNetCore": "1.14.0",
@@ -1252,7 +1264,8 @@
       },
       "WooVisAgent.SharedLib/1.0.0": {
         "dependencies": {
-          "MediatR": "14.2.0"
+          "MediatR": "14.2.0",
+          "OpenTelemetry.Api": "1.17.0"
         },
         "runtime": {
           "WooVisAgent.SharedLib.dll": {
@@ -1704,6 +1717,13 @@
       "sha512": "sha512-Xgc3Qf9B9TFMFpx6exTdGqMWuYIT2miNzkdMPutVvT9YuMFaEovXWke1Gb6z8NxYaQbbGF38vYLuSg1JCeui5Q==",
       "path": "opentelemetry.api.providerbuilderextensions/1.17.0",
       "hashPath": "opentelemetry.api.providerbuilderextensions.1.17.0.nupkg.sha512"
+    },
+    "OpenTelemetry.Exporter.Console/1.14.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-u0ekKB603NBrll76bK/wkLTnD/bl+5QMrXZKOA6oW+H383E2z5gfaWSrwof94URuvTFrtWRQcLKH+hhPykfM2w==",
+      "path": "opentelemetry.exporter.console/1.14.0",
+      "hashPath": "opentelemetry.exporter.console.1.14.0.nupkg.sha512"
     },
     "OpenTelemetry.Exporter.OpenTelemetryProtocol/1.14.0": {
       "type": "package",
