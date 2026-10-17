@@ -76,6 +76,23 @@ const modelOptions = computed(() => {
 
 const currentModel = computed(() => modelStore.getModelById(form.modelId))
 const hasModel = computed(() => modelOptions.value.length > 0)
+
+/**
+ * 当前模型是否支持图生视频 / 文生视频。
+ *
+ * 不少视频模型只支持其中一种（例如 wanx2.1-i2v-turbo 只能图生视频）。
+ * 若不据此隐藏不适用的输入，用户会得到"提交成功但首帧图被无视"的结果——
+ * 对图生视频模型做文生视频，产出画面和提示词毫无关系，用户完全无从判断原因。
+ * 这里读不到声明时默认都支持，与后端校验保持一致。
+ */
+const supportsImageToVideo = computed(() => currentModel.value?.supportsImageToVideo !== false)
+const supportsTextToVideo = computed(() => currentModel.value?.supportsTextToVideo !== false)
+
+/** 切换到只支持图生的模型时，已填的首帧图应保留；反过来若模型不支持图生则清掉，避免带脏数据提交 */
+watch(supportsImageToVideo, (supported) => {
+  if (!supported) videoOptions.firstFrameUrl = ''
+})
+
 const canSubmit = computed(
   () => Boolean(form.modelId) && form.prompt.trim().length > 0 && !submitting.value,
 )
@@ -112,6 +129,13 @@ async function submit(): Promise<void> {
   }
   if (!form.prompt.trim()) {
     message.warning('请输入提示词')
+    return
+  }
+
+  // 与后端 ValidateCapabilities 同一套判定，前端先拦一道给出即时反馈，
+  // 后端仍会再校验一次（前端校验只为准入，不作为安全边界）
+  if (taskType.value === 'video' && !supportsImageToVideo.value && !videoOptions.firstFrameUrl.trim()) {
+    message.warning('该模型仅支持图生视频，请先填入首帧图地址')
     return
   }
 
@@ -312,10 +336,30 @@ onMounted(async () => {
 
           <!-- 视频专属 -->
           <template v-else>
-            <n-form-item label="首帧图地址">
+            <n-alert
+              v-if="!supportsImageToVideo && !supportsTextToVideo"
+              type="warning"
+              :show-icon="true"
+            >
+              当前模型未声明支持文生视频或图生视频，请先在「模型配置」中勾选其支持的能力。
+            </n-alert>
+
+            <n-form-item v-if="supportsImageToVideo" label="首帧图地址">
               <n-input
                 v-model:value="videoOptions.firstFrameUrl"
                 placeholder="可选，填入图片 URL 实现图生视频"
+                clearable
+              />
+            </n-form-item>
+
+            <n-alert v-else type="info" :show-icon="true" class="mb">
+              该模型仅支持文生视频，不接受首帧图。
+            </n-alert>
+
+            <n-form-item v-if="!supportsTextToVideo" label="首帧图地址（必填）">
+              <n-input
+                v-model:value="videoOptions.firstFrameUrl"
+                placeholder="该模型仅支持图生视频，请填入首帧图 URL"
                 clearable
               />
             </n-form-item>

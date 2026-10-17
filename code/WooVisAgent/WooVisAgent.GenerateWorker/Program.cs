@@ -6,6 +6,7 @@ using WooVisAgent.EventBus;
 using WooVisAgent.Infrastructure.Storage;
 using WooVisAgent.Services.Common.Contracts;
 using WooVisAgentServices.ImageService;
+using WooVisAgentServices.VideoService;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -26,6 +27,10 @@ builder.Services.AddSingleton<IFileStorageService, LocalFileStorageService>();
 
 // 4. 图片生成服务（AGENT.md 中「调用图片生成服务进行生成」的那一层）
 builder.AddImageService();
+
+// 4.1 视频生成服务：消费 VideoGenerationRequested 并调用视频模型。
+//     顺序在图片服务之后：视频侧复用了它注册的进度通知器等类型
+builder.AddVideoService();
 
 // 5. RabbitMQ 事件总线（Wolverine）：只扫描当前程序集。
 //    本程序集里只有一个处理器——ImageGenerationRequestedConsumer，

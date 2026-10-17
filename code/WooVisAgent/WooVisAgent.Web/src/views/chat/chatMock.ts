@@ -32,11 +32,45 @@ export interface ChatAttachment {
   sourceMessageId?: string
 }
 
-/** 生成产物 */
+/** 生成产物。视频产物额外带封面与时长，渲染时要分开处理 */
 export interface ChatImage {
   id: string
   url: string
+  /** 产物类型。历史消息恢复时按任务类型推断，缺省视为图片 */
+  type?: 'image' | 'video'
+  /** 视频封面 */
+  thumbnailUrl?: string
   fileName?: string
+  fileSize?: number
+  width?: number
+  height?: number
+  /** 视频时长，单位秒 */
+  duration?: number
+}
+
+/** 图片轮的入参快照，用于「重跑这一轮」 */
+export interface ImageChatPayload {
+  modelId: string
+  prompt: string
+  negativePrompt?: string
+  width: number
+  height: number
+  batchSize: number
+  steps: number
+  cfgScale: number
+  seed?: number
+}
+
+/** 视频轮的入参快照，用于「重跑这一轮」 */
+export interface VideoChatPayload {
+  modelId: string
+  prompt: string
+  negativePrompt?: string
+  durationSeconds: number
+  fps: number
+  resolution: string
+  withAudio: boolean
+  seed?: number
 }
 
 /** 挂在助手消息下的生成卡：既是进度条，也是结果展示区 */
@@ -58,24 +92,14 @@ export interface ChatCard {
   stage?: string
   /** 本轮尺寸，卡片自己记住，避免用户中途改比例后把已完成的卡片文案改掉 */
   sizeLabel: string
-  /** 本轮张数 */
+  /** 本轮张数；视频恒为 1 */
   count: number
-  /** 本轮用到的参考图地址（图生图时非空），用于追溯"这张图是从哪张改来的" */
+  /** 本轮用到的参考图地址（图生图 / 图生视频时非空），用于追溯"这张图是从哪张改来的" */
   references: string[]
   /** 参考图来自哪一轮（值为那张产物所在卡片的消息 id），用于显示"改自上一轮" */
   fromMessageId?: string
-  /** 重跑所需的原始入参 */
-  payload: {
-    modelId: string
-    prompt: string
-    negativePrompt?: string
-    width: number
-    height: number
-    batchSize: number
-    steps: number
-    cfgScale: number
-    seed?: number
-  }
+  /** 重跑所需的原始入参，按 kind 取对应分支 */
+  payload: ImageChatPayload | VideoChatPayload
 }
 
 export interface ChatMessage {
@@ -123,6 +147,14 @@ export const starterCards = [
     prompt: '做一张 9:16 竖版产品海报，主体居中偏上，留出顶部标题与底部行动按钮的位置，背景干净。',
     mode: 'image' as ChatMode,
   },
+  {
+    icon: 'video',
+    tone: 'ic-b',
+    title: '生成一段短视频',
+    desc: '文生视频，描述画面与运镜',
+    prompt: '清晨的海边，镜头从礁石缓慢向上摇起，阳光洒在海面上泛着细碎的光，节奏舒缓。',
+    mode: 'video' as ChatMode,
+  },
 ]
 
 /** 出图比例 → 实际宽高 */
@@ -137,6 +169,17 @@ export const RATIO_PRESETS = [
 /** 一次生成的张数 */
 export const BATCH_OPTIONS = [1, 2, 4] as const
 
+/**
+ * 视频时长可选项（秒）。
+ *
+ * 各家模型的时长档位不一样，提交时后端会按模型能力兜底，
+ * 这里给的是常见交集，避免用户填一个模型根本不认的值。
+ */
+export const DURATION_OPTIONS = [3, 5, 10] as const
+
+/** 视频帧率 */
+export const FPS_OPTIONS = [24, 30] as const
+
 /** 生成中的阶段文案：后端只给 0-100 的进度，这里按区间补一句人话 */
 export const IMAGE_STAGES = ['正在排队', '正在解析提示词', '正在构图', '正在细化细节', '正在合成输出']
 
@@ -146,6 +189,17 @@ export function imageStageText(progress: number): string {
   if (progress < 60) return IMAGE_STAGES[2]
   if (progress < 90) return IMAGE_STAGES[3]
   return IMAGE_STAGES[4]
+}
+
+/** 视频比图片慢得多，阶段文案单独一套，否则 0-90% 全卡在"正在构图"上 */
+export const VIDEO_STAGES = ['正在排队', '正在解析提示词', '正在生成关键帧', '正在渲染画面', '正在编码输出']
+
+export function videoStageText(progress: number): string {
+  if (progress < 5) return VIDEO_STAGES[0]
+  if (progress < 25) return VIDEO_STAGES[1]
+  if (progress < 60) return VIDEO_STAGES[2]
+  if (progress < 90) return VIDEO_STAGES[3]
+  return VIDEO_STAGES[4]
 }
 
 /** 状态 → 卡片上的标签样式与文案 */

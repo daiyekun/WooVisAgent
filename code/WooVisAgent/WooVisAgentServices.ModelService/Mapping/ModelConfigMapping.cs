@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using WooVisAgent.SharedLib.Delivery;
 using WooVisAgent.SharedLib.Domain;
 using WooVisAgentServices.ModelService.Dtos;
 using WooVisAgentServices.ModelService.Serialization;
@@ -20,5 +21,10 @@ public static class ModelConfigMapping
         ModelParamsSerializer.Deserialize(entity.ParamsJson),
         entity.Remark,
         entity.CreatedAt,
-        entity.UpdatedAt);
+        entity.UpdatedAt,
+        // 交付模板原样回传，让编辑页能显示用户当前配的是哪一套形状。
+        // 解析失败时返回 null（= 用预设推断），而不是把坏 JSON 抛给前端
+        VideoDeliveryResolver.ReadTemplate(entity.DeliveryJson),
+        entity.SupportsTextToVideo,
+        entity.SupportsImageToVideo);
 }

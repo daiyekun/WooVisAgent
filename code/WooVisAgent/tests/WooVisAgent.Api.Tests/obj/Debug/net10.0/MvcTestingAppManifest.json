@@ -8,5 +8,6 @@
   "WooVisAgent.SharedLib, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "D:\\WooProject\\AIVidio\\code\\WooVisAgent\\WooVisAgent.SharedLib",
   "WooVisAgentServices.IdentityService, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "D:\\WooProject\\AIVidio\\code\\WooVisAgent\\WooVisAgentServices.IdentityService",
   "WooVisAgentServices.ImageService, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "D:\\WooProject\\AIVidio\\code\\WooVisAgent\\WooVisAgentServices.ImageService",
-  "WooVisAgentServices.ModelService, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "D:\\WooProject\\AIVidio\\code\\WooVisAgent\\WooVisAgentServices.ModelService"
+  "WooVisAgentServices.ModelService, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "D:\\WooProject\\AIVidio\\code\\WooVisAgent\\WooVisAgentServices.ModelService",
+  "WooVisAgentServices.VideoService, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null": "D:\\WooProject\\AIVidio\\code\\WooVisAgent\\WooVisAgentServices.VideoService"
 }

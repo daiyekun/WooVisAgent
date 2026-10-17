@@ -23,7 +23,9 @@ import { useRoute, useRouter } from 'vue-router'
 
 import AppIcon from '@/components/common/AppIcon.vue'
 import ImagePreview from '@/components/ImagePreview.vue'
+import VideoPlayer from '@/components/VideoPlayer.vue'
 import { cancelImageTask, fetchImageTask, generateImage } from '@/api/image'
+import { cancelVideoTask, fetchVideoTask, generateVideo } from '@/api/video'
 import { uploadFiles } from '@/api/file'
 import { ensureTaskHubStarted, useTaskEvents } from '@/hooks/useSignalR'
 import { TASK_STATUS_META } from '@/constants'
@@ -31,22 +33,33 @@ import { useAuthStore } from '@/stores/authStore'
 import { useConversationStore } from '@/stores/conversationStore'
 import { useModelStore } from '@/stores/modelStore'
 import { createTempId, downloadUrl, formatDateTime, formatElapsed, message } from '@/utils'
-import type { ConversationDetail, GenerationTask, TaskAsset, TaskStatus } from '@/types'
+import type {
+  ConversationDetail,
+  GenerationTask,
+  ModelConfig,
+  TaskAsset,
+  TaskStatus,
+} from '@/types'
 
 import {
   BATCH_OPTIONS,
   CHAT_STATUS_META,
+  DURATION_OPTIONS,
+  FPS_OPTIONS,
   MAX_REFERENCE_COUNT,
   MAX_REFERENCE_SIZE,
   NEW_CHAT_TITLE,
   RATIO_PRESETS,
   imageStageText,
   starterCards,
+  videoStageText,
   type ChatAttachment,
   type ChatCard,
   type ChatImage,
   type ChatMessage,
   type ChatMode,
+  type ImageChatPayload,
+  type VideoChatPayload,
 } from './chatMock'
 
 const authStore = useAuthStore()
@@ -108,15 +121,49 @@ const taskCountInChat = computed(
 
 /** ==================== 模型 ==================== */
 
+/**
+ * 当前模式下该出现哪些模型。
+ *
+ * 这一条是「点视频却还在下拉里挑图片模型」的根因：
+ * 下拉框之前直接绑 imageModels，切到视频后列表原封不动，
+ * 于是用户挑不到任何视频模型，也就没法测试视频链路。
+ * 这里按 mode 取对应分类的启用模型，两种模式各自闭环。
+ */
+const availableModels = computed<ModelConfig[]>(() =>
+  mode.value === 'video' ? modelStore.videoModels : modelStore.imageModels,
+)
+
+/**
+ * 图片模式下的模型列表。
+ * 只有 submit()（图片提交）用到——那里需要按 modelId 在图片模型里校验，
+ * 因为 rerun 复跑的是历史任务，其 modelId 可能已与当前 mode 不同。
+ */
 const imageModels = computed(() => modelStore.imageModels)
+
 const selectedModelId = ref('')
 
-const currentModel = computed(() => imageModels.value.find((item) => item.id === selectedModelId.value))
+const currentModel = computed(() =>
+  availableModels.value.find((item) => item.id === selectedModelId.value),
+)
 const hasModel = computed(() => Boolean(currentModel.value))
+
+/** 模型分类名，用于顶栏与提示文案 */
+const modeLabel = computed(() => (mode.value === 'video' ? '视频' : '图片'))
+
+/**
+ * 模式切换时重置选中项。
+ *
+ * 图片模型在视频模式下是非法值，不清掉的话 currentModel 会变成 undefined，
+ * 用户会看到"未配置图片模型"却无论如何也点不出可用的选项。
+ */
+watch(mode, (next) => {
+  if (availableModels.value.some((item) => item.id === selectedModelId.value)) return
+  selectedModelId.value = modelStore.resolvePreferredModel(next)?.id ?? ''
+})
 
 // 模型列表首次加载完成、或用户改了默认模型后，自动选中该用的那个
 watch(
-  imageModels,
+  availableModels,
   (list) => {
     if (!list.length) {
       selectedModelId.value = ''
@@ -126,7 +173,7 @@ watch(
     const stillValid = list.some((item) => item.id === selectedModelId.value)
     if (stillValid) return
 
-    selectedModelId.value = modelStore.resolvePreferredModel('image')?.id ?? list[0].id
+    selectedModelId.value = modelStore.resolvePreferredModel(mode.value)?.id ?? list[0].id
   },
   { immediate: true },
 )
@@ -141,12 +188,27 @@ const steps = ref(30)
 const cfgScale = ref(7)
 const seed = ref(0)
 
+/** 视频专属参数 */
+const durationSeconds = ref<number>(DURATION_OPTIONS[1])
+const fps = ref<number>(FPS_OPTIONS[0])
+const withAudio = ref(false)
+
 const ratio = computed(() => RATIO_PRESETS[ratioIndex.value])
 const sizeLabel = computed(() => `${ratio.value.width}×${ratio.value.height}`)
 
-/** ==================== 下拉菜单 ==================== */
+/** 视频侧分辨率沿用比例预设，只是换一种写法传给后端 */
+const videoResolution = computed(() => `${ratio.value.width}x${ratio.value.height}`)
 
-type MenuKey = '' | 'ratio' | 'batch' | 'model'
+/**
+ * 卡片进行中的阶段文案。
+ * 图片与视频的阶段划分不同（视频有"生成关键帧"这类中间态），共用一套会让视频长时间停在"正在构图"。
+ */
+function stageTextOf(card: ChatCard, progress: number): string {
+  return card.kind === 'video' ? videoStageText(progress) : imageStageText(progress)
+}
+
+/** 下拉菜单键：视频多出时长与帧率两项 */
+type MenuKey = '' | 'ratio' | 'batch' | 'model' | 'duration' | 'fps'
 const openMenu = ref<MenuKey>('')
 
 function toggleMenu(key: Exclude<MenuKey, ''>): void {
@@ -345,11 +407,22 @@ function applyTaskUpdate(
     card.images = patch.outputs.map((item) => ({
       id: item.id,
       url: item.url,
+      type: item.type,
+      thumbnailUrl: item.thumbnailUrl,
       fileName: item.fileName,
+      fileSize: item.fileSize,
+      width: item.width,
+      height: item.height,
+      duration: item.duration,
     }))
 
     const elapsed = card.startedAt ? formatElapsed(card.startedAt) : null
-    card.meta = `${card.sizeLabel} · ${card.images.length} 张${elapsed ? ` · 用时 ${elapsed}` : ''}`
+    // 视频只产出一条，文案跟着类型走，否则会出现"1 张视频"这种别扭说法
+    const summary =
+      card.kind === 'video'
+        ? `视频${card.images[0]?.duration ? ` · ${Math.round(card.images[0].duration)}s` : ''}`
+        : `${card.images.length} 张`
+    card.meta = `${card.sizeLabel} · ${summary}${elapsed ? ` · 用时 ${elapsed}` : ''}`
   }
 
   if (!isFinalStatus(patch.status)) {
@@ -369,10 +442,26 @@ function applyTaskUpdate(
   finishTask(taskId)
 }
 
+/**
+ * 按卡片类型拉任务详情。
+ *
+ * 图片与视频的详情接口是各自独立的（/api/image/generations/{id} 与
+ * /api/video/generations/{id}），但后端两个 Controller 都复用同一个
+ * GetGenerationTaskDetailQuery，返回结构完全一致，所以这里按卡片类型分流即可。
+ */
+function fetchTaskByKind(taskId: string, kind: ChatMode): Promise<GenerationTask> {
+  return kind === 'video'
+    ? fetchVideoTask(taskId, { silent: true })
+    : fetchImageTask(taskId, { silent: true })
+}
+
 /** 主动补拉一次任务详情，把产物填回卡片 */
 async function fillOutputs(taskId: string): Promise<void> {
+  const card = cardByTaskId(taskId)
+  if (!card) return
+
   try {
-    const task: GenerationTask = await fetchImageTask(taskId, { silent: true })
+    const task = await fetchTaskByKind(taskId, card.kind)
     applyTaskUpdate(taskId, {
       status: task.status,
       progress: task.progress,
@@ -417,7 +506,10 @@ function finishTask(taskId: string): void {
   }
 
   if (card.status === 'succeeded') {
-    target.text = `已生成 ${card.images.length} 张。想继续微调就点图片下方的「继续改这张」，把它带回输入框再描述要改的地方。`
+    target.text =
+      card.kind === 'video'
+        ? '视频已生成。可以下载后直接使用，或把上面的画面作为首帧图继续迭代下一段。'
+        : `已生成 ${card.images.length} 张。想继续微调就点图片下方的「继续改这张」，把它带回输入框再描述要改的地方。`
   } else if (card.status === 'failed') {
     target.text = '这次生成失败了，可以看看下面的原因，或者换个模型重试。'
   } else {
@@ -433,8 +525,14 @@ function startPolling(taskId: string): void {
 
   const timer = window.setInterval(() => {
     void (async () => {
+      const card = cardByTaskId(taskId)
+      if (!card) {
+        stopPolling(taskId)
+        return
+      }
+
       try {
-        const task: GenerationTask = await fetchImageTask(taskId, { silent: true })
+        const task = await fetchTaskByKind(taskId, card.kind)
         applyTaskUpdate(taskId, {
           status: task.status,
           progress: task.progress,
@@ -491,7 +589,7 @@ useTaskEvents((event) => {
   })
 })
 
-/** 提交一次生成。多轮迭代与首次生成共用这一条路径 */
+/** 提交一次图片生成。多轮迭代与首次生成共用这一条路径 */
 async function submit(payload: {
   modelId: string
   prompt: string
@@ -505,11 +603,18 @@ async function submit(payload: {
   references: string[]
   fromMessageId?: string
 }): Promise<void> {
-  const model = imageModels.value.find((item) => item.id === payload.modelId) ?? currentModel.value
+  // 与视频侧对称：只在图片分类内回退，避免把视频模型 id 发给图片接口
+  const model =
+    imageModels.value.find((item) => item.id === payload.modelId) ??
+    modelStore.resolvePreferredModel('image')
   if (!model) {
     message.warning('还没有可用的图片模型，请先到「模型配置」里添加一个')
     return
   }
+
+  // 实际使用的模型以解析结果为准：原模型可能已被删除或停用，
+  // 若提交仍带旧 modelId，卡片显示的模型名与真正跑的那个会对不上，重跑也会一直失败
+  const modelId = model.id
 
   const label = `${payload.width}×${payload.height}`
   const isEdit = payload.references.length > 0
@@ -546,7 +651,7 @@ async function submit(payload: {
     references: [...payload.references],
     fromMessageId: payload.fromMessageId,
     payload: {
-      modelId: payload.modelId,
+      modelId,
       prompt: payload.prompt,
       negativePrompt: payload.negativePrompt,
       width: payload.width,
@@ -574,7 +679,7 @@ async function submit(payload: {
 
   try {
     const result = await generateImage({
-      modelId: payload.modelId,
+      modelId,
       prompt: payload.prompt,
       negativePrompt: payload.negativePrompt,
       width: payload.width,
@@ -602,6 +707,114 @@ async function submit(payload: {
   }
 }
 
+/**
+ * 提交一次视频生成。
+ *
+ * 与图片侧结构对称：先落一张卡片占位，再提交，最后接上推送与轮询。
+ * 图生视频时把输入区的第一张参考图当作首帧图传过去——
+ * 后端 ValidateCapabilities 会校验模型是否接受首帧图，
+ * 只支持文生的模型带了首帧会被直接拒掉，所以这里只传用户真的放了的图。
+ */
+async function submitVideo(payload: VideoChatPayload & { firstFrameUrl?: string }): Promise<void> {
+  // 只能回退到视频分类内的模型。之前这里回退到 currentModel，
+  // 而重跑旧卡片时当前 mode 可能是图片，于是把图片模型 id 发给了视频接口，
+  // 后端会以「该模型不是视频模型」直接拒绝。
+  const model =
+    modelStore.videoModels.find((item) => item.id === payload.modelId) ??
+    modelStore.resolvePreferredModel('video')
+  if (!model) {
+    message.warning('还没有可用的视频模型，请先到「模型配置」里添加一个')
+    return
+  }
+
+  // 与图片侧同理：实际使用的模型以解析结果为准，保证卡片、重跑、提交三者一致
+  const modelId = model.id
+
+  const isEdit = Boolean(payload.firstFrameUrl)
+
+  messages.value.push({
+    id: createTempId(),
+    role: 'user',
+    time: '刚刚',
+    text: payload.prompt,
+    attachments: isEdit
+      ? [
+          {
+            id: createTempId(),
+            name: '首帧图',
+            size: 0,
+            previewUrl: payload.firstFrameUrl!,
+            url: payload.firstFrameUrl,
+          },
+        ]
+      : undefined,
+  })
+
+  if (title.value === NEW_CHAT_TITLE) title.value = payload.prompt.slice(0, 18)
+
+  const card: ChatCard = {
+    kind: 'video',
+    status: 'queued',
+    progress: 0,
+    model: model.name,
+    meta: `${payload.resolution} · ${payload.durationSeconds}s`,
+    images: [],
+    startedAt: Date.now(),
+    sizeLabel: payload.resolution,
+    // 视频一次只产出一条，卡片骨架按 1 个占位渲染
+    count: 1,
+    references: payload.firstFrameUrl ? [payload.firstFrameUrl] : [],
+    payload: {
+      modelId,
+      prompt: payload.prompt,
+      negativePrompt: payload.negativePrompt,
+      durationSeconds: payload.durationSeconds,
+      fps: payload.fps,
+      resolution: payload.resolution,
+      withAudio: payload.withAudio,
+      seed: payload.seed,
+    },
+  }
+
+  const assistantId = createTempId()
+  messages.value.push({
+    id: assistantId,
+    role: 'assistant',
+    time: '刚刚',
+    text: isEdit ? '收到首帧图，正在生成视频…' : '正在按你的描述生成视频…',
+    card,
+  })
+
+  void fitTextarea()
+  void scrollToBottom()
+
+  try {
+    const result = await generateVideo({
+      modelId,
+      prompt: payload.prompt,
+      negativePrompt: payload.negativePrompt,
+      firstFrameUrl: payload.firstFrameUrl,
+      durationSeconds: payload.durationSeconds,
+      fps: payload.fps,
+      resolution: payload.resolution,
+      withAudio: payload.withAudio,
+      seed: payload.seed,
+      conversationId: conversationId.value || undefined,
+    })
+
+    card.taskId = result.taskId
+    card.status = result.status
+    watchTask(result.taskId, assistantId)
+
+    void conversationStore.loadRecent()
+  } catch {
+    card.status = 'failed'
+    card.error = '提交失败，请检查视频模型配置后重试。'
+    const target = messages.value.find((item) => item.id === assistantId)
+    if (target) target.text = '这次没能提交成功，请检查视频模型配置后重试。'
+  }
+}
+
 async function send(): Promise<void> {
   const text = draft.value.trim()
 
@@ -610,13 +823,8 @@ async function send(): Promise<void> {
     return
   }
 
-  if (mode.value === 'video') {
-    message.info('视频生成服务还在接入中，当前可以先用图片生成')
-    return
-  }
-
   if (!currentModel.value) {
-    message.warning('还没有可用的图片模型，请先到「模型配置」里添加一个')
+    message.warning(`还没有可用的${modeLabel.value}模型，请先到「模型配置」里添加一个`)
     return
   }
 
@@ -633,19 +841,39 @@ async function send(): Promise<void> {
   const references = attachments.value.map((item) => item.url).filter((url): url is string => Boolean(url))
   const fromMessageId = attachments.value.find((item) => item.sourceMessageId)?.sourceMessageId
 
-  await submit({
-    modelId: currentModel.value.id,
-    prompt: text,
-    negativePrompt: negativePrompt.value.trim() || undefined,
-    width: ratio.value.width,
-    height: ratio.value.height,
-    batchSize: batchSize.value,
-    steps: steps.value,
-    cfgScale: cfgScale.value,
-    seed: seed.value > 0 ? seed.value : undefined,
-    references,
-    fromMessageId,
-  })
+  // 视频只认首帧图，多余的参考图在这里说清楚，
+  // 否则用户传了 3 张却只有 1 张生效，会误以为是模型不支持多图
+  if (mode.value === 'video' && references.length > 1) {
+    message.warning('视频生成只使用第一张参考图作为首帧，其余的已忽略')
+  }
+
+  if (mode.value === 'video') {
+    await submitVideo({
+      modelId: currentModel.value.id,
+      prompt: text,
+      negativePrompt: negativePrompt.value.trim() || undefined,
+      durationSeconds: durationSeconds.value,
+      fps: fps.value,
+      resolution: videoResolution.value,
+      withAudio: withAudio.value,
+      seed: seed.value > 0 ? seed.value : undefined,
+      firstFrameUrl: references[0],
+    })
+  } else {
+    await submit({
+      modelId: currentModel.value.id,
+      prompt: text,
+      negativePrompt: negativePrompt.value.trim() || undefined,
+      width: ratio.value.width,
+      height: ratio.value.height,
+      batchSize: batchSize.value,
+      steps: steps.value,
+      cfgScale: cfgScale.value,
+      seed: seed.value > 0 ? seed.value : undefined,
+      references,
+      fromMessageId,
+    })
+  }
 
   // 提交成功后才清空输入区，失败时保留内容方便用户改改再发
   if (messages.value[messages.value.length - 1]?.card?.taskId) {
@@ -656,8 +884,15 @@ async function send(): Promise<void> {
 
 /** 重跑：沿用上一轮的模型与参数，不改任何设置再来一次 */
 function rerun(card: ChatCard): void {
+  if (card.kind === 'video') {
+    const payload = card.payload as VideoChatPayload
+    void submitVideo({ ...payload, firstFrameUrl: card.references[0] })
+    return
+  }
+
+  const payload = card.payload as ImageChatPayload
   void submit({
-    ...card.payload,
+    ...payload,
     references: card.references,
     fromMessageId: card.fromMessageId,
   })
@@ -668,7 +903,11 @@ async function cancelTask(messageId: string): Promise<void> {
   if (!card?.taskId) return
 
   try {
-    await cancelImageTask(card.taskId)
+    if (card.kind === 'video') {
+      await cancelVideoTask(card.taskId)
+    } else {
+      await cancelImageTask(card.taskId)
+    }
     message.success('已取消这次生成')
     applyTaskUpdate(card.taskId, { status: 'canceled', progress: card.progress })
   } catch {
@@ -735,42 +974,11 @@ function restoreFromDetail(detail: ConversationDetail): void {
 
     if (messageItem.role === 'assistant' && task) {
       const params = task.params ?? {}
-      const width = Number(params.width ?? 0)
-      const height = Number(params.height ?? 0)
-      const batchSize = Number(params.batchSize ?? task.outputs.length ?? 1)
+      const isVideo = task.type === 'video'
 
-      messageItem.card = {
-        kind: 'image',
-        taskId: task.id,
-        status: task.status,
-        progress: task.progress,
-        model: task.modelName || '未知模型',
-        meta: `${width && height ? `${width}×${height} · ` : ''}${batchSize || 1} 张`,
-        images: task.outputs.map((asset) => ({
-          id: asset.id,
-          url: asset.url,
-          fileName: asset.fileName,
-        })),
-        error: task.errorMessage,
-        // 历史消息不再显示"生成中"的秒表，避免打开旧会话时满屏跳秒
-        startedAt: undefined,
-        stage: task.status === 'succeeded' ? undefined : task.errorMessage,
-        sizeLabel: width && height ? `${width}×${height}` : '默认尺寸',
-        count: batchSize || task.outputs.length || 1,
-        references: task.inputs.map((asset) => asset.url),
-        fromMessageId: task.sourceTaskId,
-        payload: {
-          modelId: task.modelId,
-          prompt: task.prompt,
-          negativePrompt: task.negativePrompt ?? undefined,
-          width: width || 1024,
-          height: height || 1024,
-          batchSize: batchSize || 1,
-          steps: Number(params.steps ?? 30),
-          cfgScale: Number(params.cfgScale ?? 7),
-          seed: Number(params.seed ?? 0),
-        },
-      }
+      messageItem.card = isVideo
+        ? buildRestoredVideoCard(task, params)
+        : buildRestoredImageCard(task, params)
 
       // 历史里仍在跑的任务重新接上实时推送，
       // 否则关掉页面再回来就看不到进度了
@@ -783,6 +991,89 @@ function restoreFromDetail(detail: ConversationDetail): void {
   })
 
   messages.value = restored
+}
+
+/** 历史图片卡片的还原。视频与图片的入参结构不同，分开写比在一个函数里塞 if 更清楚 */
+function buildRestoredImageCard(task: GenerationTask, params: Record<string, unknown>): ChatCard {
+  const width = Number(params.width ?? 0)
+  const height = Number(params.height ?? 0)
+  const batchSize = Number(params.batchSize ?? task.outputs.length ?? 1)
+
+  return {
+    kind: 'image',
+    taskId: task.id,
+    status: task.status,
+    progress: task.progress,
+    model: task.modelName || '未知模型',
+    meta: `${width && height ? `${width}×${height} · ` : ''}${batchSize || 1} 张`,
+    images: task.outputs.map(toChatImage),
+    error: task.errorMessage,
+    // 历史消息不再显示"生成中"的秒表，避免打开旧会话时满屏跳秒
+    startedAt: undefined,
+    stage: task.status === 'succeeded' ? undefined : task.errorMessage,
+    sizeLabel: width && height ? `${width}×${height}` : '默认尺寸',
+    count: batchSize || task.outputs.length || 1,
+    references: task.inputs.map((asset) => asset.url),
+    fromMessageId: task.sourceTaskId,
+    payload: {
+      modelId: task.modelId,
+      prompt: task.prompt,
+      negativePrompt: task.negativePrompt ?? undefined,
+      width: width || 1024,
+      height: height || 1024,
+      batchSize: batchSize || 1,
+      steps: Number(params.steps ?? 30),
+      cfgScale: Number(params.cfgScale ?? 7),
+      seed: Number(params.seed ?? 0),
+    },
+  }
+}
+
+function buildRestoredVideoCard(task: GenerationTask, params: Record<string, unknown>): ChatCard {
+  const resolution = String(params.resolution ?? '1280x720')
+  const durationSeconds = Number(params.durationSeconds ?? 5)
+
+  return {
+    kind: 'video',
+    taskId: task.id,
+    status: task.status,
+    progress: task.progress,
+    model: task.modelName || '未知模型',
+    meta: `${resolution} · ${durationSeconds}s`,
+    images: task.outputs.map(toChatImage),
+    error: task.errorMessage,
+    startedAt: undefined,
+    stage: task.status === 'succeeded' ? undefined : task.errorMessage,
+    sizeLabel: resolution,
+    count: 1,
+    references: task.inputs.map((asset) => asset.url),
+    fromMessageId: task.sourceTaskId,
+    payload: {
+      modelId: task.modelId,
+      prompt: task.prompt,
+      negativePrompt: task.negativePrompt ?? undefined,
+      durationSeconds,
+      fps: Number(params.fps ?? 24),
+      resolution,
+      withAudio: Boolean(params.withAudio),
+      seed: Number(params.seed ?? 0),
+    },
+  }
+}
+
+/** 产物统一走这一个转换，避免图片与视频各写一份而漏掉封面、时长这些字段 */
+function toChatImage(asset: TaskAsset): ChatImage {
+  return {
+    id: asset.id,
+    url: asset.url,
+    type: asset.type,
+    thumbnailUrl: asset.thumbnailUrl,
+    fileName: asset.fileName,
+    fileSize: asset.fileSize,
+    width: asset.width,
+    height: asset.height,
+    duration: asset.duration,
+  }
 }
 
 async function newChat(): Promise<void> {
@@ -979,7 +1270,7 @@ function downloadOne(image: ChatImage): void {
  */
 function cardSourceLabel(card: ChatCard): string | null {
   if (!card.references.length) return null
-  if (!card.fromMessageId) return '图生图'
+  if (!card.fromMessageId) return card.kind === 'video' ? '图生视频' : '图生图'
 
   // 轮次 = 目标卡片之前出现过多少张结果卡
   let round = 0
@@ -988,7 +1279,8 @@ function cardSourceLabel(card: ChatCard): string | null {
     if (item.card) round += 1
   }
 
-  return round > 0 ? `图生图 · 改自第 ${round} 轮` : '图生图'
+  const kindLabel = card.kind === 'video' ? '图生视频' : '图生图'
+  return round > 0 ? `${kindLabel} · 改自第 ${round} 轮` : kindLabel
 }
 
 /** ImagePreview 需要的是 TaskAsset，这里做一次轻量适配 */
@@ -1046,7 +1338,7 @@ onBeforeUnmount(() => {
     <div class="tt">
       <b>{{ title }}</b>
       <small>
-        对话创作 · 文生图与图生图共用同一会话
+        对话创作 · 图片与视频共用同一会话
         <template v-if="messages.length">
           · 本次会话共 {{ taskCountInChat }} 个任务
         </template>
@@ -1058,11 +1350,11 @@ onBeforeUnmount(() => {
     <span
       class="tb-chip"
       :class="{ 'is-warn': !hasModel }"
-      :title="hasModel ? `当前图片模型：${currentModel?.name}` : '还没配置可用的图片模型'"
+      :title="hasModel ? `当前${modeLabel}模型：${currentModel?.name}` : `还没配置可用的${modeLabel}模型`"
       @click="goModelConfig"
     >
       <span class="dot" />
-      {{ hasModel ? currentModel?.name : '未配置图片模型' }}
+      {{ hasModel ? currentModel?.name : `未配置${modeLabel}模型` }}
     </span>
 
     <span v-if="generating" class="tb-chip hide-sm">
@@ -1089,7 +1381,9 @@ onBeforeUnmount(() => {
           </svg>
         </div>
         <h2>用一句话<em>把画面说出来</em></h2>
-        <p>描述你要的图片，参数与模型都在下方输入区里随时可调；上传参考图就是图生图。</p>
+        <p>
+          描述你要的图片或视频，参数与模型都在下方输入区里随时可调；上传参考图就是图生图 / 图生视频。
+        </p>
 
         <div class="starters">
           <button
@@ -1179,21 +1473,26 @@ onBeforeUnmount(() => {
                 v-if="item.card.taskId && !item.card.images.length && !item.card.error && !isFinalStatus(item.card.status)"
                 class="gc-body"
               >
-                <div class="gl-top">
-                  <span class="spinner" />
-                  <span>
-                    <b>正在生成图片</b>
-                    <small>
-                      {{ item.card.model }} · {{ item.card.meta }} ·
-                      {{ item.card.stage || imageStageText(item.card.progress) }}
-                    </small>
-                  </span>
-                  <span class="pct">{{ Math.round(item.card.progress) }}%</span>
-                </div>
-                <div class="bar"><i :style="{ width: `${Math.max(4, item.card.progress)}%` }" /></div>
-                <div class="gc-grid" :class="item.card.count > 1 ? 'g2' : 'g1'" style="margin-top: 14px">
-                  <div v-for="n in Math.min(item.card.count, 4)" :key="n" class="shimmer" style="aspect-ratio: 1 / 1" />
-                </div>
+              <div class="gl-top">
+                <span class="spinner" />
+                <span>
+                  <b>正在生成{{ item.card.kind === 'video' ? '视频' : '图片' }}</b>
+                  <small>
+                    {{ item.card.model }} · {{ item.card.meta }} ·
+                    {{ item.card.stage || stageTextOf(item.card, item.card.progress) }}
+                  </small>
+                </span>
+                <span class="pct">{{ Math.round(item.card.progress) }}%</span>
+              </div>
+              <div class="bar"><i :style="{ width: `${Math.max(4, item.card.progress)}%` }" /></div>
+              <div class="gc-grid" :class="item.card.count > 1 ? 'g2' : 'g1'" style="margin-top: 14px">
+                <div
+                  v-for="n in Math.min(item.card.count, 4)"
+                  :key="n"
+                  class="shimmer"
+                  :style="item.card.kind === 'video' ? 'aspect-ratio: 16 / 9' : 'aspect-ratio: 1 / 1'"
+                />
+              </div>
               </div>
 
               <!--
@@ -1203,7 +1502,7 @@ onBeforeUnmount(() => {
               <div v-else-if="item.card.status === 'canceled'" class="gc-body">
                 <div class="cancel-box">
                   <app-icon name="alert" :size="14" />
-                  <span>已取消，未生成图片</span>
+                  <span>已取消，未生成{{ item.card.kind === 'video' ? '视频' : '图片' }}</span>
                 </div>
               </div>
 
@@ -1217,14 +1516,25 @@ onBeforeUnmount(() => {
 
               <!-- 产物 -->
               <div v-else-if="item.card.images.length" class="gc-body">
+                <!-- 视频走播放器：<img> 渲染 mp4 只会显示一个破图标 -->
+                <video-player
+                  v-if="item.card.kind === 'video'"
+                  :src="item.card.images[0].url"
+                  :poster="item.card.images[0].thumbnailUrl"
+                  :duration="item.card.images[0].duration"
+                  :file-size="item.card.images[0].fileSize"
+                  :file-name="item.card.images[0].fileName"
+                />
+
                 <image-preview
+                  v-else
                   :images="asAssets(item.card.images)"
                   :columns="item.card.images.length > 1 ? 2 : 1"
                   aspect-ratio="1 / 1"
                 />
 
                 <!-- 多张时逐张给出口，方便挑一张继续改 -->
-                <div v-if="item.card.images.length > 1" class="pick-row">
+                <div v-if="item.card.kind !== 'video' && item.card.images.length > 1" class="pick-row">
                   <div v-for="image in item.card.images" :key="image.id" class="pick">
                     <img :src="image.url" :alt="image.fileName || '生成结果'" />
                     <span class="pick-acts">
@@ -1243,9 +1553,10 @@ onBeforeUnmount(() => {
                 <template v-if="item.card.images.length">
                   <button class="btn btn-ghost btn-sm" type="button" @click="downloadImages(item.card!)">
                     <app-icon name="download" :size="14" />
-                    下载全部
+                    {{ item.card.kind === 'video' ? '下载视频' : '下载全部' }}
                   </button>
                   <button
+                    v-if="item.card.kind !== 'video'"
                     class="btn btn-ghost btn-sm"
                     type="button"
                     @click="useAsReference(item.card!.images[0], item.id)"
@@ -1332,7 +1643,9 @@ onBeforeUnmount(() => {
           rows="2"
           :placeholder="
             mode === 'video'
-              ? '视频生成还在接入中，先切换到图片试试'
+              ? attachments.length
+                ? '描述你希望这段视频怎么动，例如：镜头缓慢推进，暖光洒在桌面…'
+                : '描述你想要的视频画面与运镜，例如：城市夜景航拍，镜头缓慢推进，霓虹闪烁…'
               : attachments.length
                 ? '描述你想在这张参考图上改什么，例如：保留构图，把光换成傍晚暖调…'
                 : '描述你想要的画面，例如：极简日式风格的护肤品海报，柔和自然光，留白构图…'
@@ -1375,7 +1688,7 @@ onBeforeUnmount(() => {
 
           <span class="chip" @click="pickFiles">
             <app-icon name="paperclip" :size="14" />
-            参考图
+            {{ mode === 'video' ? '首帧图' : '参考图' }}
           </span>
 
           <span class="chip" :class="{ on: showAdvanced }" @click="showAdvanced = !showAdvanced">
@@ -1402,8 +1715,8 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <!-- 张数 -->
-          <div class="dd">
+          <!-- 张数：视频一次只产出一条，这一项对视频无意义 -->
+          <div v-if="mode === 'image'" class="dd">
             <span class="chip" @click.stop="toggleMenu('batch')">
               {{ batchSize }} 张
               <app-icon name="chevron-down" :size="12" class="caret" />
@@ -1421,18 +1734,71 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
+          <!-- 时长：视频专属 -->
+          <div v-else class="dd">
+            <span class="chip" @click.stop="toggleMenu('duration')">
+              {{ durationSeconds }}s
+              <app-icon name="chevron-down" :size="12" class="caret" />
+            </span>
+            <div v-if="openMenu === 'duration'" class="dd-menu" @click.stop>
+              <button
+                v-for="option in DURATION_OPTIONS"
+                :key="option"
+                type="button"
+                :class="{ on: option === durationSeconds }"
+                @click="durationSeconds = option; closeMenu()"
+              >
+                {{ option }} 秒
+              </button>
+            </div>
+          </div>
+
+          <!-- 帧率：视频专属 -->
+          <div v-if="mode === 'video'" class="dd">
+            <span class="chip" @click.stop="toggleMenu('fps')">
+              {{ fps }} fps
+              <app-icon name="chevron-down" :size="12" class="caret" />
+            </span>
+            <div v-if="openMenu === 'fps'" class="dd-menu" @click.stop>
+              <button
+                v-for="option in FPS_OPTIONS"
+                :key="option"
+                type="button"
+                :class="{ on: option === fps }"
+                @click="fps = option; closeMenu()"
+              >
+                {{ option }} fps
+              </button>
+            </div>
+          </div>
+
+          <span
+            v-if="mode === 'video'"
+            class="chip"
+            :class="{ on: withAudio }"
+            title="是否一并生成音效"
+            @click="withAudio = !withAudio"
+          >
+            <app-icon name="zap" :size="14" />
+            音效
+          </span>
+
           <span class="grow" />
 
           <!-- 模型 -->
           <div class="dd">
-            <span class="chip chip-ok" :title="`当前图片模型：${currentModel?.name ?? '未配置'}`" @click.stop="toggleMenu('model')">
+            <span
+              class="chip chip-ok"
+              :title="`当前${modeLabel}模型：${currentModel?.name ?? '未配置'}`"
+              @click.stop="toggleMenu('model')"
+            >
               <span class="dot" :style="{ background: hasModel ? 'var(--ok)' : 'var(--warn)' }" />
-              {{ currentModel?.name ?? '选择模型' }}
+              {{ currentModel?.name ?? `选择${modeLabel}模型` }}
               <app-icon name="chevron-down" :size="12" class="caret" />
             </span>
             <div v-if="openMenu === 'model'" class="dd-menu dd-menu-right" @click.stop>
               <button
-                v-for="model in imageModels"
+                v-for="model in availableModels"
                 :key="model.id"
                 type="button"
                 :class="{ on: model.id === selectedModelId }"
@@ -1441,8 +1807,8 @@ onBeforeUnmount(() => {
                 {{ model.name }}
                 <small>{{ model.provider }}</small>
               </button>
-              <button v-if="!imageModels.length" type="button" @click="goModelConfig">
-                去模型配置添加
+              <button v-if="!availableModels.length" type="button" @click="goModelConfig">
+                去模型配置添加{{ modeLabel }}模型
               </button>
             </div>
           </div>
@@ -1460,7 +1826,14 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="composer-tip">
-        {{ attachments.length ? '图生图' : '文生图' }} · {{ sizeLabel }} · {{ batchSize }} 张 · 模型可在
+        <template v-if="mode === 'video'">
+          文生视频 · {{ videoResolution }} · {{ durationSeconds }}s · {{ fps }}fps
+          <template v-if="attachments.length"> · 已选首帧图</template>
+        </template>
+        <template v-else>
+          {{ attachments.length ? '图生图' : '文生图' }} · {{ sizeLabel }} · {{ batchSize }} 张
+        </template>
+        · 模型可在
         <a style="color: var(--brand)" @click="goModelConfig">模型配置</a>
         中调整 · <kbd>Enter</kbd> 发送，<kbd>Shift</kbd>+<kbd>Enter</kbd> 换行
         <template v-if="!isEmpty">

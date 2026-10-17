@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WooVisAgentServices.ImageService")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+494f52395f9b9f94924f699fb0e15477780ed7a5")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b85bc1025b8d80e9b6f2539243e98f956d64e7d2")]
 [assembly: System.Reflection.AssemblyProductAttribute("WooVisAgentServices.ImageService")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WooVisAgentServices.ImageService")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

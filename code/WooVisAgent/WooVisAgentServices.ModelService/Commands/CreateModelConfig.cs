@@ -1,4 +1,5 @@
 ﻿using WooVisAgent.Services.Common.Contracts;
+using WooVisAgent.SharedLib.Delivery;
 using WooVisAgent.SharedLib.Domain;
 using WooVisAgent.SharedLib.Ids;
 using WooVisAgent.SharedLib.Messaging;
@@ -48,6 +49,9 @@ public class CreateModelConfigCommandHandler(
             Enabled = input.Enabled,
             IsDefault = input.IsDefault,
             ParamsJson = ModelParamsSerializer.Serialize(input.Params),
+            DeliveryJson = VideoDeliveryResolver.SerializeTemplate(input.Delivery),
+            SupportsTextToVideo = input.SupportsTextToVideo,
+            SupportsImageToVideo = input.SupportsImageToVideo,
             Remark = ModelConfigInputValidator.NormalizeOptional(input.Remark, 512),
             CreatedAt = now,
             UpdatedAt = now,

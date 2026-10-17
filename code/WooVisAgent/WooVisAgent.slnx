@@ -15,6 +15,7 @@
     <Project Path="WooVisAgentServices.IdentityService/WooVisAgentServices.IdentityService.csproj" />
     <Project Path="WooVisAgentServices.ImageService/WooVisAgentServices.ImageService.csproj" />
     <Project Path="WooVisAgentServices.ModelService/WooVisAgentServices.ModelService.csproj" />
+    <Project Path="WooVisAgentServices.VideoService/WooVisAgentServices.VideoService.csproj" />
   </Folder>
   <Folder Name="/Shared/">
     <Project Path="WooVisAgent.SharedLib/WooVisAgent.SharedLib.csproj" />

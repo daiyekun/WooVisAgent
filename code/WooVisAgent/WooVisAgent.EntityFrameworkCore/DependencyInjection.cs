@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -150,10 +151,38 @@ public static class DependencyInjection
             if (targetTable is null || !missingTables.Contains(targetTable))
                 continue;
 
-            await dbContext.Database.ExecuteSqlRawAsync(statement, cancellationToken);
+            await ExecuteNonFormattedSqlAsync(dbContext, statement, cancellationToken);
         }
 
         return missingTables.OrderBy(name => name, StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    /// <summary>
+    /// 执行一条<b>不含任何格式占位符</b>的 SQL。
+    ///
+    /// <para>为什么不直接用 <c>ExecuteSqlRawAsync(sql)</c>：EF 会把传入的字符串当作
+    /// <c>CompositeFormat</c> 处理，内部按 <c>{0}</c>、<c>{1}</c> 解析参数。
+    /// 而这里的 SQL 是我们拼出来的、或由 <c>GenerateCreateScript()</c> 生成的，
+    /// 里面必然含有列默认值字面量——<c>DEFAULT '{}'</c>（jsonb / json）、
+    /// <c>DEFAULT ''</c>、以及带花括号的表达式。</para>
+    ///
+    /// <para>症状极具迷惑性：只在这张表恰好缺列、走到补列分支时才抛
+    /// <c>FormatException: Failure to parse near offset N</c>，
+    /// 而且异常发生在应用启动阶段，宿主直接退出，
+    /// 面板上表现为「资源一直没起来、日志里一条 Error 都看不到」。
+    /// 转义所有花括号即可，代价为零。</para>
+    /// </summary>
+    private static async Task ExecuteNonFormattedSqlAsync(
+        AiCopilotDbContext dbContext,
+        string sql,
+        CancellationToken cancellationToken)
+    {
+        // 不用 FormattableString：它只把 { } 当占位符转义，
+        // 仍会改变 SQL 文本语义。这里直接把花括号加倍，SQL 语义不变。
+        var escaped = sql.Replace("{", "{{", StringComparison.Ordinal)
+                         .Replace("}", "}}", StringComparison.Ordinal);
+
+        await dbContext.Database.ExecuteSqlRawAsync(escaped, cancellationToken);
     }
 
     /// <summary>
@@ -176,7 +205,7 @@ public static class DependencyInjection
         if (!dbContext.Database.IsRelational())
             return [];
 
-        var modelColumns = BuildModelColumns(dbContext);
+        var modelColumns = BuildModelColumnMap(dbContext);
         if (modelColumns.Count == 0)
             return [];
 
@@ -189,13 +218,22 @@ public static class DependencyInjection
             if (!existingColumns.TryGetValue(table, out var actualColumns))
                 continue;
 
-            foreach (var (column, definition) in columns)
+            foreach (var (column, property) in columns)
             {
+                // 已存在的列直接跳过
                 if (actualColumns.Contains(column))
                     continue;
 
+                // <b>定义在这里才生成</b>，而不是预先为整张表算好。
+                // 因为"必填列缺默认值"的校验只对<b>真正要补的那一列</b>才有意义：
+                // 模型里绝大多数必填列（OwnerId、Prompt 等）早就建好了、并不需要补，
+                // 它们同样没有数据库默认值。
+                // 若提前为所有列生成定义，校验会误报成
+                // "OwnerId 是必填列却没有默认值"，让补列流程在没有新增列时也直接失败。
+                var definition = BuildAddColumnDefinition(property, column);
+
                 var statement = $"ALTER TABLE {QuoteIdentifier(table)} ADD COLUMN {definition};";
-                await dbContext.Database.ExecuteSqlRawAsync(statement, cancellationToken);
+                await ExecuteNonFormattedSqlAsync(dbContext, statement, cancellationToken);
                 added.Add($"{table}.{column}");
             }
         }
@@ -207,28 +245,28 @@ public static class DependencyInjection
     /// 从 EF 关系型模型元数据里读出「表名 -> (列名 -> 可直接执行的 ADD COLUMN 定义)」。
     /// 只处理我们自己映射的业务表，Identity 的表交给框架自身演进。
     /// </summary>
-    private static Dictionary<string, Dictionary<string, string>> BuildModelColumns(AiCopilotDbContext dbContext)
+    private static Dictionary<string, Dictionary<string, IProperty>> BuildModelColumnMap(AiCopilotDbContext dbContext)
     {
-        var result = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+        var result = new Dictionary<string, Dictionary<string, IProperty>>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var entityType in dbContext.Model.GetEntityTypes())
         {
             var tableName = entityType.GetTableName();
+
             if (string.IsNullOrWhiteSpace(tableName) || !IsBusinessTable(tableName))
                 continue;
 
-            var columns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var columns = new Dictionary<string, IProperty>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var property in entityType.GetProperties())
             {
                 var columnName = property.GetColumnName();
-                var storeType = property.GetColumnType();
 
                 // 存储类型读不到时跳过，交由后续正式迁移处理
-                if (string.IsNullOrWhiteSpace(columnName) || string.IsNullOrWhiteSpace(storeType))
+                if (string.IsNullOrWhiteSpace(columnName) || string.IsNullOrWhiteSpace(property.GetColumnType()))
                     continue;
 
-                columns[columnName] = BuildAddColumnDefinition(property, columnName, storeType);
+                columns[columnName] = property;
             }
 
             if (columns.Count > 0)
@@ -238,12 +276,18 @@ public static class DependencyInjection
         return result;
     }
 
-    /// <summary>拼出单列的 ADD COLUMN 定义：列名 + 类型 + NOT NULL + DEFAULT。</summary>
-    private static string BuildAddColumnDefinition(
-        Microsoft.EntityFrameworkCore.Metadata.IProperty property,
-        string columnName,
-        string storeType)
+    /// <summary>
+    /// 拼出单列的 ADD COLUMN 定义：列名 + 类型 + DEFAULT + NOT NULL。
+    ///
+    /// <b>只在确认这一列真的需要补时才调用</b>（见 EnsureMissingColumnsAsync 的说明）。
+    /// </summary>
+    private static string BuildAddColumnDefinition(IProperty property, string columnName)
     {
+        var storeType = property.GetColumnType();
+
+        if (string.IsNullOrWhiteSpace(storeType))
+            throw new InvalidOperationException($"无法解析列 {columnName} 的存储类型。");
+
         var builder = new StringBuilder();
         builder.Append(QuoteIdentifier(columnName)).Append(' ').Append(storeType);
 
@@ -265,8 +309,26 @@ public static class DependencyInjection
             return builder.ToString();
         }
 
-        if (!property.IsNullable)
-            builder.Append(" NOT NULL");
+        if (property.IsNullable)
+            return builder.ToString();
+
+        // <b>必填列却没有默认值</b>：这里必须直接失败，而不是发出一个必然报错的语句。
+        //
+        // 为什么值得在这里多此一举：直接发 `ADD COLUMN ... NOT NULL`（无 DEFAULT），
+        // PostgreSQL 会在存量行上抛 23502 column contains null values，
+        // 报错信息里只有表名列名，完全看不出"是这条字段没配默认值"。
+        // 排查的人会误以为是数据库坏了或迁移脚本有问题，反复重试都没用。
+        //
+        // 典型踩坑场景（已真实发生过）：实体里用 C# 属性初始值写了默认值
+        // （`public string DeliveryJson { get; set; } = "{}";`）就以为万事大吉——
+        // 但 C# 的属性初始值<b>不会</b>进入 EF 元数据，
+        // 补列逻辑读不到默认值，于是发出无 DEFAULT 的 NOT NULL，启动即失败。
+        // 正确做法是在 *EntityTypeConfiguration 里配 HasDefaultValue(...)。
+        throw new InvalidOperationException(
+            $"无法自动补列：{columnName} 是必填列却没有数据库默认值。" +
+            $"请在对应的 EntityTypeConfiguration 里加上 .HasDefaultValue(...)，" +
+            $"否则给已有表加这一列时会因存量行为 NULL 而失败（PostgreSQL 23502）。" +
+            $"注意 C# 属性初始值不算，它不会进入 EF 元数据。");
 
         return builder.ToString();
     }

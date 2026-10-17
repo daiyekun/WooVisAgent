@@ -1,4 +1,6 @@
-﻿namespace WooVisAgentServices.ModelService.Dtos;
+﻿using WooVisAgent.SharedLib.Delivery;
+
+namespace WooVisAgentServices.ModelService.Dtos;
 
 /// <summary>下拉类型参数的候选项</summary>
 public sealed class ModelParamOptionModel
@@ -64,6 +66,20 @@ public sealed class ModelConfigInput
 
     public List<ModelParamSpecModel>? Params { get; set; }
 
+    /// <summary>
+    /// 视频交付模板（仅视频模型需要）。
+    ///
+    /// 留空即可按预设自动推断；只有当该厂商的接口形状与预设不一致时
+    /// 才需要覆盖个别字段（如提交路径、任务号字段、产物类型）。
+    /// </summary>
+    public VideoDeliveryTemplate? Delivery { get; set; }
+
+    /// <summary>是否支持文生视频。默认 true；只支持图生视频的模型应关掉它。</summary>
+    public bool SupportsTextToVideo { get; set; } = true;
+
+    /// <summary>是否支持图生视频。默认 true；只支持文生视频的模型应关掉它。</summary>
+    public bool SupportsImageToVideo { get; set; } = true;
+
     public string? Remark { get; set; }
 }
 
@@ -80,7 +96,10 @@ public sealed record ModelConfigDto(
     IReadOnlyList<ModelParamSpecModel> Params,
     string? Remark,
     DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    VideoDeliveryTemplate? Delivery = null,
+    bool SupportsTextToVideo = true,
+    bool SupportsImageToVideo = true);
 
 /// <summary>连通性测试结果</summary>
 public sealed record ModelTestResultDto(

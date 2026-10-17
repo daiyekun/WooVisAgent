@@ -272,3 +272,5 @@ C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.GenerateWorker.runtimeconf
 C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.GenerateWorker.dll
 C:\Users\user\AppData\Local\Temp\wb_conv2\WooVisAgent.GenerateWorker.pdb
 D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.GenerateWorker\bin\Debug\net10.0\OpenTelemetry.Exporter.Console.dll
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.GenerateWorker\bin\Debug\net10.0\WooVisAgentServices.VideoService.dll
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.GenerateWorker\bin\Debug\net10.0\WooVisAgentServices.VideoService.pdb

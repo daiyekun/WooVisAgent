@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { NCheckbox, NModal, NPagination, NSpin } from 'naive-ui'
+import { storeToRefs } from 'pinia'
 import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -15,14 +16,19 @@ const router = useRouter()
 const route = useRoute()
 const materialStore = useMaterialStore()
 
-const loading = materialStore.loading
-const materials = materialStore.materials
-const total = materialStore.total
+/**
+ * 这里必须用 storeToRefs，而不是 `const materials = materialStore.materials`。
+ *
+ * 后者只在 setup 那一刻把 store 里的数组取出来存进局部变量，
+ * 之后 store 内部 `materials.value = result.items` 换的是 store 的引用，
+ * 局部变量仍指向旧数组——表现就是「点了筛选没反应，列表纹丝不动」。
+ * storeToRefs 保持与 store 的双向链接，筛选结果才会真正渲染出来。
+ */
+const { loading, materials, total, groups } = storeToRefs(materialStore)
 
 const keyword = ref('')
 const typeFilter = ref<'image' | 'video' | null>(null)
 const groupFilter = ref<string | null>(null)
-const groups = materialStore.groups
 
 const previewVisible = ref(false)
 const previewAsset = ref<MaterialAsset | null>(null)

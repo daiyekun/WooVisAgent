@@ -185,9 +185,52 @@ export interface ModelConfig {
   enabled: boolean
   isDefault: boolean
   params: ModelParamSpec[]
+  /** 视频交付模板；留空表示按预设自动推断 */
+  delivery?: VideoDeliveryTemplate | null
+  /** 是否支持文生视频（不传首帧图）。只支持图生的模型应为 false */
+  supportsTextToVideo?: boolean
+  /** 是否支持图生视频（传首帧图）。只支持文生的模型应为 false */
+  supportsImageToVideo?: boolean
   remark?: string
   createdAt: string
   updatedAt: string
+}
+
+/**
+ * 视频交付模板。字段全部可选，只覆盖与预设不同的部分。
+ * 内置预设：openai-videos / dashscope-video / dashscope-legacy-video / siliconflow-video
+ */
+export interface VideoDeliveryTemplate {
+  preset?: string
+  submitPath?: string
+  statusPath?: string
+  statusMethod?: 'GET' | 'POST' | string
+  statusIdField?: string
+  taskIdPath?: string
+  statusValuePath?: string
+  succeededStatus?: string
+  failedStatuses?: string
+  videoUrlPath?: string
+  errorPath?: string
+  /** 产物取回方式：url（响应体带地址）/ content（另外调接口下二进制）/ base64 */
+  outputKind?: 'url' | 'content' | 'base64' | string
+  contentPath?: string
+  extraHeaders?: Record<string, string>
+  /** 请求体字段映射：内部语义 → 请求体点号路径。空串表示该字段不传 */
+  requestFields?: {
+    model?: string
+    prompt?: string
+    negativePrompt?: string
+    firstFrame?: string
+    duration?: string
+    resolution?: string
+    ratio?: string
+    fps?: string
+    seed?: string
+    extraParamsContainer?: string
+  }
+  /** 分辨率表达形式：omit / pixel / tier / tierRatio */
+  resolutionStyle?: 'omit' | 'pixel' | 'tier' | 'tierRatio' | string
 }
 
 /** 新建/编辑模型入参 */

@@ -15,7 +15,8 @@
           "WooVisAgent.ServiceDefaults": "1.0.0",
           "WooVisAgent.Services.Common": "1.0.0",
           "WooVisAgent.SharedLib": "1.0.0",
-          "WooVisAgentServices.ImageService": "1.0.0"
+          "WooVisAgentServices.ImageService": "1.0.0",
+          "WooVisAgentServices.VideoService": "1.0.0"
         },
         "runtime": {
           "WooVisAgent.GenerateWorker.dll": {}
@@ -1791,6 +1792,25 @@
             "fileVersion": "1.0.0.0"
           }
         }
+      },
+      "WooVisAgentServices.VideoService/1.0.0": {
+        "dependencies": {
+          "MediatR": "14.2.0",
+          "Microsoft.Extensions.Hosting.Abstractions": "10.0.13",
+          "Microsoft.Extensions.Http": "10.0.12",
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.13",
+          "WooVisAgent.EntityFrameworkCore": "1.0.0",
+          "WooVisAgent.EventBus": "1.0.0",
+          "WooVisAgent.Services.Common": "1.0.0",
+          "WooVisAgent.SharedLib": "1.0.0",
+          "WooVisAgentServices.ImageService": "1.0.0"
+        },
+        "runtime": {
+          "WooVisAgentServices.VideoService.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
       }
     }
   },
@@ -2608,6 +2628,11 @@
       "sha512": ""
     },
     "WooVisAgentServices.ImageService/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "WooVisAgentServices.VideoService/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

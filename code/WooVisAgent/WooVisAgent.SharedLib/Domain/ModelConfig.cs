@@ -40,6 +40,28 @@ public class ModelConfig : BaseEntity<long>, IAggregateRoot, IAggregateRoot<long
     /// <summary>参数规格的 JSON 序列化结果，用于渲染任务提交表单</summary>
     public string ParamsJson { get; set; } = "[]";
 
+    /// <summary>
+    /// 视频交付模板的 JSON 序列化结果，见 <c>SharedLib.Delivery.VideoDeliveryTemplate</c>。
+    ///
+    /// 只有视频类模型会用到。留空（默认 <c>{}</c>）时按 <see cref="VideoDeliveryPreset" /> 推断，
+    /// 因此「OpenAI 兼容网关」这类常见场景不填也能直接跑；只有当预设推断出的形状不对时
+    /// 才需要显式覆盖某个字段。
+    /// </summary>
+    public string DeliveryJson { get; set; } = "{}";
+
+    /// <summary>
+    /// 是否支持「文生视频」（只给提示词，不给首帧图）。
+    ///
+    /// 很多视频模型只支持其中一种（如 <c>wanx2.1-i2v-turbo</c> 只能图生视频）。
+    /// 声明后，前端会自动隐藏不适用的输入框、后端会在提交前拦下来，
+    /// 避免出现「传了首帧图但模型悄悄忽略」这种用户完全无法察觉的错位。
+    /// 默认 <c>true</c>：绝大多数模型两种都支持，历史数据也按此处理。
+    /// </summary>
+    public bool SupportsTextToVideo { get; set; } = true;
+
+    /// <summary>是否支持「图生视频」（提供首帧图作为起始画面）</summary>
+    public bool SupportsImageToVideo { get; set; } = true;
+
     /// <summary>备注</summary>
     public string? Remark { get; set; }
 

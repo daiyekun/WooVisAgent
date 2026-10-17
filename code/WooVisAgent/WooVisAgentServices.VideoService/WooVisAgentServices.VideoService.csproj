@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MediatR" Version="14.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.13" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.13" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WooVisAgent.EntityFrameworkCore\WooVisAgent.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\WooVisAgent.EventBus\WooVisAgent.EventBus.csproj" />
+    <ProjectReference Include="..\WooVisAgent.Services.Common\WooVisAgent.Services.Common.csproj" />
+    <ProjectReference Include="..\WooVisAgent.SharedLib\WooVisAgent.SharedLib.csproj" />
+    <!-- 复用 ImageService 里已存在的通用派发器 IGenerationTaskDispatcher：
+         视频提交与视频重试都必须走同一个派发入口，否则重试会漏掉视频分支。 -->
+    <ProjectReference Include="..\WooVisAgentServices.ImageService\WooVisAgentServices.ImageService.csproj" />
+  </ItemGroup>
+
+</Project>

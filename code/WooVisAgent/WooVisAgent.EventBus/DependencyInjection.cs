@@ -86,6 +86,9 @@ public static class DependencyInjection
             opts.PublishMessage<ImageGenerationRequested>()
                 .ToRabbitQueue(EventBusConstants.GenerateWorkerQueue);
 
+            opts.PublishMessage<VideoGenerationRequested>()
+                .ToRabbitQueue(EventBusConstants.GenerateWorkerQueue);
+
             opts.PublishMessage<GenerationTaskStatusChanged>()
                 .ToRabbitQueue(EventBusConstants.ApiQueue);
 

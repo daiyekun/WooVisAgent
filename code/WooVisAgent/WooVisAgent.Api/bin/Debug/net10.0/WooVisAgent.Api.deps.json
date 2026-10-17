@@ -18,7 +18,8 @@
           "WooVisAgent.SharedLib": "1.0.0",
           "WooVisAgentServices.IdentityService": "1.0.0",
           "WooVisAgentServices.ImageService": "1.0.0",
-          "WooVisAgentServices.ModelService": "1.0.0"
+          "WooVisAgentServices.ModelService": "1.0.0",
+          "WooVisAgentServices.VideoService": "1.0.0"
         },
         "runtime": {
           "WooVisAgent.Api.dll": {}
@@ -1317,6 +1318,22 @@
             "fileVersion": "1.0.0.0"
           }
         }
+      },
+      "WooVisAgentServices.VideoService/1.0.0": {
+        "dependencies": {
+          "MediatR": "14.2.0",
+          "WooVisAgent.EntityFrameworkCore": "1.0.0",
+          "WooVisAgent.EventBus": "1.0.0",
+          "WooVisAgent.Services.Common": "1.0.0",
+          "WooVisAgent.SharedLib": "1.0.0",
+          "WooVisAgentServices.ImageService": "1.0.0"
+        },
+        "runtime": {
+          "WooVisAgentServices.VideoService.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
       }
     }
   },
@@ -1927,6 +1944,11 @@
       "sha512": ""
     },
     "WooVisAgentServices.ModelService/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "WooVisAgentServices.VideoService/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

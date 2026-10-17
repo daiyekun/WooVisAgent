@@ -6,7 +6,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:29628"
+      "url": "http://localhost:25639"
     }
   ],
   "paths": {
@@ -1793,6 +1793,246 @@
         }
       }
     },
+    "/api/video/generations": {
+      "post": {
+        "tags": [
+          "Video"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VideoGenerationInput"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VideoGenerationInput"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/VideoGenerationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoGenerationResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Video"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "modelId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultDtoOfGenerationTaskDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/video/generations/{id}": {
+      "get": {
+        "tags": [
+          "Video"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationTaskDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Video"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": { }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/video/generations/{id}/cancel": {
+      "post": {
+        "tags": [
+          "Video"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationTaskDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/WeatherForecast": {
       "get": {
         "tags": [
@@ -2566,6 +2806,24 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "delivery": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/VideoDeliveryTemplate"
+              }
+            ]
+          },
+          "supportsTextToVideo": {
+            "type": "boolean",
+            "default": true
+          },
+          "supportsImageToVideo": {
+            "type": "boolean",
+            "default": true
           }
         }
       },
@@ -2619,6 +2877,22 @@
             "items": {
               "$ref": "#/components/schemas/ModelParamSpecModel"
             }
+          },
+          "delivery": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/VideoDeliveryTemplate"
+              }
+            ]
+          },
+          "supportsTextToVideo": {
+            "type": "boolean"
+          },
+          "supportsImageToVideo": {
+            "type": "boolean"
           },
           "remark": {
             "type": [
@@ -3156,6 +3430,363 @@
           }
         }
       },
+      "VideoAssetDto": {
+        "required": [
+          "id",
+          "type",
+          "url",
+          "thumbnailUrl",
+          "fileName",
+          "fileSize",
+          "width",
+          "height",
+          "duration"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "thumbnailUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fileName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fileSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "width": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "height": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "duration": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "VideoDeliveryTemplate": {
+        "type": "object",
+        "properties": {
+          "preset": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "submitPath": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "statusPath": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "statusMethod": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "statusIdField": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "taskIdPath": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "statusValuePath": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "succeededStatus": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "failedStatuses": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "videoUrlPath": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "errorPath": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "outputKind": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "contentPath": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "extraHeaders": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "requestFields": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/VideoRequestFieldTemplate"
+              }
+            ]
+          },
+          "resolutionStyle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "VideoGenerationInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "modelId": {
+            "type": "string"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "negativePrompt": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "firstFrameUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lastFrameUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "durationSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "fps": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "resolution": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "withAudio": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "seed": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "conversationId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "params": {
+            "type": [
+              "null",
+              "object"
+            ]
+          }
+        }
+      },
+      "VideoGenerationResultDto": {
+        "required": [
+          "taskId",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "video": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/VideoAssetDto"
+              }
+            ]
+          }
+        }
+      },
+      "VideoRequestFieldTemplate": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "prompt": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "negativePrompt": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "firstFrame": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "duration": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "resolution": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "ratio": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "fps": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "seed": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "extraParamsContainer": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "WeatherForecast": {
         "type": "object",
         "properties": {
@@ -3210,6 +3841,9 @@
     },
     {
       "name": "Task"
+    },
+    {
+      "name": "Video"
     },
     {
       "name": "WeatherForecast"

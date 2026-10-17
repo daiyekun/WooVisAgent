@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import {
+  NAlert,
   NButton,
+  NCheckbox,
   NEmpty,
   NForm,
   NFormItem,
@@ -14,7 +16,7 @@ import {
   NSpin,
   NSwitch,
 } from 'naive-ui'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 
 import AppIcon from '@/components/common/AppIcon.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
@@ -59,11 +61,67 @@ function createEmptyDraft(): SaveModelInput {
     enabled: true,
     isDefault: false,
     params: [],
+    delivery: null,
+    // 视频能力默认都支持，与后端默认值一致；
+    // 新建视频模型时用户按实际情况取消勾选即可
+    supportsTextToVideo: true,
+    supportsImageToVideo: true,
     remark: '',
   }
 }
 
 const draft = reactive<SaveModelInput>(createEmptyDraft())
+
+/**
+ * 交付模板始终保持是一个对象，避免模板里出现 `draft.delivery.preset` 这类
+ * 非空断言——`delivery` 一旦为 null，模板里的 v-model 会在渲染期直接抛错，
+ * 把整个配置弹窗打不开。模板内容为空即表示"全部用预设值"，语义与后端一致。
+ */
+watch(
+  () => draft.category,
+  (category) => {
+    if (category === 'video' && !draft.delivery) draft.delivery = {}
+    if (category !== 'video') draft.delivery = null
+  },
+  { immediate: true },
+)
+
+/** 预设选项。值与后端 VideoDeliveryPresets 里的名称一一对应 */
+const VIDEO_DELIVERY_PRESET_OPTIONS = [
+  { label: '留空（自动识别）', value: '' },
+  { label: 'OpenAI 兼容（/v1/videos）', value: 'openai-videos' },
+  { label: '百炼 DashScope（video-synthesis）', value: 'dashscope-video' },
+  { label: '百炼 旧版（size 写法）', value: 'dashscope-legacy-video' },
+  { label: 'SiliconFlow（/v1/video/submit）', value: 'siliconflow-video' },
+]
+
+const VIDEO_OUTPUT_KIND_OPTIONS = [
+  { label: '留空（用预设值）', value: '' },
+  { label: '地址（响应体里带视频 URL）', value: 'url' },
+  { label: '二进制下载（另调 content 接口）', value: 'content' },
+  { label: 'Base64（响应体里直接是编码数据）', value: 'base64' },
+]
+
+/**
+ * 写交付模板的单个字段。
+ *
+ * 不用 v-model 直接绑 `draft.delivery.preset`：`delivery` 类型上是可空的，
+ * 模板里写 `:value="draft.delivery?.preset ?? ''"
+              @update:value="setDeliveryField('preset', $event)"` 既过不了类型检查，
+ * 运行时也可能在对象尚未创建时崩掉整个弹窗。
+ * 这里统一经由本函数写入：对象不存在就先建一个空模板，
+ * 而"空模板"本身就等价于"全部使用预设值"，与后端语义一致。
+ */
+function setDeliveryField(key: string, value: unknown): void {
+  if (!draft.delivery) draft.delivery = {}
+
+  // 空串一律归一成 null：界面上"清空"表达的是"用预设值"，
+  // 而后端把"字段为空串"理解为"该字段不传"。两者含义不同，
+  // 不归一就会在用户清空「提交路径」时把整条请求的路径打成空。
+  const normalized = typeof value === 'string' && value.trim() === '' ? null : value
+
+  ;(draft.delivery as Record<string, unknown>)[key] = normalized
+}
 
 const filteredModels = computed(() => {
   const kw = keyword.value.trim().toLowerCase()
@@ -112,6 +170,9 @@ function openEdit(model: ModelConfig): void {
     enabled: model.enabled,
     isDefault: model.isDefault,
     params: model.params?.map((item) => ({ ...item })) ?? [],
+    delivery: model.delivery ? { ...model.delivery } : null,
+    supportsTextToVideo: model.supportsTextToVideo !== false,
+    supportsImageToVideo: model.supportsImageToVideo !== false,
     remark: model.remark ?? '',
   })
   draftPreviewValues.value = {}
@@ -422,6 +483,79 @@ onMounted(() => {
         <n-form-item label="接口地址">
           <n-input v-model:value="draft.endpoint" placeholder="https://api.example.com/v1" />
         </n-form-item>
+
+        <!-- 视频模型专属：能力声明 + 交付模板。
+             视频接口的形状各家差异很大（路径、字段、产物形态），
+             这里把「常见情况留空自动识别、非标准情况再覆盖」摆到界面上，
+             免得用户为了接一个非标准厂商还得改代码发版。 -->
+        <template v-if="draft.category === 'video'">
+          <n-form-item label="生成能力">
+            <n-space align="center" :size="16">
+              <n-checkbox v-model:checked="draft.supportsTextToVideo">支持文生视频</n-checkbox>
+              <n-checkbox v-model:checked="draft.supportsImageToVideo">支持图生视频</n-checkbox>
+            </n-space>
+            <div class="field-warning">
+              ⚠ 多数视频模型只支持其中一种。勾选「支持图生视频」后，任务提交页会显示首帧图输入框；
+              不勾选仍可强行提交首帧图，但后端会直接拒绝，避免产出与提示词无关的视频。
+            </div>
+            <n-alert v-if="!draft.supportsTextToVideo && !draft.supportsImageToVideo" type="warning" :show-icon="true" class="mt">
+              两种能力都没勾选，该模型将无法提交任何视频任务。
+            </n-alert>
+          </n-form-item>
+
+          <n-form-item label="交付预设">
+            <n-select
+              :value="draft.delivery?.preset ?? ''"
+              @update:value="setDeliveryField('preset', $event)"
+              :options="VIDEO_DELIVERY_PRESET_OPTIONS"
+              placeholder="留空则按接口地址自动识别"
+              clearable
+            />
+            <div class="field-warning">
+              接口地址是 OpenAI 兼容网关时选 <b>OpenAI 兼容（/v1/videos）</b>；
+              阿里云百炼选 <b>百炼 DashScope</b>；硅基流动选 <b>SiliconFlow</b>。
+              留空会按地址与模型名自动推断。
+            </div>
+          </n-form-item>
+
+          <n-form-item label="提交路径">
+            <n-input
+              :value="draft.delivery?.submitPath ?? ''"
+              @update:value="setDeliveryField('submitPath', $event)"
+              placeholder="留空用预设值，如 /v1/videos"
+            />
+          </n-form-item>
+
+          <n-form-item label="轮询路径">
+            <n-input
+              :value="draft.delivery?.statusPath ?? ''"
+              @update:value="setDeliveryField('statusPath', $event)"
+              placeholder="留空用预设值，{taskId} 会被替换成模型返回的任务号"
+            />
+          </n-form-item>
+
+          <n-form-item label="任务号字段">
+            <n-input
+              :value="draft.delivery?.taskIdPath ?? ''"
+              @update:value="setDeliveryField('taskIdPath', $event)"
+              placeholder="留空用预设值，如 output.task_id（支持点号路径）"
+            />
+          </n-form-item>
+
+          <n-form-item label="产物类型">
+            <n-select
+              :value="draft.delivery?.outputKind ?? ''"
+              @update:value="setDeliveryField('outputKind', $event)"
+              :options="VIDEO_OUTPUT_KIND_OPTIONS"
+              placeholder="留空用预设值"
+              clearable
+            />
+            <div class="field-warning">
+              选「二进制下载」表示响应体里没有视频地址，需要另外调用 content 接口下载
+              （OpenAI 就是这种）。选错会导致「任务成功但取不到视频」。
+            </div>
+          </n-form-item>
+        </template>
 
         <n-form-item label="API Key">
           <n-input

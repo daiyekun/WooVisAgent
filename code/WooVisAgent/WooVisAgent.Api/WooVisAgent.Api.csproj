@@ -21,6 +21,7 @@
     <ProjectReference Include="..\WooVisAgentServices.IdentityService\WooVisAgentServices.IdentityService.csproj" />
     <ProjectReference Include="..\WooVisAgentServices.ImageService\WooVisAgentServices.ImageService.csproj" />
     <ProjectReference Include="..\WooVisAgentServices.ModelService\WooVisAgentServices.ModelService.csproj" />
+    <ProjectReference Include="..\WooVisAgentServices.VideoService\WooVisAgentServices.VideoService.csproj" />
   </ItemGroup>
 
 </Project>

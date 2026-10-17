@@ -606,7 +606,7 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
     /// 完成了多少（0 - 1）。用这个类把"局部比例"折算成整条任务的百分比，
     /// 调用方就不需要到处算区间、也不容易把进度条算反。
     /// </summary>
-    private sealed class ProgressScope(IProgress<ImageGenerationProgress> progress, double from, double to)
+    private sealed class ProgressScope(IProgress<GenerationProgress> progress, double from, double to)
     {
         /// <summary>取一个子区间，供下一层继续细分</summary>
         public ProgressScope Slice(double childFrom, double childTo) =>
@@ -614,7 +614,7 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
 
         /// <param name="ratio">本区间内的完成比例，0 - 1</param>
         public void ReportRatio(double ratio, string? stage) =>
-            progress.Report(new ImageGenerationProgress(
+            progress.Report(new GenerationProgress(
                 (int)Math.Round(100 * (from + (to - from) * Math.Clamp(ratio, 0, 1))),
                 stage));
     }

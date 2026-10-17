@@ -2586,6 +2586,27 @@
         "runtime": {
           "bin/placeholder/WooVisAgentServices.ImageService.dll": {}
         }
+      },
+      "WooVisAgentServices.VideoService/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "dependencies": {
+          "MediatR": "14.2.0",
+          "Microsoft.Extensions.Hosting.Abstractions": "10.0.13",
+          "Microsoft.Extensions.Http": "10.0.12",
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.13",
+          "WooVisAgent.EntityFrameworkCore": "1.0.0",
+          "WooVisAgent.EventBus": "1.0.0",
+          "WooVisAgent.Services.Common": "1.0.0",
+          "WooVisAgent.SharedLib": "1.0.0",
+          "WooVisAgentServices.ImageService": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/WooVisAgentServices.VideoService.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/WooVisAgentServices.VideoService.dll": {}
+        }
       }
     }
   },
@@ -6546,6 +6567,11 @@
       "type": "project",
       "path": "../WooVisAgentServices.ImageService/WooVisAgentServices.ImageService.csproj",
       "msbuildProject": "../WooVisAgentServices.ImageService/WooVisAgentServices.ImageService.csproj"
+    },
+    "WooVisAgentServices.VideoService/1.0.0": {
+      "type": "project",
+      "path": "../WooVisAgentServices.VideoService/WooVisAgentServices.VideoService.csproj",
+      "msbuildProject": "../WooVisAgentServices.VideoService/WooVisAgentServices.VideoService.csproj"
     }
   },
   "projectFileDependencyGroups": {
@@ -6557,7 +6583,8 @@
       "WooVisAgent.ServiceDefaults >= 1.0.0",
       "WooVisAgent.Services.Common >= 1.0.0",
       "WooVisAgent.SharedLib >= 1.0.0",
-      "WooVisAgentServices.ImageService >= 1.0.0"
+      "WooVisAgentServices.ImageService >= 1.0.0",
+      "WooVisAgentServices.VideoService >= 1.0.0"
     ]
   },
   "packageFolders": {
@@ -6613,6 +6640,9 @@
             },
             "D:\\WooProject\\AIVidio\\code\\WooVisAgent\\WooVisAgentServices.ImageService\\WooVisAgentServices.ImageService.csproj": {
               "projectPath": "D:\\WooProject\\AIVidio\\code\\WooVisAgent\\WooVisAgentServices.ImageService\\WooVisAgentServices.ImageService.csproj"
+            },
+            "D:\\WooProject\\AIVidio\\code\\WooVisAgent\\WooVisAgentServices.VideoService\\WooVisAgentServices.VideoService.csproj": {
+              "projectPath": "D:\\WooProject\\AIVidio\\code\\WooVisAgent\\WooVisAgentServices.VideoService\\WooVisAgentServices.VideoService.csproj"
             }
           }
         }

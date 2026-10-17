@@ -26,6 +26,21 @@ public class ModelConfigConfiguration : IEntityTypeConfiguration<ModelConfig>
         builder.Property(x => x.Endpoint).HasMaxLength(512);
         builder.Property(x => x.ApiKey).HasMaxLength(1024);
         builder.Property(x => x.ParamsJson).IsRequired();
+
+        // 下面三个字段是"给已存在的表补列"用的，必须显式声明数据库默认值。
+        //
+        // 原因：补列走的是 EnsureMissingColumnsAsync，它靠 EF 元数据里的默认值来拼
+        // `ADD COLUMN ... DEFAULT ...`。而 C# 属性初始值（= "{}" / = true）
+        // <b>不会</b>进 EF 元数据——没有 HasDefaultValue 的话，补列会发出
+        // `ADD COLUMN "DeliveryJson" text NOT NULL`（无 DEFAULT），
+        // 存量行立刻被 PostgreSQL 顶掉：23502 column contains null values，
+        // 表现为"加了视频字段之后服务起不来了"。
+        //
+        // HasDefaultValue 同时也是新建表时的 DDL 默认值，两条路径保持一致。
+        builder.Property(x => x.DeliveryJson).IsRequired().HasDefaultValue("{}");
+        builder.Property(x => x.SupportsTextToVideo).HasDefaultValue(true);
+        builder.Property(x => x.SupportsImageToVideo).HasDefaultValue(true);
+
         builder.Property(x => x.Remark).HasMaxLength(512);
 
         // 列表查询固定按「当前用户 + 可选分类」过滤

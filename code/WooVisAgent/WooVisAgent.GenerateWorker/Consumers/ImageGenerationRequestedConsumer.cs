@@ -106,7 +106,9 @@ public class ImageGenerationRequestedConsumer(
                 message.Steps,
                 message.CfgScale,
                 message.Seed,
-                message.ReferenceImages,
+                // 老队列消息可能缺这个字段，反序列化出来是 null；
+                // 交付框架本身也按"没有参考图"处理，给个空列表即可
+                message.ReferenceImages ?? [],
                 model,
                 pump.Progress);
 

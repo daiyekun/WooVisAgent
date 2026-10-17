@@ -1,0 +1,256 @@
+﻿using Microsoft.Extensions.Logging;
+using WooVisAgent.EventBus.Events;
+using WooVisAgent.GenerateWorker.Support;
+using WooVisAgent.SharedLib.Diagnostics;
+using WooVisAgent.SharedLib.Domain;
+using WooVisAgent.SharedLib.Repository;
+using WooVisAgentServices.ImageService.Contracts;
+using WooVisAgentServices.ImageService.Serialization;
+using WooVisAgentServices.VideoService.Contracts;
+
+namespace WooVisAgent.GenerateWorker.Consumers;
+
+/// <summary>
+/// 视频生成任务消费者：从队列 <c>WooVisAgent.GenerateWorker</c> 取任务，
+/// 调用视频生成服务生成，再把状态写回数据库。
+///
+/// 状态流转：Queued →（置 Running）→ 生成 → Succeeded / Failed。
+///
+/// 与图片消费者完全同构的三个关键设计：
+/// <list type="number">
+///   <item><b>幂等</b>：任务已是成功或已取消时直接跳过，消息重复投递不会重复生成、重复扣费
+///         （视频一次生成成本远高于图片，重复扣费的痛也更明显）；</item>
+///   <item><b>异常不外抛</b>：失败在本方法内被捕获并落库为 Failed，
+///         否则消息会被反复重投，形成"生成 → 失败 → 重投"的死循环；</item>
+///   <item><b>产物与状态同一次 SaveChanges</b>：保证前端收到"已完成"时视频已可读。</item>
+/// </list>
+/// </summary>
+public class VideoGenerationRequestedConsumer(
+    IRepository<GenerationTask> taskRepository,
+    IRepository<ModelConfig> modelRepository,
+    IVideoGenerationService videoGenerationService,
+    IGenerationTaskNotifier notifier,
+    ILogger<VideoGenerationRequestedConsumer> logger)
+{
+    /// <summary>
+    /// Wolverine 的处理器约定：公开方法、名字为 <c>Handle</c>、第一个参数是消息类型，
+    /// 其余参数（这里是 CancellationToken）由框架注入。
+    /// </summary>
+    public async Task Handle(VideoGenerationRequested message, CancellationToken cancellationToken)
+    {
+        // 消费 span。真正耗时的模型调用全在这个 span 之下，
+        // 面板上从「提交任务」到「出视频」是一条完整的树。
+        using var activity = TraceSources.WorkerSource.StartMessageConsume(
+            operation: "video.generate",
+            messageType: nameof(VideoGenerationRequested),
+            parentContext: TraceSources.ExtractContext(message.TraceHeaders),
+            messageId: message.MessageId);
+
+        activity?.SetTag("wv.task_id", message.TaskId.ToString());
+        activity?.SetTag("wv.model_config_id", message.ModelConfigId.ToString());
+        activity.TagCurrentUser(message.OwnerId);
+        activity?.SetTag("wv.request.has_first_frame", message.FirstFrame is not null);
+        activity?.SetTag("wv.request.duration_seconds", message.DurationSeconds);
+        activity?.SetTag("wv.request.resolution", message.Resolution);
+
+        var task = await taskRepository.GetByIdAsync(message.TaskId, cancellationToken);
+        if (task is null)
+        {
+            logger.LogWarning("队列消息指向的任务 {TaskId} 不存在，消息直接丢弃", message.TaskId);
+            activity?.SetTag("wv.skipped_reason", "task_not_found");
+            return;
+        }
+
+        // 幂等保护 1：已经成功或已被用户取消，不再重复执行
+        if (task.Status is GenerationTaskStatus.Succeeded or GenerationTaskStatus.Canceled)
+        {
+            logger.LogInformation("任务 {TaskId} 当前状态为 {Status}，跳过本次生成", task.Id, task.Status);
+            activity?.SetTag("wv.skipped_reason", $"already_{task.Status}");
+            return;
+        }
+
+        // 幂等保护 2：同一任务已被别的 Worker 实例置为运行中且尚未结束，交给它继续处理
+        if (task.Status == GenerationTaskStatus.Running && task.StartedAt is not null)
+        {
+            logger.LogInformation("任务 {TaskId} 已在生成中，跳过本次重复消息", task.Id);
+            activity?.SetTag("wv.skipped_reason", "already_running");
+            return;
+        }
+
+        var model = await modelRepository.GetByIdAsync(message.ModelConfigId, cancellationToken);
+        if (model is null)
+        {
+            await MarkFailedAsync(task, "模型配置已不存在或已被删除，无法执行生成。", cancellationToken);
+            return;
+        }
+
+        await MarkRunningAsync(task, "任务已开始执行", cancellationToken);
+
+        // 进度泵：把「已提交 / 排队中 / 生成中 / 下载保存」等阶段实时推给前端。
+        // 视频动辄几分钟，没有进度推进用户会直接以为页面卡死。
+        var pump = new TaskProgressPump(taskRepository, notifier, task);
+        var pumpTask = pump.RunAsync(cancellationToken);
+
+        try
+        {
+            // 参数快照是 Worker 的唯一依据：从快照里取模型扩展参数，
+            // 这样任务提交后即便模型配置被改动，重放出来的请求也保持一致。
+            var parameters = GenerationTaskSerialization.DeserializeParams(message.ParamsJson);
+
+            var request = new VideoGenerationRequest(
+                task.Id,
+                task.OwnerId,
+                task.Prompt,
+                task.NegativePrompt,
+                message.FirstFrame,
+                message.Resolution,
+                message.DurationSeconds,
+                message.Fps,
+                message.Seed,
+                ExtractExtraParams(parameters),
+                model,
+                pump.Progress);
+
+            await notifier.NotifyAsync(
+                task,
+                message: request.IsImageToVideo ? "正在提交到模型（图生视频）" : "正在提交到模型（文生视频）",
+                cancellationToken: cancellationToken);
+
+            var outputs = await videoGenerationService.GenerateAsync(request, cancellationToken);
+
+            // 先收泵再写终态：否则泵里残留的进度可能把已经置为 100 的状态覆盖回去
+            pump.Complete();
+            await pumpTask;
+
+            await MarkSucceededAsync(task, outputs, cancellationToken);
+
+            activity?.SetTag("wv.output_count", outputs.Count);
+            activity.RecordSuccess();
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // 服务停止（而非业务失败）时保留 Running 状态，等重启后由重投或手动重试继续
+            logger.LogWarning("任务 {TaskId} 因服务停止而中断，状态保持为 {Status}", task.Id, task.Status);
+            activity?.SetTag("wv.skipped_reason", "service_shutdown");
+            activity.RecordFailure(new OperationCanceledException("服务停止，生成中断"));
+            throw;
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "任务 {TaskId} 视频生成失败", task.Id);
+            activity.RecordFailure(exception);
+
+            // 失败时直接丢弃泵里的残留进度，避免它继续写状态与终态打架
+            pump.Complete();
+
+            try
+            {
+                await pumpTask;
+            }
+            catch (Exception pumpError)
+            {
+                logger.LogDebug(pumpError, "任务 {TaskId} 的进度泵在收尾时抛出异常，已忽略", task.Id);
+            }
+
+            await MarkFailedAsync(task, exception.Message, cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// 取出模型扩展参数。
+    ///
+    /// 必须剔除视频自身的固定字段（分辨率 / 时长 / 帧率 / 种子 / 音效开关），
+    /// 因为它们已由消息单独承载并被协议层单独写入请求体；
+    /// 不剔除会让同一个值以两个字段名各发一遍，多数网关会因此报「未知参数」。
+    /// </summary>
+    private static IReadOnlyDictionary<string, object?> ExtractExtraParams(
+        IReadOnlyDictionary<string, object?> parameters)
+    {
+        var reserved = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "resolution",
+            "durationSeconds",
+            "fps",
+            "withAudio",
+            "seed",
+            "firstFrameUrl",
+            "lastFrameUrl",
+        };
+
+        var extra = new Dictionary<string, object?>();
+
+        foreach (var (key, value) in parameters)
+        {
+            if (string.IsNullOrWhiteSpace(key) || reserved.Contains(key))
+                continue;
+
+            extra[key] = value;
+        }
+
+        return extra;
+    }
+
+    private async Task MarkRunningAsync(
+        GenerationTask task,
+        string message,
+        CancellationToken cancellationToken)
+    {
+        var now = DateTimeOffset.UtcNow;
+        task.Status = GenerationTaskStatus.Running;
+        task.Progress = 5;
+        task.StartedAt ??= now;
+        task.UpdatedAt = now;
+        task.ErrorMessage = null;
+
+        taskRepository.Update(task);
+        await taskRepository.SaveChangesAsync(cancellationToken);
+
+        await notifier.NotifyAsync(task, message: message, cancellationToken: cancellationToken);
+    }
+
+    private async Task MarkSucceededAsync(
+        GenerationTask task,
+        IReadOnlyList<TaskAsset> outputs,
+        CancellationToken cancellationToken)
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        // 产物与状态在同一张表、同一次 SaveChanges 里写回，
+        // 保证前端收到"已完成"通知时，产物一定已经可读
+        task.OutputsJson = GenerationTaskSerialization.SerializeAssets(outputs);
+        task.Status = GenerationTaskStatus.Succeeded;
+        task.Progress = 100;
+        task.FinishedAt = now;
+        task.UpdatedAt = now;
+        task.ErrorMessage = null;
+
+        taskRepository.Update(task);
+        await taskRepository.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation("任务 {TaskId} 视频生成完成，产出 {Count} 个文件", task.Id, outputs.Count);
+
+        await notifier.NotifyAsync(task, outputs?.ToList(), cancellationToken: cancellationToken);
+    }
+
+    private async Task MarkFailedAsync(
+        GenerationTask task,
+        string reason,
+        CancellationToken cancellationToken)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var errorMessage = reason.Length > 2000 ? reason[..2000] : reason;
+
+        task.Status = GenerationTaskStatus.Failed;
+        task.Progress = 100;
+        task.ErrorMessage = errorMessage;
+        task.FinishedAt = now;
+        task.UpdatedAt = now;
+
+        taskRepository.Update(task);
+        await taskRepository.SaveChangesAsync(cancellationToken);
+
+        logger.LogWarning("任务 {TaskId} 已置为失败：{Reason}", task.Id, errorMessage);
+
+        await notifier.NotifyAsync(task, message: errorMessage, cancellationToken: cancellationToken);
+    }
+}

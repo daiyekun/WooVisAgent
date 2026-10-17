@@ -19,6 +19,7 @@
     <ProjectReference Include="..\WooVisAgent.Services.Common\WooVisAgent.Services.Common.csproj" />
     <ProjectReference Include="..\WooVisAgent.SharedLib\WooVisAgent.SharedLib.csproj" />
     <ProjectReference Include="..\WooVisAgentServices.ImageService\WooVisAgentServices.ImageService.csproj" />
+    <ProjectReference Include="..\WooVisAgentServices.VideoService\WooVisAgentServices.VideoService.csproj" />
   </ItemGroup>
 
 </Project>

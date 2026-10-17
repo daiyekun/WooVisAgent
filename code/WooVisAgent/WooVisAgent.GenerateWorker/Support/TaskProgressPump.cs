@@ -16,6 +16,9 @@ namespace WooVisAgent.GenerateWorker.Support;
 /// </list>
 /// 因此这里用 channel 收集上报，由后台泵按「进度至少涨 4% 或间隔超过 2 秒」的节奏合并后转发，
 /// 既不会阻塞生成，也不会把消息总线刷爆。
+///
+/// <b>图片与视频共用同一个泵</b>：它只关心「进度 + 阶段文案」，
+/// 与具体生成类型无关；视频比图片慢得多、轮询阶段上报更频繁，恰恰更需要这层合并。
 /// </summary>
 public sealed class TaskProgressPump
 {
@@ -28,7 +31,7 @@ public sealed class TaskProgressPump
     private readonly IRepository<GenerationTask> _taskRepository;
     private readonly IGenerationTaskNotifier _notifier;
     private readonly GenerationTask _task;
-    private readonly Channel<ImageGenerationProgress> _channel;
+    private readonly Channel<GenerationProgress> _channel;
 
     private int _lastPercent;
     private string? _lastStage;
@@ -44,7 +47,7 @@ public sealed class TaskProgressPump
         _task = task;
         _lastPercent = task.Progress;
 
-        _channel = Channel.CreateUnbounded<ImageGenerationProgress>(new UnboundedChannelOptions
+        _channel = Channel.CreateUnbounded<GenerationProgress>(new UnboundedChannelOptions
         {
             SingleReader = true,
             SingleWriter = false,
@@ -54,8 +57,8 @@ public sealed class TaskProgressPump
         Progress = new ProgressAdapter(_channel.Writer);
     }
 
-    /// <summary>交给 <see cref="ImageGenerationRequest" /> 的上报通道</summary>
-    public IProgress<ImageGenerationProgress> Progress { get; }
+    /// <summary>交给生成服务的上报通道</summary>
+    public IProgress<GenerationProgress> Progress { get; }
 
     /// <summary>跑泵：一直消费到通道被 <see cref="Complete" /> 关闭为止</summary>
     public async Task RunAsync(CancellationToken cancellationToken)
@@ -66,7 +69,7 @@ public sealed class TaskProgressPump
             {
                 // 合并：同一时刻积压的多条上报只取最新的一条，
                 // 中间的旧值对用户没有意义，省掉能明显减少数据库写与消息量。
-                ImageGenerationProgress? latest = null;
+                GenerationProgress? latest = null;
                 while (_channel.Reader.TryRead(out var item))
                     latest = item;
 
@@ -89,12 +92,12 @@ public sealed class TaskProgressPump
     /// <summary>生成结束后调用：关闭通道，让泵把剩余上报处理完再退出</summary>
     public void Complete() => _channel.Writer.TryComplete();
 
-    private async Task ApplyAsync(ImageGenerationProgress progress, CancellationToken cancellationToken)
+    private async Task ApplyAsync(GenerationProgress progress, CancellationToken cancellationToken)
     {
         var percent = progress.SafePercent;
         var stage = string.IsNullOrWhiteSpace(progress.Stage) ? null : progress.Stage!.Trim();
 
-        // 百分比不能倒退：多张图出错重试时可能出现回退，进度条往回缩比不动更让人困惑
+        // 百分比不能倒退：重试时可能出现回退，进度条往回缩比不动更让人困惑
         if (percent <= _lastPercent && stage == _lastStage)
             return;
 
@@ -119,9 +122,9 @@ public sealed class TaskProgressPump
     }
 
     /// <summary>把 <see cref="IProgress{T}" /> 接到 channel 上</summary>
-    private sealed class ProgressAdapter(ChannelWriter<ImageGenerationProgress> writer)
-        : IProgress<ImageGenerationProgress>
+    private sealed class ProgressAdapter(ChannelWriter<GenerationProgress> writer)
+        : IProgress<GenerationProgress>
     {
-        public void Report(ImageGenerationProgress value) => writer.TryWrite(value);
+        public void Report(GenerationProgress value) => writer.TryWrite(value);
     }
 }

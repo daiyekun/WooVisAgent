@@ -1,4 +1,5 @@
 ﻿using WooVisAgent.Services.Common.Contracts;
+using WooVisAgent.SharedLib.Delivery;
 using WooVisAgent.SharedLib.Domain;
 using WooVisAgent.SharedLib.Messaging;
 using WooVisAgent.SharedLib.Repository;
@@ -51,6 +52,22 @@ public class UpdateModelConfigCommandHandler(
         entity.Enabled = input.Enabled;
         entity.IsDefault = input.IsDefault;
         entity.ParamsJson = ModelParamsSerializer.Serialize(input.Params);
+
+        // 交付模板与视频能力只在视频分类下有意义。
+        // 非视频模型保存时给一份干净的默认值，避免脏数据混进通用配置里。
+        if (category == ModelCategory.Video)
+        {
+            entity.DeliveryJson = VideoDeliveryResolver.SerializeTemplate(input.Delivery);
+            entity.SupportsTextToVideo = input.SupportsTextToVideo;
+            entity.SupportsImageToVideo = input.SupportsImageToVideo;
+        }
+        else
+        {
+            entity.DeliveryJson = "{}";
+            entity.SupportsTextToVideo = true;
+            entity.SupportsImageToVideo = true;
+        }
+
         entity.Remark = ModelConfigInputValidator.NormalizeOptional(input.Remark, 512);
         entity.UpdatedAt = now;
 

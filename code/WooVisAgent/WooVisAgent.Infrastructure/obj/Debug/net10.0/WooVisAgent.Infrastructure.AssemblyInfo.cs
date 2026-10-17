@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WooVisAgent.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6369edc3477bb201c0015016c057d18e80ad7be1")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b85bc1025b8d80e9b6f2539243e98f956d64e7d2")]
 [assembly: System.Reflection.AssemblyProductAttribute("WooVisAgent.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WooVisAgent.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -16,6 +16,7 @@ using WooVisAgent.Services.Common.Storage;
 using WooVisAgentServices.IdentityService;
 using WooVisAgentServices.IdentityService.Options;
 using WooVisAgentServices.ImageService;
+using WooVisAgentServices.VideoService;
 using WooVisAgentServices.ModelService;
 
 namespace WooVisAgent.Api;
@@ -36,6 +37,10 @@ public class Program
         // 图片生成用例：提交任务后把消息投递到 RabbitMQ；
         // 真正的生成由独立服务 WooVisAgent.GenerateWorker 消费队列后执行
         builder.AddImageService();
+
+        // 视频生成用例：与图片同构的异步链路（提交 → RabbitMQ → Worker 生成 → SignalR 推送）。
+        // 放在 AddImageService 之后，因为提交用例复用了它的通用派发器
+        builder.AddVideoService();
 
         // 产物落盘实现。与 GenerateWorker 使用同一实现、同一目录，
         // 这样 Worker 写出的图片能被下面挂载的 /uploads 静态托管读到

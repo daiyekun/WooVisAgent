@@ -1,0 +1,13 @@
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.ServiceDefaults\bin\Release\net10.0\WooVisAgent.ServiceDefaults.deps.json
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.ServiceDefaults\bin\Release\net10.0\WooVisAgent.ServiceDefaults.dll
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.ServiceDefaults\bin\Release\net10.0\WooVisAgent.ServiceDefaults.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.ServiceDefaults\obj\Release\net10.0\WooVisAgent.ServiceDefaults.csproj.AssemblyReference.cache
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.ServiceDefaults\obj\Release\net10.0\WooVisAgent.ServiceDefaults.GeneratedMSBuildEditorConfig.editorconfig
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.ServiceDefaults\obj\Release\net10.0\WooVisAgent.ServiceDefaults.AssemblyInfoInputs.cache
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.ServiceDefaults\obj\Release\net10.0\WooVisAgent.ServiceDefaults.AssemblyInfo.cs
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.ServiceDefaults\obj\Release\net10.0\WooVisAgent.ServiceDefaults.csproj.CoreCompileInputs.cache
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.ServiceDefaults\obj\Release\net10.0\WooVisAgent.ServiceDefaults.sourcelink.json
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.ServiceDefaults\obj\Release\net10.0\WooVisAgent.ServiceDefaults.dll
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.ServiceDefaults\obj\Release\net10.0\refint\WooVisAgent.ServiceDefaults.dll
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.ServiceDefaults\obj\Release\net10.0\WooVisAgent.ServiceDefaults.pdb
+D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.ServiceDefaults\obj\Release\net10.0\ref\WooVisAgent.ServiceDefaults.dll

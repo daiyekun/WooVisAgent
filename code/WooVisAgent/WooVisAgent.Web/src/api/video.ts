@@ -1,4 +1,5 @@
 import { del, get, post } from './http'
+import type { RequestOptions } from './types'
 import type { GenerationTask, PageQuery, PagedResult, TaskAsset, TaskStatus } from '@/types'
 
 const BASE_URL = '/api/video/generations'
@@ -23,6 +24,11 @@ export interface VideoGenerationInput {
   /** 是否生成音效 */
   withAudio?: boolean
   seed?: number
+  /**
+   * 所属创作会话。不传则由后端自动新建 / 复用空会话；
+   * 聊天页始终会带上，这样多轮对话的历史才能完整回放。
+   */
+  conversationId?: string
   params?: Record<string, unknown>
 }
 
@@ -42,9 +48,12 @@ export function fetchVideoTasks(query: PageQuery & Record<string, unknown> = {})
   return get<PagedResult<GenerationTask>>(BASE_URL, query)
 }
 
-/** 查询单条视频生成任务 */
-export function fetchVideoTask(id: string) {
-  return get<GenerationTask>(`${BASE_URL}/${id}`)
+/**
+ * 查询单条视频生成任务。
+ * 轮询兜底时传 { silent: true }，避免网络抖动时反复弹错误提示。
+ */
+export function fetchVideoTask(id: string, options?: RequestOptions) {
+  return get<GenerationTask>(`${BASE_URL}/${id}`, undefined, options)
 }
 
 /** 取消视频生成任务 */
