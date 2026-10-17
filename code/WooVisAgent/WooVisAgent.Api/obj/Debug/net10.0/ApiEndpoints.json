@@ -111,6 +111,31 @@
     ]
   },
   {
+    "ContainingType": "WooVisAgent.Api.Controllers.FileController",
+    "Method": "Upload",
+    "RelativePath": "api/files/upload",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IReadOnlyList\u00601[[WooVisAgent.Api.Controllers.UploadFileResultDto, WooVisAgent.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "application/json"
+        ],
+        "StatusCode": 200
+      },
+      {
+        "Type": "Microsoft.AspNetCore.Mvc.ProblemDetails",
+        "MediaTypes": [
+          "application/json"
+        ],
+        "StatusCode": 400
+      }
+    ]
+  },
+  {
     "ContainingType": "WooVisAgent.Api.Controllers.ImageController",
     "Method": "Generate",
     "RelativePath": "api/image/generations",

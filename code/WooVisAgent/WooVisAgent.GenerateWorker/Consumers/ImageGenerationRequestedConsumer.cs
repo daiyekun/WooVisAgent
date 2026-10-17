@@ -1,8 +1,8 @@
-﻿using MassTransit;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using WooVisAgent.EventBus.Events;
 using WooVisAgent.SharedLib.Domain;
 using WooVisAgent.SharedLib.Repository;
+using WooVisAgent.GenerateWorker.Support;
 using WooVisAgentServices.ImageService.Contracts;
 using WooVisAgentServices.ImageService.Serialization;
 
@@ -20,7 +20,7 @@ namespace WooVisAgent.GenerateWorker.Consumers;
 ///   </item>
 ///   <item>
 ///     <b>异常不外抛</b>：生成失败在本方法内被捕获并落库为 Failed（同时通知前端），
-///     不会再抛回 MassTransit。否则消息会被反复重投，形成"生成 → 失败 → 重投 → 再生成"的死循环。
+///     不会再抛回消息总线。否则消息会被反复重投，形成"生成 → 失败 → 重投 → 再生成"的死循环。
 ///   </item>
 /// </list>
 /// </summary>
@@ -29,12 +29,14 @@ public class ImageGenerationRequestedConsumer(
     IRepository<ModelConfig> modelRepository,
     IImageGenerationService imageGenerationService,
     IGenerationTaskNotifier notifier,
-    ILogger<ImageGenerationRequestedConsumer> logger) : IConsumer<ImageGenerationRequested>
+    ILogger<ImageGenerationRequestedConsumer> logger)
 {
-    public async Task Consume(ConsumeContext<ImageGenerationRequested> context)
+    /// <summary>
+    /// Wolverine 的处理器约定：公开方法、名字为 <c>Handle</c>、第一个参数是消息类型，
+    /// 其余参数（这里是 CancellationToken）由框架注入。
+    /// </summary>
+    public async Task Handle(ImageGenerationRequested message, CancellationToken cancellationToken)
     {
-        var message = context.Message;
-        var cancellationToken = context.CancellationToken;
 
         var task = await taskRepository.GetByIdAsync(message.TaskId, cancellationToken);
         if (task is null)
@@ -66,6 +68,12 @@ public class ImageGenerationRequestedConsumer(
 
         await MarkRunningAsync(task, "任务已开始执行", cancellationToken);
 
+        // 进度泵：把生成过程中的阶段推进写回任务表并推给前端。
+        // 以前整条任务只有「5%」和「100%」两个点，模型一慢进度条就像卡死；
+        // 现在解析接口、提交、等待模型、落盘都会被真实反映出来。
+        var pump = new TaskProgressPump(taskRepository, notifier, task);
+        var pumpTask = pump.RunAsync(cancellationToken);
+
         try
         {
             var request = new ImageGenerationRequest(
@@ -80,11 +88,16 @@ public class ImageGenerationRequestedConsumer(
                 message.CfgScale,
                 message.Seed,
                 message.ReferenceImages,
-                model);
+                model,
+                pump.Progress);
 
             await notifier.NotifyAsync(task, message: "正在调用模型生成", cancellationToken: cancellationToken);
 
             var outputs = await imageGenerationService.GenerateAsync(request, cancellationToken);
+
+            // 先收泵再写终态：否则泵里残留的进度可能把已经置为 100 的状态覆盖回去
+            pump.Complete();
+            await pumpTask;
 
             await MarkSucceededAsync(task, outputs, cancellationToken);
         }
@@ -97,6 +110,18 @@ public class ImageGenerationRequestedConsumer(
         catch (Exception exception)
         {
             logger.LogError(exception, "任务 {TaskId} 生成失败", task.Id);
+
+            // 失败时直接丢弃泵里的残留进度，避免它继续写状态与终态打架
+            pump.Complete();
+            try
+            {
+                await pumpTask;
+            }
+            catch (Exception pumpError)
+            {
+                logger.LogDebug(pumpError, "任务 {TaskId} 的进度泵在收尾时抛出异常，已忽略", task.Id);
+            }
+
             await MarkFailedAsync(task, exception.Message, cancellationToken);
         }
     }

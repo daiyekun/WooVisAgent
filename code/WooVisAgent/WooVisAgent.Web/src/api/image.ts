@@ -1,4 +1,5 @@
 import { del, get, post } from './http'
+import type { RequestOptions } from './types'
 import type { GenerationTask, PageQuery, PagedResult, TaskAsset, TaskStatus } from '@/types'
 
 const BASE_URL = '/api/image/generations'
@@ -40,9 +41,12 @@ export function fetchImageTasks(query: PageQuery & Record<string, unknown> = {})
   return get<PagedResult<GenerationTask>>(BASE_URL, query)
 }
 
-/** 查询单条图片生成任务 */
-export function fetchImageTask(id: string) {
-  return get<GenerationTask>(`${BASE_URL}/${id}`)
+/**
+ * 查询单条图片生成任务。
+ * 轮询兜底时传 { silent: true }，避免网络抖动时反复弹错误提示。
+ */
+export function fetchImageTask(id: string, options?: RequestOptions) {
+  return get<GenerationTask>(`${BASE_URL}/${id}`, undefined, options)
 }
 
 /** 取消图片生成任务 */

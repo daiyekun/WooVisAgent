@@ -39,11 +39,42 @@ public sealed class PassthroughProtocol : IModelDeliveryProtocol
         return TerminalKeywords.Any(keyword => last.Contains(keyword, StringComparison.OrdinalIgnoreCase));
     }
 
-    public string? ResolveRequestUrl(ModelConfig model)
+    public string? ResolveRequestUrl(ModelConfig model) => ResolveRequestUrl(model, false);
+
+    /// <summary>
+    /// 直通协议默认原样使用用户填的地址。
+    /// 唯一的例外是 OpenAI 风格的完整路径：<c>.../images/generations</c> 只收文生图，
+    /// 带参考图时要把最后一段换成 <c>edits</c>，否则图生图请求会被打回。
+    /// 其它自定义出口（如 <c>/v2/text2image</c>）没有可推导的编辑入口，保持原样。
+    /// </summary>
+    public string? ResolveRequestUrl(ModelConfig model, bool hasReferenceImages)
     {
         var endpoint = (model.Endpoint ?? string.Empty).Trim().TrimEnd('/');
-        return endpoint.Length == 0 ? null : endpoint;
+        if (endpoint.Length == 0)
+            return null;
+
+        const string generationTail = "/images/generations";
+
+        if (hasReferenceImages && endpoint.EndsWith(generationTail, StringComparison.OrdinalIgnoreCase))
+            return $"{endpoint[..^"generations".Length]}edits";
+
+        return endpoint;
     }
+
+    /// <summary>
+    /// 图生图一律按 OpenAI 的 <c>image</c> 文件字段提交。
+    /// 直通协议命中的都是「用户自己填好的自定义网关」，
+    /// multipart 文件字段是这类网关最普遍接受的带图方式。
+    /// </summary>
+    public bool SupportsImageToImage => true;
+
+    public bool RequiresMultipart(ImageDeliveryRequest request) => request.HasReferenceImages;
+
+    public MultipartFormDataContent? BuildMultipartContent(ImageDeliveryRequest request)
+        => request.HasReferenceImages ? ImageDeliveryPayloads.OpenAiEditsForm(request) : null;
+
+    public MultipartFormDataContent? BuildMinimalMultipartContent(ImageDeliveryRequest request)
+        => request.HasReferenceImages ? ImageDeliveryPayloads.OpenAiEditsForm(request, minimal: true) : null;
 
     /// <summary>取 URL 的最后一段路径（不含查询串），无路径时返回空</summary>
     private static string GetLastPathSegment(string? endpoint)

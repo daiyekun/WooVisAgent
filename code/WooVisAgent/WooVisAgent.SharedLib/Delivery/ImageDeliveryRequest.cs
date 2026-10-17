@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Net.Http.Headers;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -12,6 +14,19 @@ namespace WooVisAgent.SharedLib.Delivery;
 /// 把它放在 SharedLib（而不是复用 ImageService 的 DTO）是为了让协议实现
 /// 不反向依赖上层服务，从而保持 SharedLib 处于依赖图最底层。
 /// </summary>
+/// <summary>
+/// 一张已解析成字节的参考图（图生图的输入）。
+///
+/// 之所以要求协议层拿到<b>字节</b>而不只是 URL：参考图是用户上传到本站
+/// <c>/uploads</c> 下的文件，模型服务在公网访问不到这个地址，
+/// 因此必须就地读出来，再按协议需要转成 multipart 文件字段或 data URI。
+/// </summary>
+public sealed record ImageDeliveryReference(string Url, byte[] Bytes, string ContentType, string FileName)
+{
+    /// <summary>DashScope 等走 JSON 的协议用 data URI 携带图片</summary>
+    public string DataUri => $"data:{ContentType};base64,{Convert.ToBase64String(Bytes)}";
+}
+
 public sealed record ImageDeliveryRequest(
     string? ModelKey,
     string Prompt,
@@ -21,8 +36,12 @@ public sealed record ImageDeliveryRequest(
     int Steps,
     double CfgScale,
     long? Seed,
-    int Index)
+    int Index,
+    IReadOnlyList<ImageDeliveryReference>? ReferenceImages = null)
 {
+    /// <summary>协议层允许携带的参考图上限，与提交用例的校验保持一致</summary>
+    public const int MaxReferenceImages = 8;
+
     /// <summary>OpenAI 系的尺寸写法：<c>1024x1024</c></summary>
     public string OpenAiSize => $"{Width}x{Height}";
 
@@ -31,6 +50,12 @@ public sealed record ImageDeliveryRequest(
 
     /// <summary>同批次内多张图按 seed 递推，避免一张重复生成多份</summary>
     public long? EffectiveSeed => Seed is { } seed ? seed + Index : null;
+
+    /// <summary>参考图（已解析成字节，可能少于提交数量——取不到的会被丢弃）</summary>
+    public IReadOnlyList<ImageDeliveryReference> References => ReferenceImages ?? [];
+
+    /// <summary>是否为「图生图」。协议层据此切换入口与请求体结构</summary>
+    public bool HasReferenceImages => References.Count > 0;
 }
 
 /// <summary>协议层构造请求体时使用的 JSON 约定（与任务参数快照保持同一套 camelCase 规则）</summary>
@@ -138,7 +163,7 @@ public static class ImageDeliveryPayloads
             new Dictionary<string, object?>
             {
                 ["model"] = request.ModelKey ?? string.Empty,
-                ["input"] = BuildMultimodalInput(request.Prompt),
+                ["input"] = BuildMultimodalInput(request),
                 ["parameters"] = parameters,
             },
             ModelDeliveryJson.Options);
@@ -153,29 +178,77 @@ public static class ImageDeliveryPayloads
             new Dictionary<string, object?>
             {
                 ["model"] = request.ModelKey ?? string.Empty,
-                ["input"] = BuildMultimodalInput(request.Prompt),
+                ["input"] = BuildMultimodalInput(request),
             },
             ModelDeliveryJson.Options);
 
     /// <summary>
-    /// 多模态接口的 input 结构。当前仅支持单轮对话，
-    /// 因此 messages 有且只有一个 user 元素，content 里只有一段 text（文生图）。
+    /// 多模态接口的 input 结构。只支持单轮对话，因此 messages 有且只有一个 user 元素。
+    ///
+    /// 文生图时 content 只有一段 text；图生图时在 text 之后追加若干段 image，
+    /// 这是百炼多模态图像编辑（qwen-image-edit / qwen-image）约定的输入顺序
+    /// ——先说要改什么，再给底图。
     /// </summary>
-    private static Dictionary<string, object?> BuildMultimodalInput(string prompt)
-        => new()
+    private static Dictionary<string, object?> BuildMultimodalInput(ImageDeliveryRequest request)
+    {
+        var content = new List<object> { new Dictionary<string, object?> { ["text"] = request.Prompt } };
+
+        foreach (var reference in request.References.Take(ImageDeliveryRequest.MaxReferenceImages))
+            content.Add(new Dictionary<string, object?> { ["image"] = reference.DataUri });
+
+        return new Dictionary<string, object?>
         {
             ["messages"] = new object[]
             {
                 new Dictionary<string, object?>
                 {
                     ["role"] = "user",
-                    ["content"] = new object[]
-                    {
-                        new Dictionary<string, object?> { ["text"] = prompt },
-                    },
+                    ["content"] = content,
                 },
             },
         };
+    }
+
+    /// <summary>
+    /// OpenAI 系「图生图」的 multipart 表单（对应 <c>/images/edits</c>）。
+    ///
+    /// 该接口只接受 multipart/form-data，图片必须以文件字段（<c>image</c>）提交，
+    /// 因此不能复用 JSON 请求体。多张参考图时重复同一个字段名，
+    /// 主流兼容网关都能识别为图片数组。
+    ///
+    /// <paramref name="minimal" /> 为真时只保留 model / prompt / n / size / image，
+    /// 用于首个请求被网关以「未知字段」拒绝后的降级重试。
+    /// </summary>
+    public static MultipartFormDataContent OpenAiEditsForm(ImageDeliveryRequest request, bool minimal = false)
+    {
+        var form = new MultipartFormDataContent();
+
+        form.Add(new StringContent(string.IsNullOrWhiteSpace(request.ModelKey) ? "image-1" : request.ModelKey), "model");
+        form.Add(new StringContent(request.Prompt), "prompt");
+        form.Add(new StringContent("1"), "n");
+        form.Add(new StringContent(request.OpenAiSize), "size");
+
+        foreach (var reference in request.References.Take(ImageDeliveryRequest.MaxReferenceImages))
+        {
+            var image = new ByteArrayContent(reference.Bytes);
+            image.Headers.ContentType = new MediaTypeHeaderValue(reference.ContentType);
+            form.Add(image, "image", reference.FileName);
+        }
+
+        if (minimal)
+            return form;
+
+        form.Add(new StringContent(request.Steps.ToString(CultureInfo.InvariantCulture)), "steps");
+        form.Add(new StringContent(request.CfgScale.ToString(CultureInfo.InvariantCulture)), "cfg_scale");
+
+        if (!string.IsNullOrWhiteSpace(request.NegativePrompt))
+            form.Add(new StringContent(request.NegativePrompt), "negative_prompt");
+
+        if (request.EffectiveSeed is { } seed)
+            form.Add(new StringContent(seed.ToString(CultureInfo.InvariantCulture)), "seed");
+
+        return form;
+    }
 
     /// <summary>
     /// DashScope 原生异步接口的请求体：

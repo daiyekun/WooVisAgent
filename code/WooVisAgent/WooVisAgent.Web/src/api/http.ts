@@ -128,23 +128,38 @@ export function del<T>(url: string, params?: unknown, options?: RequestOptions):
   return request<T>({ method: 'DELETE', url, params }, options)
 }
 
-/** 文件上传，走 multipart/form-data */
+/** 上传单个文件，走 multipart/form-data */
 export function upload(
   url: string,
   file: File,
   extra?: Record<string, string>,
   options?: RequestOptions,
 ): Promise<UploadResult> {
+  return uploadMany(url, [file], extra, options).then((results) => results[0])
+}
+
+/**
+ * 批量上传文件（图生图的参考图一次可能传多张）。
+ * 服务端按 Request.Form.Files 全收，因此这里统一用同一个字段名 file。
+ */
+export function uploadMany(
+  url: string,
+  files: File[],
+  extra?: Record<string, string>,
+  options?: RequestOptions,
+): Promise<UploadResult[]> {
   const formData = new FormData()
-  formData.append('file', file)
+  files.forEach((file) => formData.append('file', file))
   Object.entries(extra ?? {}).forEach(([key, value]) => formData.append(key, value))
 
-  return request<UploadResult>(
+  return request<UploadResult[]>(
     {
       method: 'POST',
       url,
       data: formData,
       headers: { 'Content-Type': 'multipart/form-data' },
+      // 弱网下上传比普通接口慢得多，单独放宽超时
+      timeout: options?.timeout ?? 60_000,
     },
     options,
   )

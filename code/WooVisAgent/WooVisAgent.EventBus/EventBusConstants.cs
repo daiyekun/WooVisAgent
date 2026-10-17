@@ -8,8 +8,12 @@ public static class EventBusConstants
     /// <summary>
     /// 生成任务队列名。必须是 AGENT.md 中约定的 <c>WooVisAgent.GenerateWorker</c>。
     ///
-    /// 由 WooVisAgent.GenerateWorker 侧的 ImageGenerationRequestedConsumerDefinition
-    /// 通过 <c>EndpointName</c> 显式指定，因此不会受 SetKebabCaseEndpointNameFormatter 影响。
+    /// 由 AddEventBus 的显式路由绑定，Worker 侧监听该队列。
     /// </summary>
     public const string GenerateWorkerQueue = "WooVisAgent.GenerateWorker";
+
+    /// <summary>
+    /// Api 侧队列名：Worker 把任务状态变更发到这里，Api 消费后转成 SignalR 推送。
+    /// </summary>
+    public const string ApiQueue = "WooVisAgent.Api";
 }

@@ -6,7 +6,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:26445"
+      "url": "http://localhost:26082"
     }
   ],
   "paths": {
@@ -165,6 +165,38 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/files/upload": {
+      "post": {
+        "tags": [
+          "File"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UploadFileResultDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
             "content": {
               "application/json": {
                 "schema": {
@@ -2068,6 +2100,41 @@
           }
         }
       },
+      "UploadFileResultDto": {
+        "required": [
+          "id",
+          "url",
+          "fileName",
+          "fileSize",
+          "contentType"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "fileSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "contentType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "UserProfileDto": {
         "required": [
           "userId",
@@ -2130,6 +2197,9 @@
   "tags": [
     {
       "name": "Auth"
+    },
+    {
+      "name": "File"
     },
     {
       "name": "Image"

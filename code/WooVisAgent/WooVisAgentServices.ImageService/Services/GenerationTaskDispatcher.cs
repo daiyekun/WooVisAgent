@@ -1,5 +1,5 @@
-﻿using MassTransit;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using Wolverine;
 using WooVisAgent.EventBus;
 using WooVisAgent.EventBus.Events;
 using WooVisAgent.SharedLib.Domain;
@@ -12,11 +12,11 @@ namespace WooVisAgentServices.ImageService.Services;
 /// <summary>
 /// 任务派发器实现：把任务参数快照翻译成 <see cref="ImageGenerationRequested" /> 并发布。
 ///
-/// 发布用的是 MassTransit 的 <c>Publish</c>（fanout exchange），
-/// 只有订阅了该消息类型的队列才会收到——即只有 WooVisAgent.GenerateWorker。
+/// 消息按 EventBus 里声明的显式路由投递到 <c>WooVisAgent.GenerateWorker</c> 队列，
+/// 只有 WooVisAgent.GenerateWorker 会消费它。
 /// </summary>
 public sealed class GenerationTaskDispatcher(
-    IPublishEndpoint publishEndpoint,
+    IMessageBus messageBus,
     ILogger<GenerationTaskDispatcher> logger) : IGenerationTaskDispatcher
 {
     public async Task DispatchAsync(GenerationTask task, CancellationToken cancellationToken = default)
@@ -51,7 +51,9 @@ public sealed class GenerationTaskDispatcher(
             GenerationTaskSerialization.DeserializeAssets(task.InputsJson),
             DateTimeOffset.UtcNow);
 
-        await publishEndpoint.Publish(message, cancellationToken);
+        // Wolverine 的 IMessageBus.PublishAsync 不接受 CancellationToken，只有 DeliveryOptions 可传
+await messageBus.PublishAsync(message);
+cancellationToken.ThrowIfCancellationRequested();
 
         logger.LogInformation(
             "任务 {TaskId} 已投递到队列 {Queue}，生成数量 {BatchSize}",

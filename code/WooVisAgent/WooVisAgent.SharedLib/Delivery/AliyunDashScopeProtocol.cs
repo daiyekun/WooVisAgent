@@ -174,17 +174,30 @@ public sealed class AliyunDashScopeProtocol : IModelDeliveryProtocol
     internal static List<AliyunDashScopeImageProtocol> BuildPlans(ModelConfig model)
     {
         var preferred = AliyunDashScopeEndpoints.PreferMode(model.ModelKey);
+        var isNative = preferred == DashScopeImageMode.SyncMultimodal;
 
-        var nativeOrder = preferred == DashScopeImageMode.SyncMultimodal
+        var nativeOrder = isNative
             ? new[] { DashScopeImageMode.SyncMultimodal, DashScopeImageMode.AsyncText2Image }
             : new[] { DashScopeImageMode.AsyncText2Image, DashScopeImageMode.SyncMultimodal };
 
-        // 只有用户显式填了 /compatible-mode 才把兼容入口排进候选，
-        // 避免对没要求兼容模式的地址凭空多打一次必然 404 的请求。
-        IEnumerable<DashScopeImageMode> modes = IsCompatibleMode(model.Endpoint)
+        // 兼容入口（/compatible-mode/v1/images/generations 与 /images/edits）只在
+        //「模型名看不出是哪一类」时才作为首选。
+        //
+        // 原因（踩过的坑）：用户常把 endpoint 填成 /compatible-mode/v1，
+        // 但 qwen-image 系列<b>并没有</b> compatible-mode 的图生图入口，
+        // 一旦图生图被优先派到 /images/edits，公共域名会在收到 multipart 请求体
+        // 之前就断开连接，客户端最终只看到
+        // "Error while copying content to a stream."（真实原因是 Socket 10054），
+        // 排查成本极高。而按百炼官方文档，qwen-image 的图生图必须走
+        // 原生 multimodal 入口的 input.messages[].content 里的 base64 图片。
+        //
+        // 所以：模型名能判定时以模型名为准（原生入口优先），
+        // 无法判定（既不是 qwen-image 也不是 wan/wanx）才把兼容入口排到前面。
+        IEnumerable<DashScopeImageMode> modes = !isNative && IsCompatibleMode(model.Endpoint)
             ? new[] { DashScopeImageMode.CompatibleOpenAi }.Concat(nativeOrder)
             : nativeOrder;
 
+        // 兼容入口仍然留在兜底链里：业务空间专属域名（*.maas.aliyuncs.com）上它确实可用。
         return [.. modes.Select(mode => new AliyunDashScopeImageProtocol(mode))];
     }
 

@@ -1,5 +1,4 @@
 ﻿using System.Globalization;
-using MassTransit;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using WooVisAgent.Api.Hubs;
@@ -20,20 +19,26 @@ namespace WooVisAgent.Api.Consumers;
 public class GenerationTaskStatusChangedConsumer(
     IHubContext<TaskHub> hubContext,
     ILogger<GenerationTaskStatusChangedConsumer> logger)
-    : IConsumer<GenerationTaskStatusChanged>
 {
-    public async Task Consume(ConsumeContext<GenerationTaskStatusChanged> context)
+    /// <summary>
+    /// Wolverine 处理器约定：方法名为 <c>Handle</c>，第一个参数是消息类型。
+    /// </summary>
+    public async Task Handle(GenerationTaskStatusChanged message, CancellationToken cancellationToken)
     {
-        var message = context.Message;
         var taskId = message.TaskId.ToString(CultureInfo.InvariantCulture);
         var status = message.Status.ToWireValue();
         var clients = hubContext.Clients.Group(TaskHub.GroupName(message.OwnerId));
+        var outputs = message.Outputs?.Select(ToDto).ToList();
 
-        // 1. 状态 / 进度：所有状态变化都推一次，前端据此更新进度条与状态标签
+        // 1. 状态 / 进度：所有状态变化都推一次，前端据此更新进度条与状态标签。
+        //
+        // outputs 必须随每一条事件一起带出去，不能只留给下面的 TaskCompleted。
+        // 否则前端收到"已完成 + 100%"却拿不到产物，就会把卡片收尾成"100% 但没有图"，
+        // 随后到达的 TaskCompleted 又因为订阅已注销而被丢弃 —— 表现就是永远不出图。
         await clients.SendAsync(
             "TaskStatusChanged",
-            new TaskStatusChangedPayload(taskId, status, message.Progress, message.Message),
-            context.CancellationToken);
+            new TaskStatusChangedPayload(taskId, status, message.Progress, message.Message, outputs),
+            cancellationToken);
 
         // 2. 终态：额外推一条语义化事件
         switch (message.Status)
@@ -41,15 +46,15 @@ public class GenerationTaskStatusChangedConsumer(
             case GenerationTaskStatus.Succeeded:
                 await clients.SendAsync(
                     "TaskCompleted",
-                    new TaskCompletedPayload(taskId, message.Outputs?.Select(ToDto).ToList()),
-                    context.CancellationToken);
+                    new TaskCompletedPayload(taskId, outputs),
+                    cancellationToken);
                 break;
 
             case GenerationTaskStatus.Failed:
                 await clients.SendAsync(
                     "TaskFailed",
                     new TaskFailedPayload(taskId, message.Message),
-                    context.CancellationToken);
+                    cancellationToken);
                 break;
         }
 
@@ -68,7 +73,12 @@ public class GenerationTaskStatusChangedConsumer(
         asset.Duration);
 
     /// <summary>字段名与前端 TaskStatusChanged 事件负载一致（SignalR 默认 camelCase）</summary>
-    private sealed record TaskStatusChangedPayload(string TaskId, string Status, int Progress, string? Message);
+    private sealed record TaskStatusChangedPayload(
+        string TaskId,
+        string Status,
+        int Progress,
+        string? Message,
+        IReadOnlyList<TaskAssetDto>? Outputs);
 
     private sealed record TaskCompletedPayload(string TaskId, IReadOnlyList<TaskAssetDto>? Outputs);
 

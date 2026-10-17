@@ -46,6 +46,37 @@ public interface IModelDeliveryProtocol
     string? ResolveRequestUrl(ModelConfig model);
 
     /// <summary>
+    /// 是否支持「图生图」（带参考图）。
+    ///
+    /// 不支持时框架会直接给出明确的失败原因——把参考图悄悄丢掉、照常文生图，
+    /// 会产出一张和参考图毫无关系的图，用户根本无从判断是模型不行还是没接上。
+    /// </summary>
+    bool SupportsImageToImage => false;
+
+    /// <summary>
+    /// 按「是否带参考图」解析请求地址。默认忽略该标志。
+    ///
+    /// 需要覆写的典型场景：OpenAI 系的图生图走 <c>/images/edits</c> 而不是
+    /// <c>/images/generations</c>，同一个 base 地址要落到不同路径上。
+    /// </summary>
+    string? ResolveRequestUrl(ModelConfig model, bool hasReferenceImages) => ResolveRequestUrl(model);
+
+    /// <summary>
+    /// 是否要以 multipart/form-data 提交（图生图在 OpenAI 系必须走文件字段）。
+    /// 返回 <c>true</c> 时必须同时实现 <see cref="BuildMultipartContent" />。
+    /// </summary>
+    bool RequiresMultipart(ImageDeliveryRequest request) => false;
+
+    /// <summary>构造 multipart 请求内容；<see cref="RequiresMultipart" /> 为 true 时调用</summary>
+    MultipartFormDataContent? BuildMultipartContent(ImageDeliveryRequest request) => null;
+
+    /// <summary>
+    /// 极简 multipart（只含必需字段），用于首个请求被网关以「未知字段」拒绝后的降级重试。
+    /// 返回 null 表示没有可降级的版本，框架会直接复用 <see cref="BuildMultipartContent" /> 的结果。
+    /// </summary>
+    MultipartFormDataContent? BuildMinimalMultipartContent(ImageDeliveryRequest request) => null;
+
+    /// <summary>
     /// 是否走「提交任务 → 轮询任务结果」的异步流程。
     /// 目前只有 DashScope 原生接口（<c>X-DashScope-Async: enable</c>）属于这一类；
     /// 返回 <c>true</c> 时必须同时实现 <see cref="ResolveTaskStatusUrl"/>。
@@ -104,7 +135,12 @@ public sealed class ModelDeliveryProtocolResolver
     ///
     /// 返回的协议是<b>经二次分派后的具体方案</b>，调用方可以直接拿它构造请求体。
     /// </summary>
-    public ProtocolResolution? Resolve(ModelConfig model)
+    /// <param name="model">模型配置</param>
+    /// <param name="hasReferenceImages">
+    /// 本次是否带参考图（图生图）。部分协议的入口路径会因此不同，
+    /// 必须在解析阶段就带上，否则会拿着文生图的地址去发图生图请求。
+    /// </param>
+    public ProtocolResolution? Resolve(ModelConfig model, bool hasReferenceImages = false)
     {
         foreach (var candidate in _protocols)
         {
@@ -112,7 +148,7 @@ public sealed class ModelDeliveryProtocolResolver
                 continue;
 
             var protocol = candidate.SelectDeliveryProtocol(model);
-            var url = protocol.ResolveRequestUrl(model);
+            var url = protocol.ResolveRequestUrl(model, hasReferenceImages);
 
             return string.IsNullOrWhiteSpace(url) ? null : new ProtocolResolution(protocol, url);
         }

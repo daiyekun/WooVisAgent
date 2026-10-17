@@ -9,6 +9,11 @@ using WooVisAgentServices.ImageService;
 
 var builder = Host.CreateApplicationBuilder(args);
 
+// 0. 后台进程没有 HTTP 上下文，先补一个"系统身份"。
+//    用例程序集里的提交/查询/取消等处理器都依赖 ICurrentUser，
+//    不注册会导致开发环境的服务校验直接抛错、Worker 起不来。
+builder.Services.AddScoped<ICurrentUser, SystemCurrentUser>();
+
 // 1. Aspire 服务默认配置（OpenTelemetry、HealthChecks、服务发现）
 builder.AddServiceDefaults();
 
@@ -22,10 +27,10 @@ builder.Services.AddSingleton<IFileStorageService, LocalFileStorageService>();
 // 4. 图片生成服务（AGENT.md 中「调用图片生成服务进行生成」的那一层）
 builder.AddImageService();
 
-// 5. RabbitMQ 事件总线：只扫描当前程序集。
-//    本程序集里只有一个消费者——ImageGenerationRequestedConsumer，
+// 5. RabbitMQ 事件总线（Wolverine）：只扫描当前程序集。
+//    本程序集里只有一个处理器——ImageGenerationRequestedConsumer，
 //    因此 Api 侧永远不会消费到生成任务消息，从结构上杜绝「双重消费」。
-builder.AddEventBus(typeof(Program).Assembly);
+builder.AddEventBus(EventBusConstants.GenerateWorkerQueue, typeof(Program).Assembly);
 
 var host = builder.Build();
 

@@ -43,6 +43,7 @@ public enum DashScopeImageMode
 public sealed class AliyunDashScopeImageProtocol : IModelDeliveryProtocol
 {
     private const string CompatiblePath = "/compatible-mode/v1/images/generations";
+    private const string CompatibleEditPath = "/compatible-mode/v1/images/edits";
     private const string SyncPath = "/api/v1/services/aigc/multimodal-generation/generation";
     private const string AsyncPath = "/api/v1/services/aigc/text2image/image-synthesis";
 
@@ -63,10 +64,20 @@ public sealed class AliyunDashScopeImageProtocol : IModelDeliveryProtocol
     /// </summary>
     public bool Matches(ModelConfig model) => false;
 
-    public string? ResolveRequestUrl(ModelConfig model)
+    public string? ResolveRequestUrl(ModelConfig model) => ResolveRequestUrl(model, false);
+
+    /// <summary>
+    /// 图生图时：兼容入口切到 <c>/compatible-mode/v1/images/edits</c>；
+    /// 原生同步（qwen-image）仍是同一个地址，图片放在 <c>input.messages[].content</c> 里；
+    /// 原生异步（wan / wanx 文生图）不支持图生图，由框架给出明确报错。
+    /// </summary>
+    public string? ResolveRequestUrl(ModelConfig model, bool hasReferenceImages)
     {
         if (!AliyunDashScopeEndpoints.TryResolveBase(model.Endpoint, out var baseUrl))
             return null;
+
+        if (hasReferenceImages && Mode == DashScopeImageMode.CompatibleOpenAi)
+            return $"{baseUrl}{CompatibleEditPath}";
 
         return Mode switch
         {
@@ -75,6 +86,30 @@ public sealed class AliyunDashScopeImageProtocol : IModelDeliveryProtocol
             _ => $"{baseUrl}{AsyncPath}",
         };
     }
+
+    /// <summary>
+    /// 只有<b>原生同步入口</b>（qwen-image 系列）真正支持图生图。
+    ///
+    /// 原生异步（wan / wanx 文生图）接口不接受参考图；
+    /// OpenAI 兼容入口的 <c>/images/edits</c> 在百炼公共域名上同样不接受图生图 ——
+    /// 公共域名会在收到 multipart 请求体之前直接断开连接，
+    /// 客户端只会拿到一句无从下手的 "Error while copying content to a stream."。
+    /// 与其让用户撞上这个错误，不如明确声明不支持，由框架给出可读的错误。
+    /// </summary>
+    public bool SupportsImageToImage => Mode == DashScopeImageMode.SyncMultimodal;
+
+    /// <summary>
+    /// 走原生同步入口的图生图用 JSON 里的 data URI 传图，不需要 multipart。
+    /// 保留该实现是为了兼容确实存在 compatible-mode 业务空间域名的私有网关。
+    /// </summary>
+    public bool RequiresMultipart(ImageDeliveryRequest request)
+        => Mode == DashScopeImageMode.CompatibleOpenAi && request.HasReferenceImages;
+
+    public MultipartFormDataContent? BuildMultipartContent(ImageDeliveryRequest request)
+        => RequiresMultipart(request) ? ImageDeliveryPayloads.OpenAiEditsForm(request) : null;
+
+    public MultipartFormDataContent? BuildMinimalMultipartContent(ImageDeliveryRequest request)
+        => RequiresMultipart(request) ? ImageDeliveryPayloads.OpenAiEditsForm(request, minimal: true) : null;
 
     public bool IsAsynchronous => Mode == DashScopeImageMode.AsyncText2Image;
 

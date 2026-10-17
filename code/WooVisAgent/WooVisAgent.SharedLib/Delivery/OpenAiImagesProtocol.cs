@@ -22,6 +22,11 @@ public sealed class OpenAiImagesProtocol : IModelDeliveryProtocol
 
     private const string GenerationSuffix = "/images/generations";
 
+    /// <summary>图生图的入口：OpenAI 系把「带参考图」的生成定义在 edits 上</summary>
+    private const string EditSuffix = "/images/edits";
+
+    private static readonly string[] KnownSuffixes = [GenerationSuffix, EditSuffix];
+
     /// <summary>作为默认兜底：只要是合法的 http(s) 绝对地址就匹配</summary>
     public bool Matches(ModelConfig model)
     {
@@ -30,23 +35,54 @@ public sealed class OpenAiImagesProtocol : IModelDeliveryProtocol
                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
     }
 
-    public string? ResolveRequestUrl(ModelConfig model)
+    public string? ResolveRequestUrl(ModelConfig model) => ResolveRequestUrl(model, false);
+
+    /// <summary>
+    /// 文生图走 <c>/images/generations</c>，图生图走 <c>/images/edits</c>——
+    /// 两者共用同一个 base 地址，只有最后一段不同。
+    /// </summary>
+    public string? ResolveRequestUrl(ModelConfig model, bool hasReferenceImages)
+    {
+        var baseUrl = ResolveBaseUrl(model);
+        if (baseUrl is null)
+            return null;
+
+        return hasReferenceImages ? $"{baseUrl}{EditSuffix}" : $"{baseUrl}{GenerationSuffix}";
+    }
+
+    public bool SupportsImageToImage => true;
+
+    public bool RequiresMultipart(ImageDeliveryRequest request) => request.HasReferenceImages;
+
+    public MultipartFormDataContent? BuildMultipartContent(ImageDeliveryRequest request)
+        => request.HasReferenceImages ? ImageDeliveryPayloads.OpenAiEditsForm(request) : null;
+
+    public MultipartFormDataContent? BuildMinimalMultipartContent(ImageDeliveryRequest request)
+        => request.HasReferenceImages ? ImageDeliveryPayloads.OpenAiEditsForm(request, minimal: true) : null;
+
+    /// <summary>
+    /// 还原出「不含生成动作」的 base 地址。
+    /// 用户可能已经把地址填到 <c>/images/generations</c> 或 <c>/images/edits</c>，
+    /// 直接往后拼会出现 <c>.../generations/images/edits</c> 这种错地址。
+    /// </summary>
+    private static string? ResolveBaseUrl(ModelConfig model)
     {
         var endpoint = (model.Endpoint ?? string.Empty).Trim().TrimEnd('/');
         if (endpoint.Length == 0)
             return null;
 
-        // 1) 已经是完整生成路径
-        if (endpoint.EndsWith(GenerationSuffix, StringComparison.OrdinalIgnoreCase))
-            return endpoint;
+        foreach (var suffix in KnownSuffixes)
+        {
+            if (endpoint.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                return endpoint[..^suffix.Length].TrimEnd('/');
+        }
 
-        // 2) 纯域名（无路径）→ 补标准的 /v1/images/generations
+        // 纯域名（无路径）→ 补标准的 /v1 前缀
         if (!Uri.TryCreate(endpoint, UriKind.Absolute, out var uri)
             || string.IsNullOrWhiteSpace(uri.AbsolutePath)
             || uri.AbsolutePath == "/")
-            return $"{endpoint}/v1{GenerationSuffix}";
+            return $"{endpoint}/v1";
 
-        // 3) 带路径的 base（/v1、/api/v3 等）→ 末尾补 /images/generations
-        return $"{endpoint}{GenerationSuffix}";
+        return endpoint;
     }
 }

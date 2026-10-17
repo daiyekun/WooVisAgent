@@ -16,4 +16,45 @@ public static class LocalStorageDefaults
 
     /// <summary>对外访问前缀，与 Api 中静态文件中间件的 RequestPath 一致</summary>
     public const string PublicRequestPath = "/uploads";
+
+    /// <summary>
+    /// 把对外访问地址（<c>/uploads/2026/10/17/xxx.png</c>）还原成存储层的相对路径
+    /// （<c>uploads/2026/10/17/xxx.png</c>），供 <c>IFileStorageService</c> 直接读取。
+    ///
+    /// 任务的输入素材（参考图）与产物在库里存的都是对外地址，
+    /// 而存储层只认相对路径，因此需要这一层换算——不写在这里就会出现
+    /// 「Api 存的是 /uploads、Worker 拿去拼 D:\/uploads」的路径错乱。
+    /// </summary>
+    public static bool TryMapPublicUrlToRelativePath(string? url, out string relativePath)
+    {
+        relativePath = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(url))
+            return false;
+
+        var value = url.Trim().Replace('\\', '/');
+
+        if (Uri.TryCreate(value, UriKind.Absolute, out var absolute))
+        {
+            // 只有 http(s) 地址才可能指向本站的静态托管目录，其余（file、data 等）一律不接受
+            if (absolute.Scheme is not ("http" or "https"))
+                return false;
+
+            value = absolute.AbsolutePath;
+        }
+
+        var normalized = value.TrimStart('/');
+
+        // 只接受 uploads/ 前缀，避免把别的前缀误当成存储路径
+        if (!normalized.StartsWith($"{UploadFolder}/", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        // 挡掉 ../ 形式的路径穿越
+        var segments = normalized.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Any(segment => segment == "." || segment == ".."))
+            return false;
+
+        relativePath = string.Join('/', segments);
+        return true;
+    }
 }

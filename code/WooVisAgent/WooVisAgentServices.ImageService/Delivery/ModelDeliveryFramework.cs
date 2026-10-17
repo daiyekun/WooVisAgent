@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Net.Http.Headers;
+using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
@@ -70,20 +71,44 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
     {
         var batchSize = Math.Clamp(request.BatchSize, 1, ImageGenerationInputValidator.MaxBatchSize);
 
-        // 解析时同时拿到命中的协议，后续日志与错误信息都要带上，方便排查 404 / 协议不符这类问题
-        var resolution = _protocolResolver.Resolve(request.Model);
+        // 进度上报（可选）。没有传通道时全部是空操作，行为与以前完全一致。
+        var progress = request.Progress is { } reporter
+            ? new ProgressScope(reporter, 0, 100)
+            : null;
+
+        progress?.ReportRatio(0.06, "正在解析模型接口");
+
+        // 参考图必须先解析成字节：它们存在本站 /uploads 下，模型服务访问不到这个地址，
+        // 只能由本进程读出来再按协议需要转成 multipart 文件字段或 data URI。
+        var references = await ResolveReferenceImagesAsync(request, cancellationToken);
+        var hasReferences = references.Count > 0;
+
+        // 解析时同时拿到命中的协议，后续日志与错误信息都要带上，方便排查 404 / 协议不符这类问题。
+        // 是否带参考图会影响入口路径（OpenAI 系图生图走 /images/edits），必须在这一步就告知解析器。
+        var resolution = _protocolResolver.Resolve(request.Model, hasReferences);
         var protocol = resolution?.Protocol;
 
         if (protocol is not null)
         {
             _logger.LogInformation(
-                "任务 {TaskId} 使用模型 {ModelName}（供应方 {Provider}）：协议 {Protocol}（{Mode}）解析出请求地址 {Url}",
+                "任务 {TaskId} 使用模型 {ModelName}（供应方 {Provider}）：协议 {Protocol}（{Mode}）解析出请求地址 {Url}，模式 {TaskMode}",
                 request.TaskId,
                 request.Model.Name,
                 request.Model.Provider,
                 protocol.Name,
                 protocol.IsAsynchronous ? "异步提交+轮询" : "同步",
-                resolution!.Url);
+                resolution!.Url,
+                hasReferences ? $"图生图（{references.Count} 张参考图）" : "文生图");
+
+            // 协议不支持带图时直接失败。若在这里把参考图悄悄丢掉、照常文生图，
+            // 产出的是一张与参考图毫无关系的图，用户无法判断是模型不行还是没接上。
+            if (hasReferences && !protocol.SupportsImageToImage)
+            {
+                throw new InvalidOperationException(
+                    $"模型「{request.Model.Name}」命中的协议 {protocol.Name} 不支持图生图（参考图）。" +
+                    "请改用支持图生图的模型（如 OpenAI 系 /images/edits、百炼 qwen-image 多模态入口），" +
+                    "或去掉参考图改为纯文生图。");
+            }
         }
         else
         {
@@ -93,18 +118,34 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
                 request.Model.Name);
         }
 
+        progress?.ReportRatio(0.12, hasReferences ? $"已读取 {references.Count} 张参考图" : "正在提交生成请求");
+
         var assets = new List<TaskAsset>(batchSize);
+
+        // 单张图的进度区间：整体 15% → 92%，多张时按张数均分，
+        // 这样"出第 2/4 张"这种中间状态也能真实反映到进度条上。
+        const double imageRangeStart = 0.15;
+        const double imageRangeEnd = 0.92;
+        var slice = (imageRangeEnd - imageRangeStart) / batchSize;
 
         for (var index = 0; index < batchSize; index++)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            var scope = progress?.Slice(
+                imageRangeStart + slice * index,
+                imageRangeStart + slice * (index + 1));
+
+            scope?.ReportRatio(
+                0.1,
+                batchSize > 1 ? $"正在生成第 {index + 1}/{batchSize} 张" : "正在调用模型生成");
 
             (byte[] Bytes, string Extension) produced;
 
             try
             {
                 produced = protocol is not null
-                    ? await RequestFromRemoteModelAsync(request, resolution!, index, cancellationToken)
+                    ? await RequestFromRemoteModelAsync(request, resolution!, index, references, scope, cancellationToken)
                     : (PlaceholderImageRenderer.RenderPng(request.Prompt, request.Width, request.Height, index), "png");
             }
             catch (TimeoutRejectedException exception)
@@ -120,9 +161,12 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
                     exception);
             }
 
+            scope?.ReportRatio(0.93, "正在保存图片");
             assets.Add(await SaveAssetAsync(request, produced.Bytes, produced.Extension, index, cancellationToken));
+            scope?.ReportRatio(1, null);
         }
 
+        progress?.ReportRatio(0.96, "正在写入任务结果");
         return assets;
     }
 
@@ -227,6 +271,8 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
         ImageGenerationRequest request,
         ProtocolResolution resolution,
         int index,
+        IReadOnlyList<ImageDeliveryReference> references,
+        ProgressScope? progress,
         CancellationToken cancellationToken)
     {
         var deliveryRequest = new ImageDeliveryRequest(
@@ -238,15 +284,18 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
             request.Steps,
             request.CfgScale,
             request.Seed,
-            index);
+            index,
+            references);
 
-        var plans = BuildPlans(request.Model, resolution);
+        var plans = BuildPlans(request.Model, resolution, references.Count > 0);
         var failures = new List<string>(plans.Count);
+
+        progress?.ReportRatio(0.2, "正在提交生成请求");
 
         for (var position = 0; position < plans.Count; position++)
         {
             var (protocol, url) = plans[position];
-            var outcome = await TryDeliverAsync(request, url, protocol, deliveryRequest, cancellationToken);
+            var outcome = await TryDeliverAsync(request, url, protocol, deliveryRequest, progress, cancellationToken);
 
             if (outcome.Result is { } succeeded)
                 return succeeded;
@@ -274,13 +323,14 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
     /// </summary>
     private static List<(IModelDeliveryProtocol Protocol, string Url)> BuildPlans(
         ModelConfig model,
-        ProtocolResolution resolution)
+        ProtocolResolution resolution,
+        bool hasReferenceImages)
     {
         var plans = new List<(IModelDeliveryProtocol, string)> { (resolution.Protocol, resolution.Url) };
 
         foreach (var fallback in resolution.Protocol.GetFallbackProtocols(model))
         {
-            var url = fallback.ResolveRequestUrl(model);
+            var url = fallback.ResolveRequestUrl(model, hasReferenceImages);
             if (string.IsNullOrWhiteSpace(url))
                 continue;
 
@@ -299,28 +349,28 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
         string url,
         IModelDeliveryProtocol protocol,
         ImageDeliveryRequest deliveryRequest,
+        ProgressScope? progress,
         CancellationToken cancellationToken)
     {
-        var body = protocol.BuildRequestBody(deliveryRequest);
-        var attempt = await PostAsync(request, url, protocol, deliveryRequest, body, cancellationToken);
+        // 图生图在 OpenAI 系必须走 multipart 文件字段，其余仍是 JSON
+        var multipart = protocol.RequiresMultipart(deliveryRequest);
+
+        var attempt = await SendAsync(request, url, protocol, deliveryRequest, multipart, false, cancellationToken);
 
         // 异构网关对可选字段的容忍度差异很大（例如百炼的 negative_prompt 仅部分模型支持）。
         // 首个请求被 400 拒绝时，用只含必需字段的极简请求体自动降级重试一次，
         // 避免"少一个字段就整条任务失败"。400 表示请求在处理前就被拒，不会重复计费。
         if (attempt.Response.StatusCode == System.Net.HttpStatusCode.BadRequest)
         {
-            var minimalBody = protocol.BuildMinimalRequestBody(deliveryRequest);
-            if (!string.Equals(minimalBody, body, StringComparison.Ordinal))
-            {
-                _logger.LogWarning(
-                    "模型接口返回 400（请求地址 {Url}，协议 {Protocol}），疑似网关不接受可选字段，已改用极简请求体重试。原始响应：{Body}",
-                    url,
-                    protocol.Name,
-                    Truncate(attempt.Body, 300));
+            _logger.LogWarning(
+                "模型接口返回 400（请求地址 {Url}，协议 {Protocol}，{ContentType}），疑似网关不接受可选字段，已改用极简请求重试。原始响应：{Body}",
+                url,
+                protocol.Name,
+                multipart ? "multipart" : "json",
+                Truncate(attempt.Body, 300));
 
-                attempt.Response.Dispose();
-                attempt = await PostAsync(request, url, protocol, deliveryRequest, minimalBody, cancellationToken);
-            }
+            attempt.Response.Dispose();
+            attempt = await SendAsync(request, url, protocol, deliveryRequest, multipart, true, cancellationToken);
         }
 
         using var response = attempt.Response;
@@ -350,11 +400,15 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
 
         // 同步协议：响应体里直接就是图片
         if (!protocol.IsAsynchronous)
+        {
+            progress?.ReportRatio(0.75, "模型已返回，正在读取图片");
+
             return DeliveryOutcome.Success(
                 await ExtractImageAsync(responseBody, response.Content.Headers.ContentType?.MediaType, cancellationToken));
+        }
 
         return DeliveryOutcome.Success(
-            await AwaitAsyncTaskResultAsync(request, url, protocol, responseBody, cancellationToken));
+            await AwaitAsyncTaskResultAsync(request, url, protocol, responseBody, progress, cancellationToken));
     }
 
     /// <summary>
@@ -365,6 +419,7 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
         string submitUrl,
         IModelDeliveryProtocol protocol,
         string submitBody,
+        ProgressScope? progress,
         CancellationToken cancellationToken)
     {
         var modelTaskId = ExtractTaskId(submitBody);
@@ -382,7 +437,7 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
             modelTaskId,
             statusUrl);
 
-        var resultBody = await PollTaskUntilCompletedAsync(request, protocol, statusUrl, cancellationToken);
+        var resultBody = await PollTaskUntilCompletedAsync(request, protocol, statusUrl, progress, cancellationToken);
         return await ExtractImageAsync(resultBody, null, cancellationToken);
     }
 
@@ -419,6 +474,26 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
         return Truncate($"已依次尝试 {failures.Count} 套投递方案，全部失败 —— {string.Join(" ｜ ", failures)}", 900);
     }
 
+    /// <summary>
+    /// 进度区间映射器。
+    ///
+    /// 生成是分阶段的（解析接口 → 提交 → 等待模型 → 落盘），而每一阶段只知道自己内部
+    /// 完成了多少（0 - 1）。用这个类把"局部比例"折算成整条任务的百分比，
+    /// 调用方就不需要到处算区间、也不容易把进度条算反。
+    /// </summary>
+    private sealed class ProgressScope(IProgress<ImageGenerationProgress> progress, double from, double to)
+    {
+        /// <summary>取一个子区间，供下一层继续细分</summary>
+        public ProgressScope Slice(double childFrom, double childTo) =>
+            new(progress, from + (to - from) * childFrom, from + (to - from) * childTo);
+
+        /// <param name="ratio">本区间内的完成比例，0 - 1</param>
+        public void ReportRatio(double ratio, string? stage) =>
+            progress.Report(new ImageGenerationProgress(
+                (int)Math.Round(100 * (from + (to - from) * Math.Clamp(ratio, 0, 1))),
+                stage));
+    }
+
     /// <summary>一套投递方案的执行结论</summary>
     private readonly record struct DeliveryOutcome(
         (byte[] Bytes, string Extension)? Result,
@@ -430,19 +505,47 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
         public static DeliveryOutcome Failed(string error, bool canFallback) => new(null, error, canFallback);
     }
 
-    /// <summary>按协议构造并发送一次生成请求，返回响应（调用方负责释放）与响应体</summary>
-    private async Task<(HttpResponseMessage Response, string Body)> PostAsync(
+    /// <summary>
+    /// 按协议构造并发送一次生成请求，返回响应（调用方负责释放）与响应体。
+    ///
+    /// 两种提交形态由协议自己声明：
+    /// <list type="bullet">
+    ///   <item>JSON —— 文生图，以及把参考图转成 data URI 的协议（百炼多模态）；</item>
+    ///   <item>multipart —— OpenAI 系的图生图，图片必须以文件字段提交。</item>
+    /// </list>
+    /// </summary>
+    /// <param name="minimal">为真时只携带必需字段，用于被 400 拒绝后的降级重试</param>
+    private async Task<(HttpResponseMessage Response, string Body)> SendAsync(
         ImageGenerationRequest request,
         string url,
         IModelDeliveryProtocol protocol,
         ImageDeliveryRequest deliveryRequest,
-        string requestBody,
+        bool multipart,
+        bool minimal,
         CancellationToken cancellationToken)
     {
-        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, url)
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, url);
+
+        if (multipart)
         {
-            Content = new StringContent(requestBody, Encoding.UTF8, "application/json"),
-        };
+            var form = minimal
+                ? protocol.BuildMinimalMultipartContent(deliveryRequest) ?? protocol.BuildMultipartContent(deliveryRequest)
+                : protocol.BuildMultipartContent(deliveryRequest);
+
+            if (form is null)
+                throw new InvalidOperationException(
+                    $"协议 {protocol.Name} 声明需要 multipart 提交（请求地址：{url}），但没有构造出表单内容。");
+
+            httpRequest.Content = form;
+        }
+        else
+        {
+            var requestBody = minimal
+                ? protocol.BuildMinimalRequestBody(deliveryRequest)
+                : protocol.BuildRequestBody(deliveryRequest);
+
+            httpRequest.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+        }
 
         if (!string.IsNullOrWhiteSpace(request.Model.ApiKey))
             httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", request.Model.ApiKey.Trim());
@@ -450,9 +553,157 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
         foreach (var (key, value) in protocol.BuildExtraHeaders(deliveryRequest))
             httpRequest.Headers.TryAddWithoutValidation(key, value);
 
-        var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+        HttpResponseMessage response;
+        try
+        {
+            response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+        }
+        catch (HttpRequestException exception)
+        {
+            // HttpClient 会把「上传请求体时连接被对端掐断」这类传输层异常统一包装成
+            // "Error while copying content to a stream."，完全看不出真实原因。
+            // 直接把这句话写进 ErrorMessage，用户只会看到一句无从下手的英文，
+            // 排查时也拿不到任何线索。这里把最内层的真实异常挖出来重写。
+            throw new InvalidOperationException(DescribeTransportFailure(url, exception), exception);
+        }
+
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
         return (response, body);
+    }
+
+    /// <summary>
+    /// 把传输层异常翻译成能直接指导排查的中文说明。
+    ///
+    /// 图生图走 multipart，参考图动辄几 MB，对端（WAF / 网关 / 模型服务）
+    /// 可能在收到请求体之前就断开连接；这类问题如果不翻译，
+    /// 最终只会以 "Error while copying content to a stream." 的形式呈现在任务列表里。
+    /// </summary>
+    private static string DescribeTransportFailure(string url, Exception exception)
+    {
+        var root = exception;
+        while (root.InnerException is not null)
+            root = root.InnerException;
+
+        var detail = root switch
+        {
+            // 10054 = 对方在传输过程中强制关闭连接。绝大多数是 WAF / 网关在上传完成前
+            // 就按体积或规则掐断，而不是模型接口真的坏了。
+            SocketException { SocketErrorCode: var code } => $"连接被对方中断（{code}）",
+            IOException => "连接在传输过程中被关闭",
+            _ => root.Message,
+        };
+
+        return $"调用模型接口失败：向 {url} 发送请求时 {detail}。" +
+               "若为图生图，可能是参考图体积过大触发了网关限制，请换一张更小的参考图后重试；" +
+               $"底层原始错误：{root.Message}";
+    }
+
+    /// <summary>
+    /// 把任务里的参考图（<see cref="TaskAsset" />，Url 形如 <c>/uploads/2026/10/17/xxx.png</c>）
+    /// 读成字节，供协议层构造 multipart 文件或 data URI。
+    ///
+    /// 取不到的图会被跳过而不是让整条任务失败——少一张参考图还能出图，
+    /// 但若因此整单失败，用户会以为是模型坏了。跳过时留一条 warning 便于回溯。
+    /// </summary>
+    private async Task<IReadOnlyList<ImageDeliveryReference>> ResolveReferenceImagesAsync(
+        ImageGenerationRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (request.ReferenceImages is not { Count: > 0 } assets)
+            return [];
+
+        var references = new List<ImageDeliveryReference>(assets.Count);
+
+        foreach (var asset in assets.Take(ImageDeliveryRequest.MaxReferenceImages))
+        {
+            var loaded = await LoadReferenceImageAsync(asset, cancellationToken);
+            if (loaded is not null)
+                references.Add(loaded);
+        }
+
+        if (references.Count == 0)
+            _logger.LogWarning("任务 {TaskId} 带了参考图，但一张都没能读到，本次将按文生图执行", request.TaskId);
+
+        return references;
+    }
+
+    private async Task<ImageDeliveryReference?> LoadReferenceImageAsync(
+        TaskAsset asset,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(asset.Url))
+            return null;
+
+        try
+        {
+            // 1) 本站 /uploads 下的文件：直接走存储层读，与 Api 落盘共用同一根目录
+            if (LocalStorageDefaults.TryMapPublicUrlToRelativePath(asset.Url, out var relativePath))
+            {
+                await using var stream = await _fileStorage.GetAsync(relativePath, cancellationToken);
+                if (stream is null)
+                {
+                    _logger.LogWarning("参考图 {Url} 在本站存储中不存在，已跳过", asset.Url);
+                    return null;
+                }
+
+                var localBytes = await ReadAllAsync(stream, cancellationToken);
+                return new ImageDeliveryReference(
+                    asset.Url,
+                    localBytes,
+                    GuessContentType(asset.FileName ?? asset.Url),
+                    Path.GetFileName(asset.FileName ?? asset.Url));
+            }
+
+            // 2) 外部 http(s) 地址：下载一次
+            if (Uri.TryCreate(asset.Url, UriKind.Absolute, out var uri)
+                && uri.Scheme is "http" or "https")
+            {
+                using var response = await _httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("参考图 {Url} 下载失败（HTTP {Status}），已跳过", asset.Url, (int)response.StatusCode);
+                    return null;
+                }
+
+                var remoteBytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+                return new ImageDeliveryReference(
+                    asset.Url,
+                    remoteBytes,
+                    response.Content.Headers.ContentType?.MediaType ?? GuessContentType(asset.Url),
+                    Path.GetFileName(uri.AbsolutePath));
+            }
+
+            _logger.LogWarning("参考图地址 {Url} 既不是本站文件也不是可下载的 http 地址，已跳过", asset.Url);
+            return null;
+        }
+        catch (Exception exception)
+        {
+            _logger.LogWarning(exception, "读取参考图 {Url} 失败，已跳过", asset.Url);
+            return null;
+        }
+    }
+
+    private static async Task<byte[]> ReadAllAsync(Stream stream, CancellationToken cancellationToken)
+    {
+        using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer, cancellationToken);
+        return buffer.ToArray();
+    }
+
+    /// <summary>按扩展名推断 Content-Type，推断不出时按 PNG 处理</summary>
+    private static string GuessContentType(string? nameOrUrl)
+    {
+        var extension = Path.GetExtension(nameOrUrl ?? string.Empty).ToLowerInvariant();
+
+        return extension switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".webp" => "image/webp",
+            ".gif" => "image/gif",
+            ".bmp" => "image/bmp",
+            ".avif" => "image/avif",
+            _ => "image/png",
+        };
     }
 
     /// <summary>
@@ -463,16 +714,24 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
         ImageGenerationRequest request,
         IModelDeliveryProtocol protocol,
         string statusUrl,
+        ProgressScope? progress,
         CancellationToken cancellationToken)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(PollTimeout);
+
+        // 异步模型（wan / wanx）出图要几十秒。这里按"已等待时长 / 超时上限"把进度
+        // 从 30% 平滑推到 85%，让用户看到任务确实在往前走，而不是卡在原地。
+        var startedAt = Stopwatch.StartNew();
 
         try
         {
             while (true)
             {
                 timeout.Token.ThrowIfCancellationRequested();
+
+                var waited = startedAt.Elapsed.TotalSeconds / PollTimeout.TotalSeconds;
+                progress?.ReportRatio(0.3 + 0.55 * Math.Clamp(waited, 0, 1), "模型正在绘制，等待返回");
 
                 using var probe = new HttpRequestMessage(HttpMethod.Get, statusUrl);
                 if (!string.IsNullOrWhiteSpace(request.Model.ApiKey))
