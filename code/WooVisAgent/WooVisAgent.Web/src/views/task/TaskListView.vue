@@ -8,6 +8,7 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import TaskCard from '@/components/TaskCard.vue'
 import VideoPlayer from '@/components/VideoPlayer.vue'
 import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS, TASK_STATUS_OPTIONS } from '@/constants'
+import { useMaterialStore } from '@/stores/materialStore'
 import { useTaskStore } from '@/stores/taskStore'
 import { useAppStore } from '@/stores/appStore'
 import type { GenerationTask, TaskAsset } from '@/types'
@@ -16,6 +17,7 @@ import { copyText, dialog, formatFileSize, message } from '@/utils'
 const router = useRouter()
 const taskStore = useTaskStore()
 const appStore = useAppStore()
+const materialStore = useMaterialStore()
 
 const keyword = ref('')
 const typeFilter = ref<GenerationTask['type'] | null>(null)
@@ -106,11 +108,16 @@ async function handleRetry(task: GenerationTask): Promise<void> {
  * 选秀：把任务产物收录进「我的作品」。
  *
  * 成功后卡片会立刻置灰并出现星标（后端返回的任务快照已写回 store），
- * 同时提示用户可以去看看作品，不直接跳转——连续选秀多个任务时少点几下。
+ * 同时把作品总数 +addedCount，侧边栏角标无需刷新即可对上，
+ * 再异步校准一次真实数量。
+ * 不直接跳转——连续选秀多个任务时少点几下。
  */
 async function handleSelect(task: GenerationTask): Promise<void> {
   const result = await taskStore.selectTask(task.id)
   if (!result) return
+
+  materialStore.bump(result.addedCount)
+  void materialStore.loadTotal()
 
   message.success(`已将 ${result.addedCount} 件产物加入我的作品`)
 }

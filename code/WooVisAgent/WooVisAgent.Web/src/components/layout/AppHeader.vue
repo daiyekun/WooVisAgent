@@ -6,10 +6,12 @@ import { useRoute, useRouter } from 'vue-router'
 import AppIcon from '@/components/common/AppIcon.vue'
 import { useAppStore } from '@/stores/appStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useMaterialStore } from '@/stores/materialStore'
 import { formatDateTime, message } from '@/utils'
 
 const appStore = useAppStore()
 const authStore = useAuthStore()
+const materialStore = useMaterialStore()
 const route = useRoute()
 const router = useRouter()
 
@@ -38,6 +40,9 @@ const userMenuOptions = [
 function handleUserAction(key: string): void {
   if (key !== 'logout') return
 
+  // 退出前清空作品库：作品数据按用户隔离，留着会让下一个登录的人
+  // 先看到上一个人的作品数和缩略图，直到下一次请求返回才被纠正。
+  materialStore.reset()
   authStore.logout()
   message.success('已退出登录')
   void router.replace({ name: 'Login' })

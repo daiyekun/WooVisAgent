@@ -10,20 +10,22 @@
  * 版式沿用原型 docs/prot/app.html 的语言：卡片 + 起始入口 + 缩略图网格，
  * 与外壳的左侧菜单组成「工作台」整体。
  */
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 import AppIcon from '@/components/common/AppIcon.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { TASK_STATUS_META, TASK_TYPE_META } from '@/constants'
 import { useAuthStore } from '@/stores/authStore'
+import { useMaterialStore } from '@/stores/materialStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useTaskStore } from '@/stores/taskStore'
-import type { GenerationTask, TaskAsset, TaskStatus } from '@/types'
+import type { GenerationTask, MaterialAsset, TaskStatus } from '@/types'
 import { formatDateTime } from '@/utils'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const materialStore = useMaterialStore()
 const modelStore = useModelStore()
 const taskStore = useTaskStore()
 
@@ -40,26 +42,23 @@ const greeting = computed(() => {
 
 /** ==================== 概览 ==================== */
 
-/** 已完成的任务（作品来源） */
-const finishedTasks = computed(() =>
-  taskStore.tasks.filter((task) => task.status === 'succeeded'),
-)
-
-/** 作品 = 已完成任务的产物摊平，一条产物算一件作品 */
-const works = computed(() =>
-  finishedTasks.value.flatMap((task) =>
-    (task.outputs ?? []).map((asset) => ({ id: `${task.id}-${asset.id}`, task, asset })),
-  ),
-)
+/**
+ * 「我的作品」以作品库为准，而不是从已完成任务里现算。
+ *
+ * 作品库是用户点「选秀」主动收录的结果，任务产物只是候选；
+ * 两者的差集很大——没选秀的产物不算作品，删掉的作品也不该继续计数。
+ * 侧边栏角标读的是同一个 store，两处数字天然一致。
+ */
+const works = computed(() => materialStore.materials)
 
 /** 概览指标；to 决定点击后去哪一页 */
 const stats = computed(() => [
   {
     key: 'works',
     label: '我的作品',
-    value: works.value.length,
+    value: materialStore.total,
     icon: 'grid',
-    hint: '已完成任务的产物',
+    hint: '已收录进作品库的产物',
     to: 'Works' as const,
   },
   {
@@ -124,6 +123,8 @@ function openWorks(): void {
 function refresh(): void {
   void taskStore.loadTasks({ page: 1, pageSize: 8 })
   void modelStore.loadModels()
+  void materialStore.loadTotal()
+  void materialStore.loadMaterials({ page: 1, pageSize: 8 })
 }
 
 /** ==================== 缩略图 ==================== */
@@ -142,12 +143,12 @@ function gradientOf(key: string): string {
   return WORK_GRADIENTS[sum % WORK_GRADIENTS.length]!
 }
 
-function thumbUrl(asset: TaskAsset): string {
+function thumbUrl(asset: MaterialAsset): string {
   return asset.thumbnailUrl || asset.url || ''
 }
 
 /** 视频时长 00:04 这种展示 */
-function durationText(asset: TaskAsset): string {
+function durationText(asset: MaterialAsset): string {
   const total = Math.max(0, Math.round(asset.duration ?? 0))
   const mm = String(Math.floor(total / 60)).padStart(2, '0')
   const ss = String(total % 60).padStart(2, '0')
@@ -157,6 +158,19 @@ function durationText(asset: TaskAsset): string {
 function taskTitle(task: GenerationTask): string {
   return task.name || task.prompt || '未命名任务'
 }
+
+function workTitle(asset: MaterialAsset): string {
+  return asset.fileName || asset.sourceTaskName || '未命名作品'
+}
+
+onMounted(() => {
+  // 工作台要展示真实的作品库与最近任务，进来就把两侧数据都拉起来；
+  // loadTotal 只取数量（pageSize=1），loadMaterials 取缩略图，
+  // 后者返回的 total 会顺带把 loadTotal 的结果对齐。
+  void taskStore.loadTasks({ page: 1, pageSize: 8 })
+  void materialStore.loadTotal()
+  void materialStore.loadMaterials({ page: 1, pageSize: 8 })
+})
 </script>
 
 <template>
@@ -236,10 +250,10 @@ function taskTitle(task: GenerationTask): string {
       <div class="card-head">
         <div>
           <h3><app-icon name="grid" :size="15" />最近作品</h3>
-          <div class="sub">已完成任务的产物，点缩略图去作品库继续处理</div>
+          <div class="sub">已收录进「我的作品」的产物，点缩略图去作品库继续处理</div>
         </div>
 
-        <button v-if="works.length" class="btn btn-ghost btn-sm" type="button" @click="openWorks">
+        <button v-if="materialStore.total" class="btn btn-ghost btn-sm" type="button" @click="openWorks">
           查看全部
           <app-icon name="chevron-right" :size="14" />
         </button>
@@ -247,26 +261,26 @@ function taskTitle(task: GenerationTask): string {
 
       <div v-if="recentWorks.length" class="ws-grid">
         <button
-          v-for="item in recentWorks"
-          :key="item.id"
+          v-for="asset in recentWorks"
+          :key="asset.id"
           class="ws-thumb"
           type="button"
-          :title="taskTitle(item.task)"
+          :title="workTitle(asset)"
           @click="openWorks"
         >
-          <img v-if="thumbUrl(item.asset)" :src="thumbUrl(item.asset)" :alt="taskTitle(item.task)" />
-          <span v-else class="glyph" :style="{ background: gradientOf(item.id) }">
-            {{ item.asset.type === 'video' ? '🎬' : '🎨' }}
+          <img v-if="thumbUrl(asset)" :src="thumbUrl(asset)" :alt="workTitle(asset)" />
+          <span v-else class="glyph" :style="{ background: gradientOf(asset.id) }">
+            {{ asset.type === 'video' ? '🎬' : '🎨' }}
           </span>
 
-          <span v-if="item.asset.type === 'video'" class="ws-play">
+          <span v-if="asset.type === 'video'" class="ws-play">
             <i />
           </span>
-          <span v-if="item.asset.type === 'video'" class="ws-dur">
-            {{ durationText(item.asset) }}
+          <span v-if="asset.type === 'video'" class="ws-dur">
+            {{ durationText(asset) }}
           </span>
-          <span class="ws-kind" :class="item.asset.type === 'video' ? 'is-video' : 'is-image'">
-            {{ TASK_TYPE_META[item.task.type].label }}
+          <span class="ws-kind" :class="asset.type === 'video' ? 'is-video' : 'is-image'">
+            {{ asset.type === 'video' ? '视频' : '图片' }}
           </span>
         </button>
       </div>
@@ -275,7 +289,7 @@ function taskTitle(task: GenerationTask): string {
         v-else
         icon="grid"
         title="还没有作品"
-        description="点上面的「新建图片创作」或「新建视频创作」，第一条对话就能出图 / 出片。"
+        description="生成完成后到任务列表点「选秀」，产物就会收录到「我的作品」。"
       >
         <button class="btn btn-primary btn-sm" type="button" @click="startCreate('image')">
           <app-icon name="plus" :size="15" />

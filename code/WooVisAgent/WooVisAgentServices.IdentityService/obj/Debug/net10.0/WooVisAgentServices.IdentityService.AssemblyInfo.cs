@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WooVisAgentServices.IdentityService")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9719bdc3a7353ef3ce1fc4e5e10e0c8475db0b68")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3e169606f9fe5c46fe36339cd9e6f768e395c3a6")]
 [assembly: System.Reflection.AssemblyProductAttribute("WooVisAgentServices.IdentityService")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WooVisAgentServices.IdentityService")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

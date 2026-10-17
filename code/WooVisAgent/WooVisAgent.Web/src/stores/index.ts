@@ -10,5 +10,7 @@ export function setupStore(app: App): void {
 
 export * from './appStore'
 export * from './authStore'
+export * from './conversationStore'
+export * from './materialStore'
 export * from './modelStore'
 export * from './taskStore'

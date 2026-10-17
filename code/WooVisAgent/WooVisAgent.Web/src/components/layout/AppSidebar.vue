@@ -7,7 +7,7 @@
  * 「最近会话」读的是真实会话数据（conversationStore），固定只展示 5 条：
  * 侧边栏空间有限，多了会把导航挤到需要滚动；要看全部走下面的「更多会话(N)」。
  */
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import AppIcon from '@/components/common/AppIcon.vue'
@@ -16,6 +16,7 @@ import { menuRoutes } from '@/router/routes'
 import { useAppStore } from '@/stores/appStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useConversationStore } from '@/stores/conversationStore'
+import { useMaterialStore } from '@/stores/materialStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useTaskStore } from '@/stores/taskStore'
 import { formatDateTime, message } from '@/utils'
@@ -25,6 +26,7 @@ defineProps<{ collapsed?: boolean }>()
 const appStore = useAppStore()
 const authStore = useAuthStore()
 const conversationStore = useConversationStore()
+const materialStore = useMaterialStore()
 const modelStore = useModelStore()
 const taskStore = useTaskStore()
 const route = useRoute()
@@ -57,14 +59,15 @@ const modelSummary = computed(() =>
 )
 
 /**
- * 「我的作品」角标：与工作台的口径保持一致，都按已完成任务的产物条数算。
- * 目前只统计当前分页内的任务，接入作品接口后换成接口返回的 total 更准。
+ * 「我的作品」角标：直接读作品库接口返回的 total。
+ *
+ * 早先这里是从 `taskStore.tasks` 里过滤 succeeded 再累加 outputs.length 算的，
+ * 两个问题叠加导致数字长期对不上：`taskStore.tasks` 只有当前分页（任务超过一页就少数），
+ * 而且它统计的是「已完成任务的产物」而非「作品库里真实存在的条目」——
+ * 没选秀的产物被算进去，选秀后又被删掉的算不出来。
+ * 现在统一由 materialStore 提供口径，侧边栏、工作台、作品库三处同源。
  */
-const worksCount = computed(() =>
-  taskStore.tasks
-    .filter((task) => task.status === 'succeeded')
-    .reduce((sum, task) => sum + (task.outputs?.length ?? 0), 0),
-)
+const worksCount = computed(() => materialStore.total)
 
 /** 「任务列表」角标：未结束的任务数，有任务在跑时提示用户可以点进去看进度 */
 const runningCount = computed(() => taskStore.runningCount)
@@ -95,17 +98,37 @@ function openConversation(id: string): void {
 }
 
 function handleLogout(): void {
+  // 与 AppHeader 保持一致：作品数据按用户隔离，退出即清空
+  materialStore.reset()
   authStore.logout()
   message.success('已退出登录')
   void router.replace({ name: 'Login' })
 }
 
 onMounted(() => {
-  // 侧边栏是最近会话的唯一入口，布局一挂载就该把数据拉起来；
+  // 侧边栏是最近会话与作品角标的唯一入口，布局一挂载就该把数据拉起来；
   // 布局本身因 AppLayout 复用而不会重复挂载，这里不需要额外去重。
   void conversationStore.loadRecent()
   void conversationStore.loadSummary()
+  void materialStore.loadTotal()
 })
+
+/**
+ * 作品总数兜底刷新。
+ *
+ * 选秀、删除作品这些写操作已经会就地 bump 数字，但同一账号可能在另一个标签页
+ * 产生过作品，或 SignalR 推送完成了新的任务——光靠本地增减会慢慢偏离。
+ * 这里在离开「作品库 / 任务列表」时补一次校准，成本是多一个 pageSize=1 的请求，
+ * 换来角标始终能和真实库存对上。
+ */
+watch(
+  () => route.name,
+  (name, previous) => {
+    if (previous !== 'Works' && previous !== 'TaskList') return
+    if (name === 'Works' || name === 'TaskList') return
+    void materialStore.loadTotal()
+  },
+)
 </script>
 
 <template>

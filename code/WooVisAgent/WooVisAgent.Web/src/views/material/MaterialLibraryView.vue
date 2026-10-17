@@ -1,92 +1,52 @@
 <script setup lang="ts">
 import { NCheckbox, NModal, NPagination, NSpin } from 'naive-ui'
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
-import { materialApi } from '@/api'
 import AppIcon from '@/components/common/AppIcon.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import VideoPlayer from '@/components/VideoPlayer.vue'
 import { PAGE_SIZE_OPTIONS } from '@/constants'
+import { useMaterialStore } from '@/stores/materialStore'
 import type { MaterialAsset } from '@/types'
 import { copyText, dialog, downloadUrl, formatDateTime, formatFileSize, message } from '@/utils'
 
 const router = useRouter()
-const loading = ref(false)
-const materials = ref<MaterialAsset[]>([])
-const total = ref(0)
-const page = ref(1)
-const pageSize = ref(24)
+const route = useRoute()
+const materialStore = useMaterialStore()
+
+const loading = materialStore.loading
+const materials = materialStore.materials
+const total = materialStore.total
 
 const keyword = ref('')
 const typeFilter = ref<'image' | 'video' | null>(null)
 const groupFilter = ref<string | null>(null)
-const groups = ref<string[]>([])
-
-const selectedIds = ref<string[]>([])
+const groups = materialStore.groups
 
 const previewVisible = ref(false)
 const previewAsset = ref<MaterialAsset | null>(null)
 
-const allSelected = computed(
-  () => materials.value.length > 0 && selectedIds.value.length === materials.value.length,
-)
-
-function isSelected(id: string): boolean {
-  return selectedIds.value.includes(id)
+function loadData(): Promise<void> {
+  return materialStore.loadMaterials()
 }
 
-function toggleSelect(id: string, checked: boolean): void {
-  selectedIds.value = checked
-    ? [...selectedIds.value, id]
-    : selectedIds.value.filter((item) => item !== id)
-}
-
-function toggleSelectAll(checked: boolean): void {
-  selectedIds.value = checked ? materials.value.map((item) => item.id) : []
-}
-
-async function loadData(): Promise<void> {
-  loading.value = true
-  try {
-    const result = await materialApi.fetchMaterials({
-      page: page.value,
-      pageSize: pageSize.value,
-      keyword: keyword.value.trim(),
-      type: typeFilter.value ?? undefined,
-      groupName: groupFilter.value ?? undefined,
-    })
-    materials.value = result.items ?? []
-    total.value = result.total ?? 0
-  } catch {
-    materials.value = []
-    total.value = 0
-  } finally {
-    loading.value = false
-  }
-}
-
-async function loadGroups(): Promise<void> {
-  try {
-    groups.value = await materialApi.fetchMaterialGroups()
-  } catch {
-    groups.value = []
-  }
-}
-
-function search(): void {
-  page.value = 1
-  void loadData()
+/** 筛选条件都在本组件的 ref 里，查询前先同步进 store 的 query */
+function applyFilters(): Promise<void> {
+  materialStore.query.keyword = keyword.value.trim() || undefined
+  materialStore.query.type = typeFilter.value ?? undefined
+  materialStore.query.groupName = groupFilter.value ?? undefined
+  return materialStore.search()
 }
 
 function setType(value: 'image' | 'video' | null): void {
   typeFilter.value = value
-  search()
+  void applyFilters()
 }
 
 function setGroup(value: string | null): void {
   groupFilter.value = value
-  search()
+  void applyFilters()
 }
 
 function handlePreview(asset: MaterialAsset): void {
@@ -103,6 +63,12 @@ async function handleCopyUrl(asset: MaterialAsset): Promise<void> {
   ok ? message.success('地址已复制') : message.error('复制失败')
 }
 
+/**
+ * 删除作品。
+ *
+ * store 内部会同步把总数 -1，侧边栏角标立刻跟着变；
+ * 再 reloadAfterRemove 处理「删完当前页空了一页」的情况。
+ */
 function handleRemove(asset: MaterialAsset): void {
   dialog.error({
     title: '删除素材',
@@ -110,16 +76,15 @@ function handleRemove(asset: MaterialAsset): void {
     positiveText: '删除',
     negativeText: '取消',
     onPositiveClick: async () => {
-      await materialApi.deleteMaterial(asset.id)
-      selectedIds.value = selectedIds.value.filter((item) => item !== asset.id)
+      await materialStore.removeMaterial(asset.id)
       message.success('已删除')
-      await loadData()
+      await materialStore.reloadAfterRemove()
     },
   })
 }
 
 function handleBatchRemove(): void {
-  const ids = [...selectedIds.value]
+  const ids = [...materialStore.selectedIds]
   if (!ids.length) return
 
   dialog.error({
@@ -128,17 +93,31 @@ function handleBatchRemove(): void {
     positiveText: '删除',
     negativeText: '取消',
     onPositiveClick: async () => {
-      await materialApi.batchDeleteMaterials(ids)
-      selectedIds.value = []
+      await materialStore.removeMaterials(ids)
       message.success(`已删除 ${ids.length} 个素材`)
-      await loadData()
+      await materialStore.reloadAfterRemove()
     },
   })
 }
 
 onMounted(async () => {
-  await Promise.all([loadGroups(), loadData()])
+  await Promise.all([materialStore.loadGroups(), loadData()])
 })
+
+/**
+ * 离开作品库时把总数同步给侧边栏角标。
+ *
+ * 列表查询已经把 total 写回 store，这一步只是保证万一某条路径只增删了
+ * local 状态（比如别处直接调了 bump），角标也能在下次进入时校准。
+ */
+watch(
+  () => route.name,
+  (name, previous) => {
+    if (previous === 'Works' && name !== 'Works') {
+      void materialStore.loadTotal()
+    }
+  },
+)
 </script>
 
 <template>
@@ -191,20 +170,24 @@ onMounted(async () => {
 
       <n-checkbox
         v-if="materials.length"
-        :checked="allSelected"
-        @update:checked="toggleSelectAll"
+        :checked="materialStore.allSelected"
+        @update:checked="materialStore.toggleSelectAll"
       >
         全选
       </n-checkbox>
 
-      <button v-if="selectedIds.length" class="btn btn-danger btn-sm" @click="handleBatchRemove">
+      <button
+        v-if="materialStore.selectedIds.length"
+        class="btn btn-danger btn-sm"
+        @click="handleBatchRemove"
+      >
         <app-icon name="trash" :size="14" />
-        删除选中({{ selectedIds.length }})
+        删除选中({{ materialStore.selectedIds.length }})
       </button>
 
       <div class="search">
         <span class="search-icon"><app-icon name="search" :size="15" /></span>
-        <input v-model="keyword" placeholder="搜索文件名" @keyup.enter="search" />
+        <input v-model="keyword" placeholder="搜索文件名" @keyup.enter="applyFilters" />
       </div>
     </div>
 
@@ -215,7 +198,7 @@ onMounted(async () => {
           v-for="asset in materials"
           :key="asset.id"
           class="work"
-          :class="{ 'is-selected': isSelected(asset.id) }"
+          :class="{ 'is-selected': materialStore.isSelected(asset.id) }"
         >
           <div class="pv">
             <img
@@ -235,8 +218,8 @@ onMounted(async () => {
 
             <span class="pick">
               <n-checkbox
-                :checked="isSelected(asset.id)"
-                @update:checked="(value: boolean) => toggleSelect(asset.id, value)"
+                :checked="materialStore.isSelected(asset.id)"
+                @update:checked="(value: boolean) => materialStore.toggleSelect(asset.id, value)"
               />
             </span>
 
@@ -286,8 +269,8 @@ onMounted(async () => {
     <!-- 分页 -->
     <div v-if="total > 0" class="flex justify-end pt-5">
       <n-pagination
-        v-model:page="page"
-        v-model:page-size="pageSize"
+        v-model:page="materialStore.query.page"
+        v-model:page-size="materialStore.query.pageSize"
         :item-count="total"
         :page-sizes="PAGE_SIZE_OPTIONS"
         show-size-picker
@@ -295,7 +278,7 @@ onMounted(async () => {
         @update:page="loadData"
         @update:page-size="
           () => {
-            page = 1
+            materialStore.query.page = 1
             loadData()
           }
         "
