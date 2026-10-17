@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using WooVisAgent.EventBus.Events;
 using WooVisAgent.SharedLib.Diagnostics;
 using WooVisAgent.SharedLib.Domain;
@@ -30,6 +31,7 @@ public class ImageGenerationRequestedConsumer(
     IRepository<ModelConfig> modelRepository,
     IImageGenerationService imageGenerationService,
     IGenerationTaskNotifier notifier,
+    IHostApplicationLifetime hostLifetime,
     ILogger<ImageGenerationRequestedConsumer> logger)
 {
     /// <summary>
@@ -125,13 +127,35 @@ public class ImageGenerationRequestedConsumer(
             activity?.SetTag("wv.output_count", outputs.Count);
             activity.RecordSuccess();
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
         {
-            // 服务停止（而非业务失败）时保留 Running 状态，等下次重启由重投或手动重试继续
-            logger.LogWarning("任务 {TaskId} 因服务停止而中断，状态保持为 {Status}", task.Id, task.Status);
-            activity?.SetTag("wv.skipped_reason", "service_shutdown");
-            activity.RecordFailure(new OperationCanceledException("服务停止，生成中断"));
-            throw;
+            pump.Complete();
+            await pumpTask;
+
+            if (hostLifetime.ApplicationStopping.IsCancellationRequested)
+            {
+                logger.LogWarning("任务 {TaskId} 因服务停止而中断，状态保持为 {Status}", task.Id, task.Status);
+                activity?.SetTag("wv.skipped_reason", "service_shutdown");
+                activity.RecordFailure(new OperationCanceledException("服务停止，生成中断", exception));
+                throw;
+            }
+
+            const string reason = "图片生成被消息处理器超时中断，请重试。";
+            logger.LogError(exception, "任务 {TaskId} 被消息执行超时中断，立即收敛为失败", task.Id);
+            activity?.SetTag("wv.skipped_reason", "message_execution_timeout");
+            activity.RecordFailure(exception);
+
+            try
+            {
+                await MarkFailedAsync(task, reason, CancellationToken.None);
+            }
+            catch (Exception persistException)
+            {
+                logger.LogCritical(
+                    persistException,
+                    "任务 {TaskId} 超时中断且无法回写失败状态，将由僵尸任务清扫器兜底",
+                    task.Id);
+            }
         }
         catch (Exception exception)
         {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { NButton, NSpace, NTag } from 'naive-ui'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import AppIcon from '@/components/common/AppIcon.vue'
 import { copyText, downloadUrl, formatDurationSeconds, formatFileSize, message } from '@/utils'
@@ -15,12 +15,18 @@ const props = withDefaults(
     fileSize?: number
     /** 下载时的文件名 */
     fileName?: string
+    /**
+     * 打开即播放。用于「作品库点封面直接看」这类明确由用户点击触发的场景；
+     * 默认 false，聊天流里的历史视频仍然保持手动播放，不改变原有体验。
+     */
+    autoplay?: boolean
   }>(),
   {
     poster: '',
     duration: undefined,
     fileSize: undefined,
     fileName: undefined,
+    autoplay: false,
   },
 )
 
@@ -48,6 +54,14 @@ function togglePlay(): void {
 function handleDownload(): void {
   downloadUrl(props.src, props.fileName)
 }
+
+onMounted(() => {
+  if (!props.autoplay) return
+
+  // 只写 autoplay 属性并不可靠（弹窗里挂载的 video 常被浏览器判定为「非用户手势」）。
+  // 这里再显式 play() 一次；被策略拦下也不报错，用户点中间的播放按钮即可。
+  void videoRef.value?.play().catch(() => undefined)
+})
 
 async function handleCopyUrl(): Promise<void> {
   const ok = await copyText(props.src)

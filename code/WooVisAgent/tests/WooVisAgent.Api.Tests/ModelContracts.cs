@@ -53,7 +53,8 @@ public record ModelResult(
     List<ModelParamSpecPayload> Params,
     string? Remark,
     DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    string? ApiKey = null);
 
 public record ModelTestPayload(bool Success, int? Latency, string? Message);
 

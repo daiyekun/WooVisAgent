@@ -9,7 +9,7 @@ namespace WooVisAgentServices.ModelService.Mapping;
 /// <summary>实体与出参之间的映射</summary>
 public static class ModelConfigMapping
 {
-    public static ModelConfigDto ToDto(this ModelConfig entity) => new(
+    public static ModelConfigDto ToDto(this ModelConfig entity, bool includeApiKey = false) => new(
         entity.Id.ToString(CultureInfo.InvariantCulture),
         entity.Name,
         entity.Provider,
@@ -26,5 +26,6 @@ public static class ModelConfigMapping
         // 解析失败时返回 null（= 用预设推断），而不是把坏 JSON 抛给前端
         VideoDeliveryResolver.ReadTemplate(entity.DeliveryJson),
         entity.SupportsTextToVideo,
-        entity.SupportsImageToVideo);
+        entity.SupportsImageToVideo,
+        includeApiKey ? entity.ApiKey : null);
 }

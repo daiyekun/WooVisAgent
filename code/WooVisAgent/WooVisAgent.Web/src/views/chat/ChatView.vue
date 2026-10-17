@@ -1210,13 +1210,13 @@ function scrollToHighlight(taskId: string): void {
 watch(
   () => route.query,
   (query) => {
+    // 先应用入口指定的模式；工作台会同时传 new + mode，不能被 new 分支提前 return 掉。
+    if (query.mode === 'image' || query.mode === 'video') mode.value = query.mode
+
     if (query.new) {
       void newChat()
       return
     }
-
-    // 工作台的「视频创作」入口直接带 mode=video 进来，省得用户再切一次
-    if (query.mode === 'image' || query.mode === 'video') mode.value = query.mode
 
     // 从最近会话 / 更多会话 / 双击任务跳进来：带 conversation 指定打开哪个会话，
     // taskId 用于定位高亮。conversation 变了才重新加载，

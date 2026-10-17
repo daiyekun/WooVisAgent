@@ -200,6 +200,11 @@ public class SubmitVideoGenerationCommandHandler(
             UpdatedAt = now,
         });
 
+        // 聊天页会预先创建一个默认 Image 类型的空会话；首个任务若是视频，
+        // 必须在落库前纠正类型，否则“视频会话”筛选永远找不到它。
+        if (targetConversation.TaskCount == 0)
+            targetConversation.Type = GenerationTaskType.Video;
+
         targetConversation.MessageCount += 2;
         targetConversation.TaskCount += 1;
         targetConversation.UpdatedAt = now;

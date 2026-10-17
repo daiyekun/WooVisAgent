@@ -18,6 +18,7 @@ import {
 } from 'naive-ui'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 
+import { modelApi } from '@/api'
 import AppIcon from '@/components/common/AppIcon.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import ModelSettingForm from '@/components/ModelSettingForm.vue'
@@ -34,6 +35,7 @@ const keyword = ref('')
 
 const modalVisible = ref(false)
 const editingId = ref<string | null>(null)
+const editingModelId = ref<string | null>(null)
 const submitting = ref(false)
 
 const PARAM_TYPE_OPTIONS = [
@@ -52,6 +54,7 @@ const CATEGORY_STYLE: Record<ModelCategory, { icon: string; gradient: string }> 
 
 function createEmptyDraft(): SaveModelInput {
   return {
+    id: undefined,
     name: '',
     provider: 'OpenAI',
     category: 'image',
@@ -156,27 +159,35 @@ function openCreate(): void {
   modalVisible.value = true
 }
 
-function openEdit(model: ModelConfig): void {
-  editingId.value = model.id
-  Object.assign(draft, {
-    id: model.id,
-    name: model.name,
-    provider: model.provider,
-    category: model.category,
-    modelKey: model.modelKey ?? '',
-    endpoint: model.endpoint ?? '',
-    // 后端不回传明文密钥，编辑时留空表示不修改
-    apiKey: '',
-    enabled: model.enabled,
-    isDefault: model.isDefault,
-    params: model.params?.map((item) => ({ ...item })) ?? [],
-    delivery: model.delivery ? { ...model.delivery } : null,
-    supportsTextToVideo: model.supportsTextToVideo !== false,
-    supportsImageToVideo: model.supportsImageToVideo !== false,
-    remark: model.remark ?? '',
-  })
-  draftPreviewValues.value = {}
-  modalVisible.value = true
+async function openEdit(model: ModelConfig): Promise<void> {
+  editingModelId.value = model.id
+
+  try {
+    // 列表接口刻意不携带密钥；编辑时单独查本人配置详情，回填真实 API Key。
+    const detail = await modelApi.fetchModelDetail(model.id)
+
+    editingId.value = detail.id
+    Object.assign(draft, {
+      id: detail.id,
+      name: detail.name,
+      provider: detail.provider,
+      category: detail.category,
+      modelKey: detail.modelKey ?? '',
+      endpoint: detail.endpoint ?? '',
+      apiKey: detail.apiKey ?? '',
+      enabled: detail.enabled,
+      isDefault: detail.isDefault,
+      params: detail.params?.map((item) => ({ ...item })) ?? [],
+      delivery: detail.delivery ? { ...detail.delivery } : null,
+      supportsTextToVideo: detail.supportsTextToVideo !== false,
+      supportsImageToVideo: detail.supportsImageToVideo !== false,
+      remark: detail.remark ?? '',
+    })
+    draftPreviewValues.value = {}
+    modalVisible.value = true
+  } finally {
+    editingModelId.value = null
+  }
 }
 
 /**
@@ -410,9 +421,14 @@ onMounted(() => {
               设为默认
             </button>
 
-            <button class="btn btn-ghost btn-sm" type="button" @click="openEdit(model)">
+            <button
+              class="btn btn-ghost btn-sm"
+              type="button"
+              :disabled="editingModelId !== null"
+              @click="openEdit(model)"
+            >
               <app-icon name="sliders" :size="14" />
-              编辑
+              {{ editingModelId === model.id ? '加载中…' : '编辑' }}
             </button>
 
             <n-popconfirm @positive-click="handleRemove(model)">
@@ -576,7 +592,7 @@ onMounted(() => {
             v-model:value="draft.apiKey"
             type="password"
             show-password-on="click"
-            :placeholder="editingId ? '留空表示沿用原密钥' : '请输入访问密钥'"
+            :placeholder="editingId ? '当前密钥已回填，可直接修改' : '请输入访问密钥'"
           />
         </n-form-item>
 

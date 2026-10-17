@@ -31,7 +31,7 @@ public class ModelController(ISender sender, IModelProviderCatalog providerCatal
         return result.ToActionResult();
     }
 
-    /// <summary>查询单条模型配置</summary>
+    /// <summary>查询单条模型配置；仅配置所有者可访问，供编辑页回填（包含 API Key）</summary>
     [HttpGet("{id:long}")]
     [ProducesResponseType<ModelConfigDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]

@@ -18,6 +18,38 @@ public static class LocalStorageDefaults
     public const string PublicRequestPath = "/uploads";
 
     /// <summary>
+    /// 把存储层返回的相对路径（形如 <c>uploads/2026/10/18/xxx.mp4</c>）转成页面可直接使用的
+    /// 对外地址（<c>/uploads/2026/10/18/xxx.mp4</c>）。
+    ///
+    /// 为什么必须带前导斜杠：不带斜杠时浏览器会按「相对当前页面路径」解析。
+    /// 图片侧早就补了斜杠，视频侧漏了——于是同一个 <c>uploads/...</c> 在
+    /// <c>/chat</c> 下碰巧能取到（被解析成 <c>/uploads/...</c>），
+    /// 换到别的路由或子路径部署就会 404，表现为播放器一片黑。
+    /// 已经是 http(s) 绝对地址的原样返回，避免二次拼接。
+    /// </summary>
+    public static string ToPublicUrl(string? relativePath)
+    {
+        if (string.IsNullOrWhiteSpace(relativePath))
+            return string.Empty;
+
+        var value = relativePath.Trim().Replace('\\', '/');
+
+        if (Uri.TryCreate(value, UriKind.Absolute, out var absolute)
+            && absolute.Scheme is "http" or "https")
+        {
+            return value;
+        }
+
+        var normalized = value.TrimStart('/');
+        var uploadPrefix = $"{UploadFolder}/";
+
+        if (normalized.StartsWith(uploadPrefix, StringComparison.OrdinalIgnoreCase))
+            normalized = normalized[uploadPrefix.Length..];
+
+        return $"{PublicRequestPath}/{normalized}";
+    }
+
+    /// <summary>
     /// 把对外访问地址（<c>/uploads/2026/10/17/xxx.png</c>）还原成存储层的相对路径
     /// （<c>uploads/2026/10/17/xxx.png</c>），供 <c>IFileStorageService</c> 直接读取。
     ///

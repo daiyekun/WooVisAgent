@@ -25,7 +25,7 @@ namespace WooVisAgentServices.VideoService.Delivery;
 /// <list type="number">
 ///   <item><b>产物形态有三种</b>（URL / 二进制 content / base64），
 ///         响应体里没有地址时不能按字符串解析，否则报出莫名其妙的错；</item>
-///   <item><b>轮询窗口以分钟计</b>（默认 15 分钟），且要把模型的排队时间算在内，
+///   <item><b>轮询窗口以分钟计</b>（默认 20 分钟），且要把模型的排队时间算在内，
 ///         图片的 3 分钟窗口对视频远远不够；</item>
 ///   <item><b>模型侧地址会过期</b>（百炼的 video_url 只有 24 小时），
 ///         所以拿到地址后必须立刻转存，而不是把地址原样交给前端。</item>
@@ -42,10 +42,11 @@ public sealed class VideoDeliveryFramework(
     /// 轮询上限（分钟）。视频通常 1-6 分钟，但排队高峰时模型侧可能压十几分钟，
     /// 20 分钟能覆盖绝大多数情况，又不至于让用户对着一条转圈的进度条等太久。
     ///
-    /// <b>改动这个值必须同步三处</b>，否则会出现"正常排队被误判成僵尸"或"僵尸永远不被清理"：
+    /// <b>改动这个值必须同步四处</b>，否则会出现"正常排队被误判成僵尸"或"僵尸永远不被清理"：
     /// <list type="bullet">
     ///   <item><c>VideoGenerationRequestedConsumer.StaleRunningThreshold</c>（必须大于本值）</item>
     ///   <item><c>StaleTaskReaper.VideoThreshold</c>（必须大于本值）</item>
+    ///   <item><c>EventBus.DependencyInjection.DefaultMessageExecutionTimeout</c>（必须大于本值并留出收尾余量）</item>
     ///   <item>前端聊天页里"最长等待 N 分钟"的文案</item>
     /// </list>
     /// </summary>
@@ -703,7 +704,8 @@ public sealed class VideoDeliveryFramework(
             if (thumbnail is not null && File.Exists(thumbnail))
             {
                 await using var stream = File.OpenRead(thumbnail);
-                var thumbUrl = await fileStorage.SaveAsync(stream, $"video-{asset.Id}.jpg", cancellationToken);
+                var thumbUrl = LocalStorageDefaults.ToPublicUrl(
+                    await fileStorage.SaveAsync(stream, $"video-{asset.Id}.jpg", cancellationToken));
                 asset.ThumbnailUrl = thumbUrl;
             }
         }
@@ -716,7 +718,10 @@ public sealed class VideoDeliveryFramework(
     private async Task<string> SaveToStorageAsync(byte[] bytes, string fileName, CancellationToken cancellationToken)
     {
         using var buffer = new MemoryStream(bytes);
-        return await fileStorage.SaveAsync(buffer, fileName, cancellationToken);
+        // 存储层返回的是 uploads/... 相对路径，必须转成 /uploads/... 对外地址：
+        // 缺前导斜杠时浏览器按相对当前路由解析，换页面 / 子路径部署就取不到文件（播放器全黑）。
+        return LocalStorageDefaults.ToPublicUrl(
+            await fileStorage.SaveAsync(buffer, fileName, cancellationToken));
     }
 
     private static void ApplyAuthentication(HttpRequestMessage message, ModelConfig model)

@@ -54,6 +54,16 @@ internal static class ModelTestHelper
         return list!;
     }
 
+    /// <summary>一个能提交视频任务的模型配置</summary>
+    public static SaveModelRequest VideoModel(string name = "测试文生视频模型") => new(
+        name,
+        "AliyunBailian",
+        "video",
+        ModelKey: "wan3.0-video",
+        Endpoint: "https://dashscope.aliyuncs.com",
+        ApiKey: "sk-test-secret-key",
+        Remark: "集成测试创建");
+
     /// <summary>一个校验一定能通过的图片模型配置</summary>
     public static SaveModelRequest ImageModel(string name = "测试文生图模型") => new(
         name,

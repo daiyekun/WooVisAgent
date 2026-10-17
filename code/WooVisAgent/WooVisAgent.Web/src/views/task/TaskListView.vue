@@ -12,7 +12,7 @@ import { useMaterialStore } from '@/stores/materialStore'
 import { useTaskStore } from '@/stores/taskStore'
 import { useAppStore } from '@/stores/appStore'
 import type { GenerationTask, TaskAsset } from '@/types'
-import { copyText, dialog, formatFileSize, message } from '@/utils'
+import { copyText, dialog, formatFileSize, message, resolveMediaUrl } from '@/utils'
 
 const router = useRouter()
 const taskStore = useTaskStore()
@@ -362,14 +362,15 @@ onBeforeUnmount(stopPolling)
       <template v-if="previewAsset">
         <img
           v-if="previewAsset.type === 'image'"
-          :src="previewAsset.url"
+          :src="resolveMediaUrl(previewAsset.url)"
           :alt="previewAsset.fileName"
           class="mx-auto max-h-[65vh] rounded-lg object-contain"
         />
         <video-player
           v-else
-          :src="previewAsset.url"
-          :poster="previewAsset.thumbnailUrl"
+          :key="previewAsset.id"
+          :src="resolveMediaUrl(previewAsset.url)"
+          :poster="resolveMediaUrl(previewAsset.thumbnailUrl)"
           :duration="previewAsset.duration"
           :file-size="previewAsset.fileSize"
           :file-name="previewAsset.fileName"

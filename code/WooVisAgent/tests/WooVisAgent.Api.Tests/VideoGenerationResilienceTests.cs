@@ -5,6 +5,7 @@ using Microsoft.Extensions.Http.Resilience;
 using WooVisAgent.ServiceDefaults;
 using WooVisAgent.Services.Common.Contracts;
 using WooVisAgentServices.VideoService;
+using EventBusDi = WooVisAgent.EventBus.DependencyInjection;
 using VideoServiceDi = WooVisAgentServices.VideoService.DependencyInjection;
 
 namespace WooVisAgent.Api.Tests;
@@ -33,6 +34,20 @@ namespace WooVisAgent.Api.Tests;
 /// </summary>
 public class VideoGenerationResilienceTests
 {
+    [Fact]
+    public void 消息执行超时必须覆盖视频轮询与收尾时间()
+    {
+        var pollWindow = TimeSpan.FromMinutes(VideoGenerationFrameworkLimits.MaxPollMinutes);
+        var executionTimeout = EventBusDi.DefaultMessageExecutionTimeout;
+
+        // Wolverine 默认只有 60 秒，曾在视频任务运行约 60 秒时精准取消 handler，
+        // 于是进度固定停在 22%-23%。消息生命周期必须覆盖 20 分钟轮询和下载落盘余量。
+        Assert.True(
+            executionTimeout >= pollWindow + TimeSpan.FromMinutes(5),
+            $"消息执行超时 {executionTimeout} 必须至少比视频轮询窗口 {pollWindow} 多 5 分钟，" +
+            "否则正常生成会被消息框架提前取消");
+    }
+
     [Fact]
     public void 弹性超时配置必须覆盖模板默认的30秒()
     {

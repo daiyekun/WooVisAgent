@@ -20,6 +20,15 @@ namespace WooVisAgent.EventBus;
 /// </summary>
 public static class DependencyInjection
 {
+    /// <summary>
+    /// 单条消息允许的最长执行时间。
+    ///
+    /// Wolverine 默认只有 60 秒，而视频生成会轮询最长 20 分钟；使用默认值时，
+    /// 所有超过 1 分钟的视频都会在 22%-23% 被框架取消并移入死信队列。
+    /// 30 分钟既覆盖视频轮询、下载与落盘，也给异常任务保留了明确的收敛上限。
+    /// </summary>
+    public static readonly TimeSpan DefaultMessageExecutionTimeout = TimeSpan.FromMinutes(30);
+
     public static void AddEventBus(
         this IHostApplicationBuilder builder,
         string listenQueue,
@@ -64,7 +73,12 @@ public static class DependencyInjection
             // （生产环境想省掉这段编译开销，可以改用 `dotnet run -- codegen write` 预生成。）
             opts.UseRuntimeCompilation();
 
-// 关键：Wolverine 6 起 ServiceLocationPolicy 默认是 NotAllowed，
+            // Wolverine 的默认消息执行超时只有 60 秒。视频通常需要 1-6 分钟，
+            // 默认值会在第 60 秒取消 handler，表现为进度固定卡在 22%-23%。
+            // 必须让消息生命周期覆盖视频业务侧的 20 分钟轮询窗口与收尾下载。
+            opts.DefaultExecutionTimeout = DefaultMessageExecutionTimeout;
+
+            // 关键：Wolverine 6 起 ServiceLocationPolicy 默认是 NotAllowed，
       // 处理器的构造函数里只要有服务依赖，就会在第一次收到消息时抛
       // InvalidServiceLocationException，并把消息丢进死信队列 ——
       // 表现是任务永远停在 queued，而 Api 侧完全看不到任何错误。

@@ -6,7 +6,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:11039"
+      "url": "http://localhost:17219"
     }
   ],
   "paths": {
@@ -2831,6 +2831,12 @@
           "supportsImageToVideo": {
             "type": "boolean",
             "default": true
+          },
+          "apiKey": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

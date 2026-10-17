@@ -30,6 +30,8 @@ public class GetModelConfigDetailQueryHandler(
         if (entity is null)
             return Result.NotFound("模型配置不存在或无权访问。");
 
-        return Result.Success(entity.ToDto());
+        // 详情接口只允许配置所有者访问；编辑页需要回填当前密钥。
+        // 列表、新增、更新等其它响应仍不携带密钥，避免密钥在普通列表请求中扩散。
+        return Result.Success(entity.ToDto(includeApiKey: true));
     }
 }

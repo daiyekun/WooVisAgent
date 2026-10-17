@@ -1,4 +1,5 @@
-﻿using WooVisAgent.SharedLib.Delivery;
+﻿using System.Text.Json.Serialization;
+using WooVisAgent.SharedLib.Delivery;
 
 namespace WooVisAgentServices.ModelService.Dtos;
 
@@ -83,7 +84,10 @@ public sealed class ModelConfigInput
     public string? Remark { get; set; }
 }
 
-/// <summary>模型配置出参。主键以字符串输出，避免前端 JS 丢失 64 位精度；密钥不回传。</summary>
+/// <summary>
+/// 模型配置出参。主键以字符串输出，避免前端 JS 丢失 64 位精度。
+/// ApiKey 只在“查询本人单条配置”时赋值；其它接口保持 null，并通过 JsonIgnore 不输出该字段。
+/// </summary>
 public sealed record ModelConfigDto(
     string Id,
     string Name,
@@ -99,7 +103,8 @@ public sealed record ModelConfigDto(
     DateTimeOffset UpdatedAt,
     VideoDeliveryTemplate? Delivery = null,
     bool SupportsTextToVideo = true,
-    bool SupportsImageToVideo = true);
+    bool SupportsImageToVideo = true,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ApiKey = null);
 
 /// <summary>连通性测试结果</summary>
 public sealed record ModelTestResultDto(

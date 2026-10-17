@@ -1,4 +1,5 @@
 export * from './file'
+export * from './media'
 export * from './time'
 export { dialog, loadingBar, message, notification } from './feedback'
 

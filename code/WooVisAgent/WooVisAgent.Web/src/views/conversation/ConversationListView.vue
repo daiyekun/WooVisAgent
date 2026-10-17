@@ -34,7 +34,11 @@ const activeId = computed(() => {
 })
 
 async function search(): Promise<void> {
-  await conversationStore.search()
+  await conversationStore.loadConversations({
+    page: 1,
+    type: typeFilter.value ?? undefined,
+    keyword: keyword.value.trim(),
+  })
 }
 
 async function setType(value: TaskType | null): Promise<void> {
@@ -99,7 +103,8 @@ function startNewChat(): void {
 }
 
 onMounted(async () => {
-  await conversationStore.loadConversations({ page: 1 })
+  // 页面筛选控件默认是“全部”，进入页面时也要显式清掉 store 上次留下的条件。
+  await conversationStore.loadConversations({ page: 1, type: undefined, keyword: '' })
   await conversationStore.loadSummary()
 })
 </script>

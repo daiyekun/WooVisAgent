@@ -10,7 +10,7 @@ import VideoPlayer from '@/components/VideoPlayer.vue'
 import { PAGE_SIZE_OPTIONS } from '@/constants'
 import { useMaterialStore } from '@/stores/materialStore'
 import type { MaterialAsset } from '@/types'
-import { copyText, dialog, downloadUrl, formatDateTime, formatFileSize, message } from '@/utils'
+import { copyText, dialog, downloadUrl, formatDateTime, formatFileSize, message, resolveMediaUrl } from '@/utils'
 
 const router = useRouter()
 const route = useRoute()
@@ -61,11 +61,11 @@ function handlePreview(asset: MaterialAsset): void {
 }
 
 function handleDownload(asset: MaterialAsset): void {
-  downloadUrl(asset.url, asset.fileName)
+  downloadUrl(resolveMediaUrl(asset.url), asset.fileName)
 }
 
 async function handleCopyUrl(asset: MaterialAsset): Promise<void> {
-  const ok = await copyText(asset.url)
+  const ok = await copyText(resolveMediaUrl(asset.url))
   ok ? message.success('地址已复制') : message.error('复制失败')
 }
 
@@ -206,30 +206,45 @@ watch(
           class="work"
           :class="{ 'is-selected': materialStore.isSelected(asset.id) }"
         >
-          <div class="pv">
+          <div class="pv" @click="handlePreview(asset)">
             <img
               v-if="asset.type === 'image'"
-              :src="asset.thumbnailUrl || asset.url"
+              :src="resolveMediaUrl(asset.thumbnailUrl || asset.url)"
               :alt="asset.fileName"
               loading="lazy"
             />
-            <span v-else class="grid h-full w-full place-items-center t-dim">
-              <app-icon name="video" :size="30" />
-            </span>
+
+            <!--
+              视频封面：有截图就用截图，没有就退化成第一帧（preload=metadata 只拉 moov，
+              不整段下载）。绝不再走"深色占位图标"——那在页面上看起来就是个黑框，
+              用户以为视频坏了。
+            -->
+            <template v-else>
+              <img
+                v-if="asset.thumbnailUrl"
+                :src="resolveMediaUrl(asset.thumbnailUrl)"
+                :alt="asset.fileName"
+                loading="lazy"
+              />
+              <video v-else :src="resolveMediaUrl(asset.url)" preload="metadata" muted playsinline />
+              <span class="play-badge">
+                <app-icon name="play" :size="16" />
+              </span>
+            </template>
 
             <span class="kind" :class="{ vid: asset.type === 'video' }">
               <app-icon :name="asset.type === 'video' ? 'video' : 'image'" :size="10" />
               {{ asset.type === 'video' ? '视频' : '图片' }}
             </span>
 
-            <span class="pick">
+            <span class="pick" @click.stop>
               <n-checkbox
                 :checked="materialStore.isSelected(asset.id)"
                 @update:checked="(value: boolean) => materialStore.toggleSelect(asset.id, value)"
               />
             </span>
 
-            <div class="ov">
+            <div class="ov" @click.stop>
               <button class="act" type="button" title="预览" @click="handlePreview(asset)">
                 <app-icon name="search" :size="15" />
               </button>
@@ -302,17 +317,19 @@ watch(
       <template v-if="previewAsset">
         <img
           v-if="previewAsset.type === 'image'"
-          :src="previewAsset.url"
+          :src="resolveMediaUrl(previewAsset.url)"
           :alt="previewAsset.fileName"
           class="mx-auto max-h-[65vh] rounded-lg object-contain"
         />
         <video-player
           v-else
-          :src="previewAsset.url"
-          :poster="previewAsset.thumbnailUrl"
+          :key="previewAsset.id"
+          :src="resolveMediaUrl(previewAsset.url)"
+          :poster="resolveMediaUrl(previewAsset.thumbnailUrl)"
           :duration="previewAsset.duration"
           :file-size="previewAsset.fileSize"
           :file-name="previewAsset.fileName"
+          autoplay
         />
 
         <div class="mt-3 flex flex-wrap items-center gap-3 text-xs t-dim">
@@ -326,3 +343,31 @@ watch(
     </n-modal>
   </div>
 </template>
+
+<style scoped>
+/*
+ * 视频卡片的播放角标。封面图已经铺满整个 .pv，这里只叠一颗半透明圆形按钮，
+ * 让用户一眼看出「这块能点、点了会播」，而不是把视频当成一张坏掉的图。
+ */
+.play-badge {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  color: #0b0f16;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.32);
+  transition: transform 0.18s ease, background 0.18s ease;
+  pointer-events: none;
+}
+
+.work:hover .play-badge {
+  transform: scale(1.08);
+  background: rgba(255, 255, 255, 0.96);
+}
+</style>

@@ -180,7 +180,7 @@ export interface ModelConfig {
   /** 调用时传给后端的模型标识 */
   modelKey?: string
   endpoint?: string
-  /** 后端返回时应做脱敏，仅提交时使用 */
+  /** 仅模型详情接口向配置所有者返回，用于编辑时回填 */
   apiKey?: string
   enabled: boolean
   isDefault: boolean

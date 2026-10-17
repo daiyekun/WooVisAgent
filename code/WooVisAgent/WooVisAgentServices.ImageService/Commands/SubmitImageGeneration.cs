@@ -215,6 +215,10 @@ public class SubmitImageGenerationCommandHandler(
             UpdatedAt = now,
         });
 
+        // 空会话的类型由首个真实任务决定，与视频提交侧保持对称。
+        if (targetConversation.TaskCount == 0)
+            targetConversation.Type = GenerationTaskType.Image;
+
         targetConversation.MessageCount += 2;
         targetConversation.TaskCount += 1;
         targetConversation.UpdatedAt = now;

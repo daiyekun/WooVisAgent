@@ -248,20 +248,26 @@ public class ModelApiTests(AuthApiFactory factory) : IClassFixture<AuthApiFactor
     }
 
     [Fact]
-    public async Task 接口不回传密钥明文()
+    public async Task 列表不回传密钥_本人详情回传密钥供编辑回填()
     {
         var token = await ModelTestHelper.RegisterAndGetTokenAsync(_client);
         var created = await ModelTestHelper.CreateAsync(_client, token, ModelTestHelper.ImageModel());
 
+        // 高频列表响应不应扩散任何密钥字段或内容。
         var listResponse = await ModelTestHelper.SendAsync(_client, HttpMethod.Get, ModelEndpoints.Base, token);
         var listJson = await listResponse.Content.ReadAsStringAsync();
         Assert.DoesNotContain("sk-test-secret-key", listJson);
         Assert.DoesNotContain("apiKey", listJson, StringComparison.OrdinalIgnoreCase);
 
+        // 单条详情已由“登录 + OwnerId”双重隔离，编辑页需要真实值才能正确回填。
         var detailResponse = await ModelTestHelper.SendAsync(
             _client, HttpMethod.Get, ModelEndpoints.Detail(created.Id), token);
-        var detailJson = await detailResponse.Content.ReadAsStringAsync();
-        Assert.DoesNotContain("sk-test-secret-key", detailJson);
+        Assert.Equal(HttpStatusCode.OK, detailResponse.StatusCode);
+
+        var detail = await detailResponse.Content.ReadFromJsonAsync<ModelResult>();
+        Assert.NotNull(detail);
+        Assert.Equal("sk-test-secret-key", detail!.ApiKey);
+        Assert.Equal(created.ModelKey, detail.ModelKey);
     }
 
     [Fact]
