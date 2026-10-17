@@ -2637,6 +2637,14 @@ html:not(.dark) {
     font-variant-numeric: tabular-nums;
   }
 
+  /* 等待预期说明：视频动辄几分钟，没有这句用户会以为页面卡死 */
+  .gen-loading .gl-hint {
+    margin-top: 10px;
+    font-size: 11.5px;
+    line-height: 1.6;
+    color: var(--dim);
+  }
+
   /* ---------- 输入区 ---------- */
   .composer {
     flex-shrink: 0;

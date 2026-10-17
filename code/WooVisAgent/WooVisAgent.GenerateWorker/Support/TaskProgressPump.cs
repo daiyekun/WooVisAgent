@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Threading.Channels;
 using WooVisAgent.SharedLib.Domain;
 using WooVisAgent.SharedLib.Repository;
@@ -32,19 +34,23 @@ public sealed class TaskProgressPump
     private readonly IGenerationTaskNotifier _notifier;
     private readonly GenerationTask _task;
     private readonly Channel<GenerationProgress> _channel;
+    private readonly ILogger _logger;
 
     private int _lastPercent;
     private string? _lastStage;
     private DateTimeOffset _lastSentAt = DateTimeOffset.MinValue;
+    private int _consecutiveFailures;
 
     public TaskProgressPump(
         IRepository<GenerationTask> taskRepository,
         IGenerationTaskNotifier notifier,
-        GenerationTask task)
+        GenerationTask task,
+        ILogger? logger = null)
     {
         _taskRepository = taskRepository;
         _notifier = notifier;
         _task = task;
+        _logger = logger ?? NullLogger.Instance;
         _lastPercent = task.Progress;
 
         _channel = Channel.CreateUnbounded<GenerationProgress>(new UnboundedChannelOptions
@@ -76,7 +82,29 @@ public sealed class TaskProgressPump
                 if (latest is null)
                     continue;
 
-                await ApplyAsync(latest, cancellationToken).ConfigureAwait(false);
+                // 关键：单条上报写库失败绝不能让泵退出。
+                // 泵一死，进度就永远停在最后一次成功的值上（表现为"进度条卡在 22% 不动"），
+                // 而异常被塞进 pumpTask 里，要等生成结束 await 时才浮出水面——
+                // 视频动辄几分钟，这段时间用户看到的就是一个彻底静止的页面。
+                try
+                {
+                    await ApplyAsync(latest, cancellationToken).ConfigureAwait(false);
+                    _consecutiveFailures = 0;
+                }
+                catch (Exception exception) when (exception is not OperationCanceledException)
+                {
+                    _consecutiveFailures++;
+
+                    // 连续失败说明不是偶发抖动，记一条 Error 便于定位，但泵继续活着
+                    if (_consecutiveFailures == 1 || _consecutiveFailures % 10 == 0)
+                    {
+                        _logger.LogError(
+                            exception,
+                            "任务 {TaskId} 的进度上报连续失败 {Count} 次，进度展示可能滞后，生成本身不受影响",
+                            _task.Id,
+                            _consecutiveFailures);
+                    }
+                }
             }
         }
         catch (ChannelClosedException)

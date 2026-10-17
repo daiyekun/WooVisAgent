@@ -7,6 +7,7 @@ using WooVisAgent.SharedLib.Repository;
 using WooVisAgentServices.ImageService.Contracts;
 using WooVisAgentServices.ImageService.Serialization;
 using WooVisAgentServices.VideoService.Contracts;
+using WooVisAgentServices.VideoService.Delivery;
 
 namespace WooVisAgent.GenerateWorker.Consumers;
 
@@ -32,6 +33,22 @@ public class VideoGenerationRequestedConsumer(
     IGenerationTaskNotifier notifier,
     ILogger<VideoGenerationRequestedConsumer> logger)
 {
+    /// <summary>
+    /// 判定「状态是 Running、但实际已经死了」的心跳阈值。
+    ///
+    /// 必须<b>大于</b> <see cref="VideoDeliveryFramework.MaxPollMinutes" />（20 分钟）：
+    /// 视频正常生成要 1-5 分钟、排队久的接近窗口上限，阈值给得比窗口小
+    /// 会把正在正常出片的任务误判成僵尸，白白重跑一次（视频重跑是真金白银）。
+    ///
+    /// 反过来，没有这个阈值就是这次故障的放大器：执行体一旦死掉，
+    /// 状态永远停在 Running，之后每一次重投都被"已在生成中"跳过，
+    /// 任务再也不会有任何进展，也不会失败——用户只看到一条永远转圈的进度条。
+    /// </summary>
+    /// 由 <see cref="VideoDeliveryFramework.MaxPollMinutes" /> 推导而不是写死，
+    /// 避免轮询窗口放宽后这里漏改，把正常排队的长任务误判成僵尸。
+    /// </summary>
+    private static readonly TimeSpan StaleRunningThreshold =
+        TimeSpan.FromMinutes(VideoDeliveryFramework.MaxPollMinutes + 5);
     /// <summary>
     /// Wolverine 的处理器约定：公开方法、名字为 <c>Handle</c>、第一个参数是消息类型，
     /// 其余参数（这里是 CancellationToken）由框架注入。
@@ -69,12 +86,28 @@ public class VideoGenerationRequestedConsumer(
             return;
         }
 
-        // 幂等保护 2：同一任务已被别的 Worker 实例置为运行中且尚未结束，交给它继续处理
+        // 幂等保护 2：同一任务已被别的 Worker 实例置为运行中且尚未结束，交给它继续处理。
+        //
+        // 但"还在 Running"不等于"还活着"——上一次执行可能已经崩了、进程被杀了、
+        // 或者写库失败导致状态没回写。这时若照旧跳过，任务就永远停在 Running。
+        // 因此加一个心跳判断：超过阈值没有任何动静，本次就接管过来重新跑。
         if (task.Status == GenerationTaskStatus.Running && task.StartedAt is not null)
         {
-            logger.LogInformation("任务 {TaskId} 已在生成中，跳过本次重复消息", task.Id);
-            activity?.SetTag("wv.skipped_reason", "already_running");
-            return;
+            var silentFor = DateTimeOffset.UtcNow - task.UpdatedAt;
+
+            if (silentFor < StaleRunningThreshold)
+            {
+                logger.LogInformation("任务 {TaskId} 已在生成中，跳过本次重复消息", task.Id);
+                activity?.SetTag("wv.skipped_reason", "already_running");
+                return;
+            }
+
+            logger.LogWarning(
+                "任务 {TaskId} 处于 Running 但已 {Minutes:F0} 分钟没有心跳，判定上一次执行已中断，本次接管继续",
+                task.Id,
+                silentFor.TotalMinutes);
+
+            activity?.SetTag("wv.stale_running_minutes", silentFor.TotalMinutes);
         }
 
         var model = await modelRepository.GetByIdAsync(message.ModelConfigId, cancellationToken);
@@ -88,7 +121,7 @@ public class VideoGenerationRequestedConsumer(
 
         // 进度泵：把「已提交 / 排队中 / 生成中 / 下载保存」等阶段实时推给前端。
         // 视频动辄几分钟，没有进度推进用户会直接以为页面卡死。
-        var pump = new TaskProgressPump(taskRepository, notifier, task);
+        var pump = new TaskProgressPump(taskRepository, notifier, task, logger);
         var pumpTask = pump.RunAsync(cancellationToken);
 
         try
@@ -152,7 +185,20 @@ public class VideoGenerationRequestedConsumer(
                 logger.LogDebug(pumpError, "任务 {TaskId} 的进度泵在收尾时抛出异常，已忽略", task.Id);
             }
 
-            await MarkFailedAsync(task, exception.Message, cancellationToken);
+            try
+            {
+                await MarkFailedAsync(task, exception.Message, cancellationToken);
+            }
+            catch (Exception persistException)
+            {
+                // 连失败状态都写不回去时，任务会一直停在 Running。
+                // 生成失败的原因上面已经记过了，这里把"写不回去"单独喊出来，
+                // 否则两个错误互相掩盖，事后只能看到一句无关的异常。
+                logger.LogCritical(
+                    persistException,
+                    "任务 {TaskId} 生成失败且无法回写失败状态，将长期停留在 Running，由僵尸任务清扫器兜底",
+                    task.Id);
+            }
         }
     }
 

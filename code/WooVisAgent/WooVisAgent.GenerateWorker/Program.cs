@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using WooVisAgent.EntityFrameworkCore;
 using WooVisAgent.EventBus;
+using WooVisAgent.GenerateWorker.Support;
 using WooVisAgent.Infrastructure.Storage;
 using WooVisAgent.Services.Common.Contracts;
 using WooVisAgentServices.ImageService;
@@ -32,7 +33,11 @@ builder.AddImageService();
 //     顺序在图片服务之后：视频侧复用了它注册的进度通知器等类型
 builder.AddVideoService();
 
-// 5. RabbitMQ 事件总线（Wolverine）：只扫描当前程序集。
+// 5. 僵尸任务清扫：把"状态停在 Running 却再也不动"的任务收敛成失败。
+//    没有它，执行体一旦崩掉，任务就永远转圈——既不继续也不失败。
+builder.Services.AddHostedService<StaleTaskReaper>();
+
+// 6. RabbitMQ 事件总线（Wolverine）：只扫描当前程序集。
 //    本程序集里只有一个处理器——ImageGenerationRequestedConsumer，
 //    因此 Api 侧永远不会消费到生成任务消息，从结构上杜绝「双重消费」。
 builder.AddEventBus(EventBusConstants.GenerateWorkerQueue, typeof(Program).Assembly);

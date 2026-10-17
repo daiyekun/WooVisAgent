@@ -1341,16 +1341,38 @@ async function scrollToBottom(): Promise<void> {
   if (el) el.scrollTop = el.scrollHeight
 }
 
+/**
+ * 每秒走一格。
+ *
+ * 视频动辄几分钟，进度条会在某个百分比上停很久。
+ * 「已等待 1m 20s」这种会自己跳秒的文案是唯一能证明"还在跑、不是死了"的信号，
+ * 而不是响应式的 now 只会渲染一次，看着同样像卡住。
+ */
+const nowTick = ref(Date.now())
+let tickTimer = 0
+
+/** 视频侧等待文案。返回 null 表示这张卡还没开始计时 */
+function waitingLabel(card: ChatCard): string | null {
+  if (!card.startedAt) return null
+
+  // 读一次 tick 建立响应式依赖，让文案跟着跳秒
+  return formatElapsed(card.startedAt, nowTick.value)
+}
+
 onMounted(() => {
   // 模型列表在布局里做过兜底加载，这里再补一次，避免直接刷新对话页时选不到模型
   if (!modelStore.models.length) void modelStore.loadModels()
   // 实时通道由布局启动，这里补一次是为了「直接刷新到对话页」的情况
   void ensureTaskHubStarted()
   document.addEventListener('click', closeMenu)
+  tickTimer = window.setInterval(() => {
+    nowTick.value = Date.now()
+  }, 1000)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', closeMenu)
+  window.clearInterval(tickTimer)
   watchers.forEach((_messageId, taskId) => stopWatch(taskId))
 })
 </script>
@@ -1503,11 +1525,21 @@ onBeforeUnmount(() => {
                   <small>
                     {{ item.card.model }} · {{ item.card.meta }} ·
                     {{ item.card.stage || stageTextOf(item.card, item.card.progress) }}
+                    <template v-if="waitingLabel(item.card)">
+                      · 已等待 {{ waitingLabel(item.card) }}
+                    </template>
                   </small>
                 </span>
                 <span class="pct">{{ Math.round(item.card.progress) }}%</span>
               </div>
               <div class="bar"><i :style="{ width: `${Math.max(4, item.card.progress)}%` }" /></div>
+              <!--
+                视频在这里停留几分钟是常态，不给预期用户会以为页面死了。
+                跳秒的「已等待」证明流程还活着，这句说明还要等多久。
+              -->
+              <div v-if="item.card.kind === 'video'" class="gl-hint">
+                视频生成通常需要 1-6 分钟，排队高峰更久；超过 20 分钟会自动判为失败，可以重跑。
+              </div>
               <div class="gc-grid" :class="item.card.count > 1 ? 'g2' : 'g1'" style="margin-top: 14px">
                 <div
                   v-for="n in Math.min(item.card.count, 4)"

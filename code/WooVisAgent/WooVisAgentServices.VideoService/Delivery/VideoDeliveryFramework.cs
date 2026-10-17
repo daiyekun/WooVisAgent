@@ -38,11 +38,33 @@ public sealed class VideoDeliveryFramework(
     ISnowflakeIdGenerator idGenerator,
     ILogger<VideoDeliveryFramework> logger) : IVideoDeliveryFramework
 {
-    /// <summary>轮询上限。视频生成通常 1-5 分钟，15 分钟能覆盖绝大多数模型且不会无限挂起。</summary>
-    public const int MaxPollMinutes = 15;
+    /// <summary>
+    /// 轮询上限（分钟）。视频通常 1-6 分钟，但排队高峰时模型侧可能压十几分钟，
+    /// 20 分钟能覆盖绝大多数情况，又不至于让用户对着一条转圈的进度条等太久。
+    ///
+    /// <b>改动这个值必须同步三处</b>，否则会出现"正常排队被误判成僵尸"或"僵尸永远不被清理"：
+    /// <list type="bullet">
+    ///   <item><c>VideoGenerationRequestedConsumer.StaleRunningThreshold</c>（必须大于本值）</item>
+    ///   <item><c>StaleTaskReaper.VideoThreshold</c>（必须大于本值）</item>
+    ///   <item>前端聊天页里"最长等待 N 分钟"的文案</item>
+    /// </list>
+    /// </summary>
+    public const int MaxPollMinutes = 20;
 
     /// <summary>轮询间隔。百炼建议 15 秒左右，太频繁会被限流；OpenAI 建议 2-5 秒，取 3 秒折中。</summary>
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(3);
+
+    /// <summary>
+    /// 单次 HTTP 请求的超时上限。
+    ///
+    /// 必须<b>明显小于</b> <see cref="MaxPollMinutes" />：轮询窗口的 deadline 检查位于循环末尾，
+    /// 一次请求挂住时它根本执行不到。曾经没有这层超时、而 HttpClient.Timeout 是 20 分钟，
+    /// 结果单次轮询挂起就把整个窗口拖过去——任务卡在 22% 十几分钟毫无动静，
+    /// 而且失败原因只剩一句意义不明的 "The operation was canceled."。
+    ///
+    /// 公开是为了让测试能直接断言它与窗口的大小关系，这条关系是本次修复的核心不变量。
+    /// </summary>
+    public static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(90);
 
     private const int MaxVideoBytes = 512 * 1024 * 1024;
 
@@ -186,7 +208,12 @@ public sealed class VideoDeliveryFramework(
 
         try
         {
-            using var response = await client.SendAsync(message, cancellationToken);
+            // 提交同样要卡超时：没有它，一次挂起的提交能把任务按在 8% 上十分钟，
+            // 而这期间用户看到的就是一条毫无变化的进度条。
+            using var requestCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            requestCts.CancelAfter(RequestTimeout);
+
+            using var response = await client.SendAsync(message, requestCts.Token);
             var responseBody = await SafeReadAsync(response, cancellationToken);
 
             llmSpan?.SetTag("wv.delivery.status_code", (int)response.StatusCode);
@@ -266,13 +293,58 @@ public sealed class VideoDeliveryFramework(
         var deadline = pollStartedAt.AddMinutes(MaxPollMinutes);
         var attempt = 0;
 
+        // 整个轮询窗口挂一个可取消令牌：
+        // deadline 的检查写在循环末尾，一旦某次请求挂起就永远走不到那里，
+        // 于是「15 分钟窗口」形同虚设。CancelAfter 让窗口到点主动发难，
+        // 卡在请求里的那次调用会立刻被取消，deadline 因此真正生效。
+        using var windowCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        windowCts.CancelAfter(deadline - pollStartedAt);
+
         while (true)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var body = usePost
-                ? await PollWithPostAsync(client, spec, request, statusUrl, taskId, cancellationToken)
-                : await PollWithGetAsync(client, spec, request, statusUrl, cancellationToken);
+            string? body;
+
+            try
+            {
+                // 单次请求再套一层短超时：网关偶发抖动时不至于把整个窗口耗光，
+                // 一次失败就放弃太可惜，下一轮还有机会。
+                using var requestCts = CancellationTokenSource.CreateLinkedTokenSource(windowCts.Token);
+                requestCts.CancelAfter(RequestTimeout);
+
+                body = usePost
+                    ? await PollWithPostAsync(client, spec, request, statusUrl, taskId, requestCts.Token)
+                    : await PollWithGetAsync(client, spec, request, statusUrl, requestCts.Token);
+            }
+            catch (Exception exception) when (IsTimeout(exception) && !cancellationToken.IsCancellationRequested)
+            {
+                // 窗口到点才判定超时；单次请求超时只记一笔，继续下一轮
+                if (windowCts.IsCancellationRequested)
+                {
+                    throw new TimeoutException(
+                        $"视频生成超过 {MaxPollMinutes} 分钟仍未完成，已停止等待。" +
+                        $"（模型任务号 {Shorten(taskId)}，可凭该号到服务商控制台查询真实进度。）" +
+                        "若模型排队时间较长，请稍后到任务列表重试，或换一个出片更快的模型。");
+                }
+
+                attempt++;
+                logger.LogWarning(
+                    "任务 {TaskId} 第 {Attempt} 次查询视频状态超时（{Seconds} 秒），继续等待",
+                    request.TaskId,
+                    attempt,
+                    RequestTimeout.TotalSeconds);
+
+                if (DateTimeOffset.UtcNow >= deadline)
+                {
+                    throw new TimeoutException(
+                        $"视频生成超过 {MaxPollMinutes} 分钟仍未完成，已停止等待。" +
+                        "若模型排队时间较长，请稍后到任务列表重试，或换一个出片更快的模型。");
+                }
+
+                await Task.Delay(PollInterval, cancellationToken);
+                continue;
+            }
 
             var status = JsonNodePath.GetScalar(JsonNodePath.Parse(body), spec.StatusValuePath);
 
@@ -668,6 +740,17 @@ public sealed class VideoDeliveryFramework(
             (csv ?? string.Empty)
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
             StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// 判断异常是不是「被取消 / 超时」。
+    ///
+    /// HTTP 超时在 .NET 上表现为 <see cref="TaskCanceledException" />，
+    /// 而服务停止时抛的也是它，两者必须区分开——否则一次普通的请求超时
+    /// 会被误判成「服务停止」，任务状态就永远停在 Running 了。
+    /// </summary>
+    private static bool IsTimeout(Exception exception)
+        => exception is TaskCanceledException or OperationCanceledException
+           || exception.InnerException is TaskCanceledException or OperationCanceledException;
 
     /// <summary>
     /// 把云端错误翻译成可读的中文。

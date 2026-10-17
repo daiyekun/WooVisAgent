@@ -39,15 +39,17 @@ public static class DependencyInjection
         });
         builder.Services.TryAddSingleton<ISnowflakeIdGenerator, SnowflakeIdGenerator>();
 
-        // 视频生成比图片慢得多（通常 1-5 分钟），超时必须放宽。
+        // 这个值是<b>最外层兜底</b>，要同时大于下面两个值：
+        //   ① 弹性管道总超时（5 分钟）——否则最外层会先于管道掐断请求；
+        //   ② 轮询窗口 MaxPollMinutes（20 分钟）——保证"超时由业务代码抛出可读中文"
+        //      这条不变量成立，而不是被传输层先抛一句 HttpClient.Timeout。
         //
-        // 注意这个值要和 ServiceDefaults 的弹性管道对齐：
-        // HttpClient.Timeout 是最外层兜底（一旦触发会砍掉整个请求，含管道内重试），
-        // 真正的超时判定交给 Polly，因此这里留到 20 分钟，
-        // 正常情况下永远先由 <see cref="VideoDeliveryFramework.MaxPollMinutes" /> 的 15 分钟窗口收敛。
+        // 但单靠它挡不住"一次请求挂起把整个窗口拖过去"：
+        // 轮询阶段现在自己带 90 秒的请求级超时 + 到点取消的窗口令牌，
+        // 所以这里的值不再参与轮询超时判定，只覆盖下载成品视频的耗时。
         builder.Services.AddHttpClient(VideoGenerationHttpClientName, client =>
         {
-            client.Timeout = TimeSpan.FromMinutes(20);
+            client.Timeout = TimeSpan.FromMinutes(25);
             client.DefaultRequestHeaders.UserAgent.ParseAdd("WooVisAgent-VideoGeneration/1.0");
         });
 
