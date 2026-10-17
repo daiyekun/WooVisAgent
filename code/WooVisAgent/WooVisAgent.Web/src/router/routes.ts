@@ -86,7 +86,6 @@ export const routes: RouteRecordRaw[] = [
           title: '任务列表',
           desc: '查看、筛选并追踪全部生成任务',
           icon: 'list',
-          hidden: true,
           order: 4,
         },
       },

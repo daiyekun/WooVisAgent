@@ -31,6 +31,7 @@ const router = useRouter()
  * 工作区导航，直接由路由表派生，避免两处维护。
  * 这里再挡一道 name：`to={{ name: undefined }}` 会让 router.resolve 抛错，
  * 一抛就是整个布局渲染失败、页面全白，代价太大，宁可少渲染一项。
+ * 按 meta.order 排序，保证「任务列表」这类后加的菜单落在预期位置。
  */
 const navItems = computed(() =>
   menuRoutes
@@ -39,7 +40,9 @@ const navItems = computed(() =>
       name: String(item.name),
       title: (item.meta?.title as string) ?? '',
       icon: (item.meta?.icon as string) ?? 'grid',
-    })),
+      order: (item.meta?.order as number) ?? 0,
+    }))
+    .sort((a, b) => a.order - b.order),
 )
 
 const activeKey = computed(() => String(route.name ?? 'Workspace'))
@@ -59,6 +62,9 @@ const worksCount = computed(() =>
     .filter((task) => task.status === 'succeeded')
     .reduce((sum, task) => sum + (task.outputs?.length ?? 0), 0),
 )
+
+/** 「任务列表」角标：未结束的任务数，有任务在跑时提示用户可以点进去看进度 */
+const runningCount = computed(() => taskStore.runningCount)
 
 /** 最近会话：先展示最近若干条任务，点击回到任务列表查看全部 */
 const recentTasks = computed(() => taskStore.tasks.slice(0, 5))
@@ -138,6 +144,7 @@ function handleLogout(): void {
         <app-icon :name="item.icon" :size="17" />
         <span>{{ item.title }}</span>
         <span v-if="item.name === 'Works' && worksCount" class="badge">{{ worksCount }}</span>
+        <span v-else-if="item.name === 'TaskList' && runningCount" class="badge">{{ runningCount }}</span>
       </router-link>
 
       <template v-if="recentTasks.length">

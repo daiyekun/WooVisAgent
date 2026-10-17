@@ -7,7 +7,7 @@ import AppIcon from '@/components/common/AppIcon.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import TaskCard from '@/components/TaskCard.vue'
 import VideoPlayer from '@/components/VideoPlayer.vue'
-import { PAGE_SIZE_OPTIONS, TASK_STATUS_OPTIONS } from '@/constants'
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS, TASK_STATUS_OPTIONS } from '@/constants'
 import { useTaskStore } from '@/stores/taskStore'
 import { useAppStore } from '@/stores/appStore'
 import type { GenerationTask, TaskAsset } from '@/types'
@@ -165,7 +165,11 @@ watch(
 )
 
 onMounted(async () => {
-  await taskStore.loadTasks()
+  /**
+   * 侧边栏「最近会话」会先用 pageSize: 8 预热一次列表，
+   * 这里显式回到默认分页大小，否则分页器会停在一个并不存在的档位上。
+   */
+  await taskStore.loadTasks({ page: 1, pageSize: DEFAULT_PAGE_SIZE })
   startPolling()
 })
 
