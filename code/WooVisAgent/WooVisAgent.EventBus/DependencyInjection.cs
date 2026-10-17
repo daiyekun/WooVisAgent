@@ -29,6 +29,32 @@ public static class DependencyInjection
         // 连接字符串名必须与 AppHost 中 .AddRabbitMQ("eventbus") 的名称一致
         var connectionString = builder.Configuration.GetConnectionString("eventbus");
 
+        // 显式关闭开关：集成测试用它把整个消息总线摘掉。
+        //
+        // 为什么不靠「InMemory 数据库就换传输层」自动判断：
+        //   1) Wolverine 在宿主<b>启动阶段</b>就会去连 broker，连不上就一直重连，
+        //      测试会整体卡死（本次踩过：84 个用例只跑出 3 个，耗时 4 分 46 秒）；
+        //   2) 自动判断意味着「测试跑一套、上线跑另一套」，
+        //      迟早出现「测试全绿、上线连不上队列」这种最难查的问题。
+        //
+        // 开关只用于测试，生产环境不设置，走的永远是 RabbitMQ 那一条路径。
+        if (builder.Configuration.GetValue("EventBus:Enabled", true) is false)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            // 不给 5672 这类"看起来能用"的兜底值。
+            // 之前写死 localhost:5672，而本机该端口常被别的 RabbitMQ 容器占着，
+            // 于是注入失败时会静默连到别人的队列：消息发出去没报错，
+            // 任务却永远停在 queued，且日志里看不出任何异常。
+            // 拿不到连接串就直接抛错，让问题在启动时暴露。
+            throw new InvalidOperationException(
+                "缺少 ConnectionStrings:eventbus。请通过 AppHost 启动（WithReference 注入），"
+                + "或显式配置该连接串。");
+        }
+
         builder.UseWolverine(opts =>
         {
             // Wolverine 6 起，处理器代码默认在运行时用 Roslyn 动态编译，
@@ -47,7 +73,7 @@ public static class DependencyInjection
       // 因此必须显式放开服务定位。
       opts.ServiceLocationPolicy = ServiceLocationPolicy.AlwaysAllowed;
 
-            opts.UseRabbitMq(new Uri(connectionString ?? "amqp://guest:guest@localhost:5672"))
+            opts.UseRabbitMq(new Uri(connectionString))
                 // 启动时自动声明队列与绑定，免得手工去 RabbitMQ 控制台建
                 .AutoProvision();
 

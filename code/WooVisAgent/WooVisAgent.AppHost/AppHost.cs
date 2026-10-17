@@ -1,11 +1,21 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
 var password = builder.AddParameter("pg-password", secret: true);
+
+// 不要用 WithHostPort(5432) 写死端口。
+//
+// 本机 5432 已被 Docker 里的 pg-biz 容器占用（监听 0.0.0.0:5432），
+// 而 Aspire 的容器只能抢到 127.0.0.1:5432。于是同一个端口上并存两个 Postgres：
+// Docker 那个优先匹配 0.0.0.0，Api 用 localhost 连库时命中的是<b>Docker 的库</b>——
+// 里面没有本项目的表，于是表现为「登录接口挂死 / 会话列表空 / 时好时坏」，
+// 而且换机器、停掉那个 Docker 容器就又好了，故障看起来完全随机。
+//
+// 交给 Aspire 分配随机端口最稳：不与任何既有服务冲突，
+// 连接串由 WithReference 注入，永远指向正确的那个实例。
 var postgresdb = builder.AddPostgres("postgres", password: password)
-    .WithHostPort(5432)
     .WithDataVolume("woovisagent")
     // pgweb 是数据库管理界面，首次运行需要联网拉取 sosedoff/pgweb 镜像。
-    // 当前网络访问 Docker Hub 及 daemon.json 里的镜像源都超时，该资源会一直 FailedToStart，
+    // 当前网络访问 Docker Hub 及 daemon.json里的镜像源都超时，该资源会一直 FailedToStart，
     // 所以先关掉；等网络恢复后取消下面这行注释即可。
     //.WithPgWeb(pgAdmin => pgAdmin.WithHostPort(5050))
     // 挂载初始化脚本：容器启动时会自动执行该目录下的 .sql 文件创建 erp_demo
@@ -16,8 +26,13 @@ var postgresdb = builder.AddPostgres("postgres", password: password)
 // 不是 AMQP 端口。之前传 5672 会和宿主机上已被其他 rabbitmq 容器占用的 5672 冲突，
 // 导致 eventbus 容器 FailedToStart，进而 api / webui 因 WaitFor 一直卡在 Waiting。
 // AMQP 端口通过配置项 Resources:eventbus:tcp:port 指定，见 appsettings.Development.json（默认 15500）。
+//
+// 同理，管理端口 15673 也可能被别人占用（Docker 里的 rabbitmq 就占了 15672）。
+// 写死端口的风险是"两个容器抢同一个端口"，而这类冲突的失败方式极具迷惑性：
+// 表面上进程都起来了、接口也能通，唯独数据落在另一个实例里，故障时好时坏。
+// 这里让 Aspire 自己分配随机端口。
 var rabbitmq = builder.AddRabbitMQ("eventbus")
-    .WithManagementPlugin(15673)
+    .WithManagementPlugin()
     .WithLifetime(ContainerLifetime.Persistent);
 
 var httpapi = builder.AddProject<Projects.WooVisAgent_Api>("woovisagent-api")
