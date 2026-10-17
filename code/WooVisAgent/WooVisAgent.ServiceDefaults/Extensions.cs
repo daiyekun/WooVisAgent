@@ -64,7 +64,12 @@ public static class Extensions
             {
                 metrics.AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
-                    .AddRuntimeInstrumentation();
+                    .AddRuntimeInstrumentation()
+                     .AddMeter("Microsoft.AspNetCore.Hosting")
+                    .AddMeter("Microsoft.AspNetCore.Server.Kestrel")
+                    .AddMeter("System.Net.Http")
+                    .AddMeter("System.Net.NameResolution");
+                ;
             })
             .WithTracing(tracing =>
             {
