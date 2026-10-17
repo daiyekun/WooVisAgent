@@ -34,6 +34,11 @@ export interface ImageGenerationResult {
   status: TaskStatus
   /** 同步返回时直接带上产物，异步场景为空数组 */
   images: TaskAsset[]
+  /**
+   * 任务实际所属的会话主键。请求未带 conversationId 时由后端自动建会话并回传，
+   * 前端必须用它更新当前会话 id，否则新会话的历史不会出现在聊天记录里。
+   */
+  conversationId?: string
 }
 
 /** 提交图片生成任务 */

@@ -39,6 +39,11 @@ public class CancelGenerationTaskCommandHandler(
         task.UpdatedAt = now;
         task.ErrorMessage = null;
 
+        // 进度必须一起归零：任务是被用户主动中止的，不是跑完了。
+        // 之前漏了这行，取消后 progress 仍停在 100，
+        // 前端进度条会显示满格，和「已取消」自相矛盾。
+        task.Progress = 0;
+
         repository.Update(task);
         await repository.SaveChangesAsync(cancellationToken);
 

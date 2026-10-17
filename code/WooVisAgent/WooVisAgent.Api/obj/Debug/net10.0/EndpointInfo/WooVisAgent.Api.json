@@ -6,7 +6,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:25639"
+      "url": "http://localhost:16222"
     }
   ],
   "paths": {
@@ -2552,7 +2552,8 @@
         "required": [
           "taskId",
           "status",
-          "images"
+          "images",
+          "conversationId"
         ],
         "type": "object",
         "properties": {
@@ -2567,6 +2568,12 @@
             "items": {
               "$ref": "#/components/schemas/TaskAssetDto"
             }
+          },
+          "conversationId": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

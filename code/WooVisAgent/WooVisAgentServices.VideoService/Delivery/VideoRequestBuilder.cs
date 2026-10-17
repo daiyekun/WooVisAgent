@@ -118,10 +118,19 @@ public static class VideoRequestBuilder
         return Math.Min(width, height) >= 1080 ? "1080P" : "720P";
     }
 
-    /// <summary>从像素尺寸推出宽高比（1280x720 → 16:9）</summary>
+    /// <summary>
+    /// 从像素尺寸推出宽高比（1280x720 → 16:9）。
+    ///
+    /// 用户直接选档位（<c>480P</c> 这类没有 <c>x</c> 的写法）时返回 <c>adaptive</c>——
+    /// 只给清晰度不给比例，就是在说"比例你看着办"，这正是万相 2.6 起 <c>ratio</c> 字段
+    /// 支持 <c>adaptive</c> 的用意。硬塞一个 16:9 反而会把用户没表达的意图写死。
+    /// </summary>
     private static string ToRatio(string resolution)
     {
         var normalized = resolution.Replace('*', 'x').Replace('X', 'x');
+
+        if (!normalized.Contains('x'))
+            return "adaptive";
 
         var parts = normalized.Split('x', StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length != 2

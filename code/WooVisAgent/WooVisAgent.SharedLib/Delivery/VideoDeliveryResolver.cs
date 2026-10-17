@@ -141,9 +141,7 @@ public static class VideoDeliveryResolver
         if (endpoint.Contains("dashscope", StringComparison.Ordinal)
             || endpoint.Contains("aliyuncs.com", StringComparison.Ordinal))
         {
-            // 新版 wan2.7 / wan2.6 起 resolution 与 ratio 分开传，旧的用 size
-            return modelKey.Contains("wan2.7", StringComparison.Ordinal)
-                   || modelKey.Contains("wan2.6", StringComparison.Ordinal)
+            return UsesTierAndRatio(modelKey)
                 ? VideoDeliveryPresets.DashScopeVideo
                 : VideoDeliveryPresets.DashScopeLegacyVideo;
         }
@@ -155,6 +153,11 @@ public static class VideoDeliveryResolver
             return VideoDeliveryPresets.SiliconFlowVideo;
         }
 
+        // 第三方网关（如 maas.qianwenaiapi.com）主机名认不出百炼，
+        // 但模型名是万相——按代际选出正确的参数形态，否则会用 2.5 的 size 去调 3.0
+        if (UsesTierAndRatio(modelKey))
+            return VideoDeliveryPresets.DashScopeVideo;
+
         if (modelKey.Contains("wan", StringComparison.Ordinal))
         {
             return VideoDeliveryPresets.DashScopeLegacyVideo;
@@ -164,6 +167,19 @@ public static class VideoDeliveryResolver
         // 也是让用户只填 endpoint 就能用的关键。
         return VideoDeliveryPresets.OpenAiVideos;
     }
+
+    /// <summary>
+    /// 该万相模型是不是走「档位 + 宽高比」的新参数形态。
+    ///
+    /// 万相 2.5 及更早只有单个 <c>parameters.size</c>（<c>1280*720</c>）；
+    /// 2.6 起拆成 <c>parameters.resolution</c>（<c>480P</c>）与 <c>parameters.ratio</c>，
+    /// 3.0 沿用新形态。代际判断错一次，请求体就整个不对——
+    /// 而接口只会回一句笼统的参数错误，不会告诉你该换哪个字段。
+    /// </summary>
+    private static bool UsesTierAndRatio(string modelKey)
+        => modelKey.Contains("wan2.6", StringComparison.Ordinal)
+           || modelKey.Contains("wan2.7", StringComparison.Ordinal)
+           || modelKey.Contains("wan3", StringComparison.Ordinal);
 
     /// <summary>解析模型配置里的交付模板 JSON；格式不对时返回 null 而不是抛异常</summary>
     public static VideoDeliveryTemplate? ReadTemplate(string? json)
@@ -213,6 +229,8 @@ public static class VideoDeliveryResolver
                 : preset.ExtraHeaders,
             RequestFields = fields,
             ResolutionStyle = ParseResolutionStyle(template.ResolutionStyle) ?? preset.ResolutionStyle,
+            // 预设的内部属性，不向用户模板开放：路径怎么拼取决于协议本身，不由配置决定
+            VendorNativePaths = preset.VendorNativePaths,
         };
     }
 

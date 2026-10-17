@@ -50,6 +50,7 @@ import {
   MAX_REFERENCE_SIZE,
   NEW_CHAT_TITLE,
   RATIO_PRESETS,
+  VIDEO_RESOLUTION_OPTIONS,
   imageStageText,
   starterCards,
   videoStageText,
@@ -196,8 +197,13 @@ const withAudio = ref(false)
 const ratio = computed(() => RATIO_PRESETS[ratioIndex.value])
 const sizeLabel = computed(() => `${ratio.value.width}×${ratio.value.height}`)
 
-/** 视频侧分辨率沿用比例预设，只是换一种写法传给后端 */
-const videoResolution = computed(() => `${ratio.value.width}x${ratio.value.height}`)
+/**
+ * 视频侧分辨率独立成一份状态，不复用图片的比例预设。
+ *
+ * 图片比例是 1024×1024 这类像素尺寸，套到视频上所有选项都会算出同一个档位（720P），
+ * 用户根本选不到 480P / 1080P；而万相 3.0 这类模型恰恰要能选档位。
+ */
+const videoResolution = ref<string>(VIDEO_RESOLUTION_OPTIONS[1].value)
 
 /**
  * 卡片进行中的阶段文案。
@@ -207,8 +213,8 @@ function stageTextOf(card: ChatCard, progress: number): string {
   return card.kind === 'video' ? videoStageText(progress) : imageStageText(progress)
 }
 
-/** 下拉菜单键：视频多出时长与帧率两项 */
-type MenuKey = '' | 'ratio' | 'batch' | 'model' | 'duration' | 'fps'
+/** 下拉菜单键：视频多出分辨率、时长与帧率三项 */
+type MenuKey = '' | 'ratio' | 'batch' | 'model' | 'duration' | 'fps' | 'vres'
 const openMenu = ref<MenuKey>('')
 
 function toggleMenu(key: Exclude<MenuKey, ''>): void {
@@ -695,6 +701,23 @@ async function submit(payload: {
     card.taskId = result.taskId
     card.status = result.status
     watchTask(result.taskId, assistantId)
+
+    // 从「新建创作」进入时请求不带 conversationId，会话是在提交这一刻才由后端建的。
+    // 必须把后端回传的主键写回本地状态，否则后续消息还会继续走「无会话」分支，
+    // 表现为会话列表里看不到、历史消息不落在这个会话下。
+    if (result.conversationId && !conversationId.value) {
+      conversationId.value = result.conversationId
+      // 同步到路由，刷新 / 分享链接后仍停留在同一个会话
+      if (typeof router !== 'undefined') {
+        void router.replace({
+          name: route.name ?? undefined,
+          params: { ...route.params, id: result.conversationId },
+          query: route.query,
+        }).catch(() => {
+          /* 路由未定义会话参数时忽略，不影响生成流程 */
+        })
+      }
+    }
 
     // 后端会把这一轮写进会话，提交成功后刷新侧边栏的「最近会话」与角标
     void conversationStore.loadRecent()
@@ -1696,8 +1719,8 @@ onBeforeUnmount(() => {
             高级
           </span>
 
-          <!-- 比例 -->
-          <div class="dd">
+          <!-- 比例：图片专属。视频改用下面的分辨率，避免两个模式共用一套像素尺寸 -->
+          <div v-if="mode === 'image'" class="dd">
             <span class="chip" @click.stop="toggleMenu('ratio')">
               {{ ratio.label }} · {{ sizeLabel }}
               <app-icon name="chevron-down" :size="12" class="caret" />
@@ -1711,6 +1734,25 @@ onBeforeUnmount(() => {
                 @click="ratioIndex = i; closeMenu()"
               >
                 {{ item.label }} · {{ item.width }}×{{ item.height }}
+              </button>
+            </div>
+          </div>
+
+          <!-- 分辨率：视频专属 -->
+          <div v-else class="dd">
+            <span class="chip" @click.stop="toggleMenu('vres')">
+              {{ videoResolution }}
+              <app-icon name="chevron-down" :size="12" class="caret" />
+            </span>
+            <div v-if="openMenu === 'vres'" class="dd-menu" @click.stop>
+              <button
+                v-for="option in VIDEO_RESOLUTION_OPTIONS"
+                :key="option.value"
+                type="button"
+                :class="{ on: option.value === videoResolution }"
+                @click="videoResolution = option.value; closeMenu()"
+              >
+                {{ option.label }}
               </button>
             </div>
           </div>

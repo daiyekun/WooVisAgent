@@ -1,0 +1,20 @@
+从 WooVisAgent.AppHost\Properties\launchSettings.json 使用启动设置...
+info: Aspire.Hosting.DistributedApplication[0]
+      Aspire AppHost version: 13.6.1+3751e615ad660621f2a7aa4c390ef48e08a0eed8
+info: Aspire.Hosting.DistributedApplication[0]
+      Distributed application starting.
+info: Aspire.Hosting.DistributedApplication[0]
+      Application host directory is: D:\WooProject\AIVidio\code\WooVisAgent\WooVisAgent.AppHost
+info: Aspire.Hosting.DistributedApplication[0]
+      Now listening on: https://localhost:17227
+info: Aspire.Hosting.DistributedApplication[0]
+      Login to the dashboard at https://localhost:17227/login?t=e4ddd8f15d0e6d9c0ec444f9af707563
+info: Aspire.Hosting.DistributedApplication[0]
+      Aspire Dashboard
+
+      - Dashboard:  https://localhost:17227
+      - Login URL:  https://localhost:17227/login?t=e4ddd8f15d0e6d9c0ec444f9af707563
+      - OTLP/gRPC:  https://localhost:21254
+
+info: Aspire.Hosting.DistributedApplication[0]
+      Distributed application started. Press Ctrl+C to shut down.

@@ -482,6 +482,18 @@ onMounted(() => {
 
         <n-form-item label="接口地址">
           <n-input v-model:value="draft.endpoint" placeholder="https://api.example.com/v1" />
+          <!--
+            视频与图片的地址习惯不一样：视频各家都只有「原生入口」，
+            路径从域名根算起，因此地址填到域名即可。
+            用户最容易从聊天模型把 /compatible-mode/v1 整段复制过来，
+            这里提前讲清楚，比等提交时报一个 404 再排查省事得多。
+          -->
+          <div v-if="draft.category === 'video'" class="field-warning">
+            视频接口一般只填到域名：百炼填 <b>https://dashscope.aliyuncs.com</b>，
+            硅基流动填 <b>https://api.siliconflow.cn/v1</b>。<br />
+            若填的是聊天用的 OpenAI 兼容地址（含 <b>/compatible-mode</b>），
+            提交时会自动去掉该前缀——各家视频接口都没有兼容层。
+          </div>
         </n-form-item>
 
         <!-- 视频模型专属：能力声明 + 交付模板。
@@ -495,8 +507,10 @@ onMounted(() => {
               <n-checkbox v-model:checked="draft.supportsImageToVideo">支持图生视频</n-checkbox>
             </n-space>
             <div class="field-warning">
-              ⚠ 多数视频模型只支持其中一种。勾选「支持图生视频」后，任务提交页会显示首帧图输入框；
-              不勾选仍可强行提交首帧图，但后端会直接拒绝，避免产出与提示词无关的视频。
+              ⚠ 多数视频模型只支持其中一种，请按模型文档勾选。<br />
+              勾选「支持图生视频」后，在聊天页切到视频并上传一张参考图即自动作为首帧；
+              在任务提交页则会显示首帧图输入框。不勾选仍可强行提交首帧图，
+              但后端会直接拒绝，避免产出与提示词无关的视频。
             </div>
             <n-alert v-if="!draft.supportsTextToVideo && !draft.supportsImageToVideo" type="warning" :show-icon="true" class="mt">
               两种能力都没勾选，该模型将无法提交任何视频任务。

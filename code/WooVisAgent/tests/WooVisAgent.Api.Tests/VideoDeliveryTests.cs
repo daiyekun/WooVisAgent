@@ -286,6 +286,46 @@ var portrait = Parse(VideoRequestBuilder.BuildSubmitBody(
     }
 
     [Fact]
+    public void 提交地址_应丢弃聊天用的OpenAI兼容层前缀()
+    {
+        var spec = VideoDeliveryPresets.DashScopeVideo;
+
+        // 用户从聊天模型整段复制 endpoint：视频接口在百炼没有兼容层，
+        // 直接相加会得到 /compatible-mode/v1/api/v1/... —— 服务端只回 404
+        var url = spec.ResolveSubmitUrl(CreateModel("https://dashscope.aliyuncs.com/compatible-mode/v1"));
+
+        Assert.Equal(
+            "https://dashscope.aliyuncs.com/api/v1/services/aigc/video-generation/video-synthesis",
+            url);
+
+        // 轮询地址同样要回到域名根，否则提交成功后一步也会 404
+        Assert.Equal(
+            "https://dashscope.aliyuncs.com/api/v1/tasks/task-1",
+            spec.ResolveStatusUrl(CreateModel("https://dashscope.aliyuncs.com/compatible-mode/v1"), "task-1"));
+
+        // 业务空间专属域名同样适用
+        Assert.Equal(
+            "https://ws-123.cn-beijing.maas.aliyuncs.com/api/v1/services/aigc/video-generation/video-synthesis",
+            spec.ResolveSubmitUrl(CreateModel("https://ws-123.cn-beijing.maas.aliyuncs.com/compatible-mode/v1")));
+    }
+
+    [Fact]
+    public void 提交地址_兼容层前缀不应影响OpenAI预设()
+    {
+        // OpenAI 预设本身就是兼容协议，endpoint 里的前缀是真实路径的一部分。
+        // 若一并丢弃，自建网关（/proxy 这类）的地址会被拼坏。
+        var spec = VideoDeliveryPresets.OpenAiVideos;
+
+        Assert.Equal(
+            "https://gateway.example.com/proxy/v1/videos",
+            spec.ResolveSubmitUrl(CreateModel("https://gateway.example.com/proxy")));
+
+        Assert.Equal(
+            "https://api.openai.com/v1/videos",
+            spec.ResolveSubmitUrl(CreateModel("https://api.openai.com/v1")));
+    }
+
+    [Fact]
     public void 预设推断_应按主机名与模型名命中()
     {
         // 百炼：主机名带 aliyuncs
@@ -306,6 +346,51 @@ var portrait = Parse(VideoRequestBuilder.BuildSubmitBody(
             CreateModel("https://api.example.com/v1", "some-video-model", provider: "自建"));
 
         Assert.Equal("openai-videos", fallback!.PresetName);
+    }
+
+    [Fact]
+    public void 预设推断_第三方网关上的万相应按代际选参数形态()
+    {
+        // maas.qianwenaiapi.com 这类网关主机名既不含 dashscope 也不含 aliyuncs，
+        // 只能靠模型名识别；而 wan3.0 走的是新版「resolution + ratio」形态，
+        // 若按旧的 wan → 旧预设处理，会拿 2.5 的 parameters.size 去调 3.0。
+        var wan3 = VideoDeliveryResolver.Resolve(
+            CreateModel("https://maas.qianwenaiapi.com", "wan3.0-video"));
+
+        Assert.Equal("dashscope-video", wan3!.PresetName);
+
+        // 同一网关上的老模型（非 2.2，避开硅基流动那条模型名规则）仍应走旧形态
+        var wan25 = VideoDeliveryResolver.Resolve(
+            CreateModel("https://maas.qianwenaiapi.com", "wan2.5-i2v"));
+
+        Assert.Equal("dashscope-legacy-video", wan25!.PresetName);
+
+        // 已知歧义：wan2.2 在"认不出主机名"时按硅基流动处理，
+        // 因为该平台的万相模型就叫 Wan-AI/Wan2.2-T2V-A14B。
+        // 第三方网关上若判断错了，在交付预设里显式选一个即可覆盖。
+        var wan22 = VideoDeliveryResolver.Resolve(
+            CreateModel("https://maas.qianwenaiapi.com", "wan2.2-i2v-plus"));
+
+        Assert.Equal("siliconflow-video", wan22!.PresetName);
+    }
+
+    [Fact]
+    public void 档位分辨率_应搭配adaptive而不是写死16比9()
+    {
+        var spec = VideoDeliveryPresets.DashScopeVideo;
+
+        // 官方示例：只给清晰度，比例交给模型自适应
+        var body = VideoRequestBuilder.BuildSubmitBody(CreateRequest(spec, resolution: "480P"), spec);
+        var root = Parse(body);
+
+        Assert.Equal("480P", JsonNodePath.GetScalar(root, "parameters.resolution"));
+        Assert.Equal("adaptive", JsonNodePath.GetScalar(root, "parameters.ratio"));
+
+        // 给了像素尺寸才推导具体比例
+        var sized = Parse(VideoRequestBuilder.BuildSubmitBody(CreateRequest(spec, resolution: "1280x720"), spec));
+
+        Assert.Equal("720P", JsonNodePath.GetScalar(sized, "parameters.resolution"));
+        Assert.Equal("16:9", JsonNodePath.GetScalar(sized, "parameters.ratio"));
     }
 
     [Fact]

@@ -103,17 +103,31 @@ public sealed class VideoDeliverySpec
     /// </summary>
     public VideoResolutionStyle ResolutionStyle { get; init; } = VideoResolutionStyle.Omit;
 
+    /// <summary>
+    /// 该预设的路径是不是「厂商原生路径」——即从域名根算起，与 endpoint 自带的路径无关。
+    ///
+    /// 两类接口的定位不同，必须分开对待：
+    /// <list type="bullet">
+    ///   <item>百炼 / 硅基流动的视频接口挂在域名根下（<c>/api/v1/...</c>、<c>/v1/video/...</c>），
+    ///         endpoint 只填域名即可，带任何前缀都会拼错；</item>
+    ///   <item>OpenAI 预设本身就是兼容协议，<c>/v1/videos</c> 必须跟在 endpoint 后面——
+    ///         endpoint 填 <c>https://gateway.example.com/proxy/v1</c> 时这个前缀是有意义的。</item>
+    /// </list>
+    /// 只有 <c>true</c> 时才会丢弃 endpoint 上的「兼容层」前缀，见 <see cref="Combine" />。
+    /// </summary>
+    public bool VendorNativePaths { get; init; } = true;
+
     /// <summary>解析出的提交 URL；解析不出来时返回 null，由调用方给出明确错误而不是硬拼路径。</summary>
     public string? ResolveSubmitUrl(ModelConfig model)
-        => Combine(EndpointOf(model), SubmitPath);
+        => Combine(EndpointOf(model), SubmitPath, VendorNativePaths);
 
     /// <summary>解析轮询地址；模板里没有 <c>{taskId}</c> 且 <see cref="StatusPath" /> 为空时返回 null。</summary>
     public string? ResolveStatusUrl(ModelConfig model, string taskId)
-        => Combine(EndpointOf(model), Replace( StatusPath, taskId));
+        => Combine(EndpointOf(model), Replace(StatusPath, taskId), VendorNativePaths);
 
     /// <summary>解析视频正文的下载地址（仅 <see cref="VideoOutputKind.ContentBinary" /> 需要）</summary>
     public string? ResolveContentUrl(ModelConfig model, string taskId)
-        => Combine(EndpointOf(model), Replace(ContentPath, taskId));
+        => Combine(EndpointOf(model), Replace(ContentPath, taskId), VendorNativePaths);
 
     /// <summary>
     /// 把「接口根地址 + 相对路径」拼成最终 URL，并消除重复前缀。
@@ -133,8 +147,17 @@ public sealed class VideoDeliverySpec
     /// <c>https://api.openai.com</c>、<c>https://api.openai.com/v1</c>、
     /// <c>https://api.openai.com/v1/</c> 配 <c>/v1/videos</c>。
     /// </para>
+    ///
+    /// <para>
+    /// 第二条规则处理的是反向的情况：endpoint 带的路径是<b>聊天用的 OpenAI 兼容层</b>
+    /// （如百炼的 <c>/compatible-mode/v1</c>），而视频接口在厂商那里根本没有兼容层，
+    /// 一律走域名根。用户从聊天模型整段复制地址过来是最常见的操作，
+    /// 于是拼出 <c>/compatible-mode/v1/api/v1/services/...</c> 这种地址，
+    /// 服务端只回一个 404——且错误信息完全不提"前缀拼错了"，排查方向会被带偏。
+    /// 因此当预设声明走原生路径时，这类前缀直接丢弃、回到 origin 重拼。
+    /// </para>
     /// </summary>
-    private static string? Combine(string endpoint, string? path)
+    private static string? Combine(string endpoint, string? path, bool vendorNativePaths)
     {
         if (string.IsNullOrWhiteSpace(endpoint))
             return null;
@@ -152,7 +175,37 @@ public sealed class VideoDeliverySpec
         if (endpointPath.Length > 0 && trimmedPath.StartsWith(endpointPath, StringComparison.OrdinalIgnoreCase))
             return origin + trimmedPath;
 
+        // endpoint 只剩一个与视频无关的兼容层前缀 → 同样回到 origin
+        if (vendorNativePaths && endpointPath.Length > 0 && IsCompatibilityShim(endpointPath))
+            return origin + trimmedPath;
+
         return baseUrl + trimmedPath;
+    }
+
+    /// <summary>
+    /// 已知的「OpenAI 兼容层」路径前缀。
+    ///
+    /// 这些前缀只服务于 <c>/v1/chat/completions</c> 一类的文本接口，
+    /// 视频生成各家都只有原生入口，因此带上它们必然 404。
+    /// </summary>
+    private static readonly string[] CompatibilityShims =
+    [
+        "/compatible-mode/v1",
+        "/compatible-mode",
+    ];
+
+    private static bool IsCompatibilityShim(string endpointPath)
+    {
+        foreach (var shim in CompatibilityShims)
+        {
+            if (endpointPath.Equals(shim, StringComparison.OrdinalIgnoreCase)
+                || endpointPath.EndsWith(shim, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static string Replace(string? template, string taskId)

@@ -10,12 +10,12 @@ info: Aspire.Hosting.DistributedApplication[0]
 info: Aspire.Hosting.DistributedApplication[0]
       Now listening on: https://localhost:17227
 info: Aspire.Hosting.DistributedApplication[0]
-      Login to the dashboard at https://localhost:17227/login?t=953338dbe17cb368d786763ea31d8b35
+      Login to the dashboard at https://localhost:17227/login?t=febdca1b1244e823573a4bbff3b1ed99
 info: Aspire.Hosting.DistributedApplication[0]
       Aspire Dashboard
 
       - Dashboard:  https://localhost:17227
-      - Login URL:  https://localhost:17227/login?t=953338dbe17cb368d786763ea31d8b35
+      - Login URL:  https://localhost:17227/login?t=febdca1b1244e823573a4bbff3b1ed99
       - OTLP/gRPC:  https://localhost:21254
 
 info: Aspire.Hosting.DistributedApplication[0]

@@ -57,10 +57,19 @@ public sealed record TaskAssetDto(
 /// 提交图片生成任务的返回结构，与前端 ImageGenerationResult 对齐。
 /// 异步生成场景下 <c>Images</c> 为空数组，产物由 SignalR 推送。
 /// </summary>
+/// <param name="TaskId">生成任务主键</param>
+/// <param name="Status">初始状态，通常为 queued</param>
+/// <param name="Images">产物列表，异步场景下为空</param>
+/// <param name="ConversationId">
+/// 任务所属会话主键。前端必须把它写回当前会话，否则这条消息不会进入聊天历史，
+/// 表现为「会话看不到、重新登录后历史丢失」。请求未带 conversationId 时，
+/// 后端会自动新建（或复用空会话）并在这里返回其主键。
+/// </param>
 public sealed record ImageGenerationResultDto(
     string TaskId,
     string Status,
-    IReadOnlyList<TaskAssetDto> Images);
+    IReadOnlyList<TaskAssetDto> Images,
+    string? ConversationId);
 
 /// <summary>生成任务出参，字段与前端 GenerationTask 对齐</summary>
 public sealed record GenerationTaskDto(

@@ -180,6 +180,24 @@ export const DURATION_OPTIONS = [3, 5, 10] as const
 /** 视频帧率 */
 export const FPS_OPTIONS = [24, 30] as const
 
+/**
+ * 视频分辨率。
+ *
+ * 档位与像素尺寸两组并存，对应两代模型的不同字段形态：
+ * - 档位（480P / 720P / 1080P）：只给清晰度、比例交给模型自适应，
+ *   万相 2.6 起官方示例就是这个写法（resolution=480P, ratio=adaptive）；
+ * - 像素尺寸：老模型只认一个 size，比例由宽高推导。
+ * 后端会按当前模型的交付预设自动换算，这里不需要用户判断。
+ */
+export const VIDEO_RESOLUTION_OPTIONS = [
+  { label: '480P · 自适应比例', value: '480P' },
+  { label: '720P · 自适应比例', value: '720P' },
+  { label: '1080P · 自适应比例', value: '1080P' },
+  { label: '1280 × 720 · 720P 横屏', value: '1280x720' },
+  { label: '720 × 1280 · 720P 竖屏', value: '720x1280' },
+  { label: '1024 × 1024 · 方形', value: '1024x1024' },
+]
+
 /** 生成中的阶段文案：后端只给 0-100 的进度，这里按区间补一句人话 */
 export const IMAGE_STAGES = ['正在排队', '正在解析提示词', '正在构图', '正在细化细节', '正在合成输出']
 

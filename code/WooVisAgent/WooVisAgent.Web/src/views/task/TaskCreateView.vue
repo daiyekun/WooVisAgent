@@ -58,7 +58,19 @@ const videoOptions = reactive({
 /** 选中模型的扩展参数 */
 const modelParams = ref<Record<string, unknown>>({})
 
+/**
+ * 视频分辨率选项。
+ *
+ * 两组并存是因为两代模型的字段形态不同：
+ * - 档位（480P/720P/1080P）：万相 2.6 起用 resolution + ratio，只给清晰度、
+ *   比例交给模型自适应（ratio=adaptive），这是官方示例的写法；
+ * - 像素尺寸（1280x720 等）：老模型只认 size，比例由宽高推导。
+ * 两组都会按当前预设自动换算，用户不需要关心底层字段。
+ */
 const RESOLUTION_OPTIONS = [
+  { label: '480P（自适应比例）', value: '480P' },
+  { label: '720P（自适应比例）', value: '720P' },
+  { label: '1080P（自适应比例）', value: '1080P' },
   { label: '1280 × 720 (720P 横屏)', value: '1280x720' },
   { label: '720 × 1280 (720P 竖屏)', value: '720x1280' },
   { label: '1024 × 1024 (方形)', value: '1024x1024' },

@@ -48,6 +48,9 @@ public static class VideoDeliveryPresets
             ExtraParamsContainer = "",
         },
         ResolutionStyle = VideoResolutionStyle.PixelSize,
+        // OpenAI 协议本身就是「兼容协议」：/v1/videos 必须跟在 endpoint 后面，
+        // endpoint 里的前缀（自建网关的 /proxy/v1 等）是路径的一部分，不能丢。
+        VendorNativePaths = false,
     };
 
     /// <summary>

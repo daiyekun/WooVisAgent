@@ -708,9 +708,14 @@ public sealed class VideoDeliveryFramework(
 
         if (statusCode == (int)HttpStatusCode.NotFound)
         {
+            var shimHint = url.Contains("/compatible-mode", StringComparison.OrdinalIgnoreCase)
+                ? "当前地址里仍有 /compatible-mode——那是聊天接口的 OpenAI 兼容层，视频生成各家都只有原生入口，" +
+                  "请把 endpoint 改成厂商原生域名（百炼为 https://dashscope.aliyuncs.com）。"
+                : string.Empty;
+
             return prefix +
-                "：接口地址不存在。请检查模型配置里的 endpoint 与交付模板里的 submitPath，" +
-                "拼接结果是否与该服务商的文档一致。";
+                "：接口地址不存在。请核对模型配置里的 endpoint 与交付模板里的 submitPath，" +
+                "拼接后的完整地址应与该服务商文档一致。" + shimHint;
         }
 
         if (body.Contains("DataInspectionFailed", StringComparison.OrdinalIgnoreCase)

@@ -261,9 +261,12 @@ public class SubmitImageGenerationCommandHandler(
             return Result.Failure("任务已创建，但投递到消息队列失败，请稍后重试。");
         }
 
+        // ConversationId 必须回传：前端要用它把本次消息挂到会话上，
+        // 否则会话虽然落库了，但前端不知道新会话的 id，历史消息不会出现在聊天记录里。
         return Result.Success(new ImageGenerationResultDto(
             task.Id.ToString(CultureInfo.InvariantCulture),
             task.Status.ToWireValue(),
-            []));
+            [],
+            targetConversation.Id.ToString(CultureInfo.InvariantCulture)));
     }
 }
