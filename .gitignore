@@ -1,47 +1,129 @@
-﻿src/Woo.AICopilot.AiGatewayService/bin/Debug/net10.0
-src/Woo.AICopilot.AiGatewayService/obj
-src/Woo.AICopilot.AppHost/bin
-src/Woo.AICopilot.AppHost/obj
-src/Woo.AICopilot.Core.AiGateway/obj
-src/Woo.AICopilot.Core.AiGateway/bin
-src/Woo.AICopilot.Core.DataAnalysis/obj
-src/Woo.AICopilot.Core.McpServer/bin
-src/Woo.AICopilot.AgentPlugin/bin
-src/Woo.AICopilot.AgentPlugin/obj
-src/Woo.AICopilot.Core.DataAnalysis/bin
-src/Woo.AICopilot.Core.McpServer/obj
-src/Woo.AICopilot.Core.Rag/bin
-src/Woo.AICopilot.Core.Rag/obj
-src/Woo.AICopilot.Dapper/bin
-src/Woo.AICopilot.Dapper/obj
-src/Woo.AICopilot.DataAnalysisService/bin
-src/Woo.AICopilot.DataAnalysisService/obj
-src/Woo.AICopilot.Visualization/obj
-src/Woo.AICopilot.Visualization/bin
-src/Woo.AICopilot.SharedKernel/obj
-src/Woo.AICopilot.Services.Common/obj
-src/Woo.AICopilot.Services.Common/bin
-src/Woo.AICopilot.ServiceDefaults/obj
-src/Woo.AICopilot.RagWorker/obj
-src/Woo.AICopilot.RagWorker/bin
-src/Woo.AICopilot.RagService/obj
-src/Woo.AICopilot.RagService/bin
-src/Woo.AICopilot.MigrationWorkApp/obj
-src/Woo.AICopilot.MigrationWorkApp/bin
-src/Woo.AICopilot.McpService/obj
-src/Woo.AICopilot.McpService/bin
-src/Woo.AICopilot.Infrastructure/bin
-src/Woo.AICopilot.Infrastructure/obj
-src/Woo.AICopilot.IdentityService/obj
-src/Woo.AICopilot.IdentityService/bin
-src/Woo.AICopilot.HttpApi/obj
-src/Woo.AICopilot.HttpApi/bin
-src/Woo.AICopilot.Embedding/bin
-src/Woo.AICopilot.Embedding/obj
-src/Woo.AICopilot.EntityFrameworkCore/bin
-src/Woo.AICopilot.EntityFrameworkCore/obj
-src/Woo.AICopilot.EventBus/bin
-src/Woo.AICopilot.EventBus/obj
-src/Woo.AICopilot.ServiceDefaults/bin
-src/Woo.AICopilot.SharedKernel/bin
-.vs
+﻿# ==============================================================================
+# WooVisAgent 仓库根 .gitignore
+#
+# 原则：只写「任意层级都匹配」的通配规则，不写死具体项目名。
+# 这样仓库里现有的十几个项目（Api / AppHost / GenerateWorker / Services.* /
+# Web / tests ...）以及以后新增的项目都自动生效，不用再逐个补路径。
+#
+# 注意：不以 / 开头的模式会匹配任意子目录，例如 bin/ 等价于 **/bin/
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# .NET 编译产物
+# ------------------------------------------------------------------------------
+# 任意层级的 bin / obj（所有项目共用，这是本文件的核心规则）
+[Bb]in/
+[Oo]bj/
+
+# dotnet publish / 统一输出目录
+artifacts/
+publish/
+*.deps.json
+*.runtimeconfig.json
+*.runtimeconfig.dev.json
+*.staticwebassets.endpoints.json
+
+# ASP.NET 开发期生成的文件
+*.dbmdl
+*.jfm
+*.pidb
+*.svclog
+
+# NuGet 还原产物
+*.nuget.props
+*.nuget.targets
+packages/
+*.nupkg
+*.snupkg
+
+# ------------------------------------------------------------------------------
+# 测试与覆盖率
+# ------------------------------------------------------------------------------
+[Tt]est[Rr]esult*/
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+coverage*.json
+coverage*.xml
+coverage*.info
+*.coverlet.json
+
+# ------------------------------------------------------------------------------
+# 前端（WooVisAgent.Web）
+# ------------------------------------------------------------------------------
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
+
+# 包管理器调试日志
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# 本地环境覆盖文件（.env.development / .env.production 团队共用，保留提交）
+.env.local
+.env.*.local
+*.local
+
+# ------------------------------------------------------------------------------
+# IDE / 编辑器
+# ------------------------------------------------------------------------------
+.vs/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+.idea/
+*.suo
+*.user
+*.userosscache
+*.userprefs
+*.sln.docstates
+*.csproj.user
+*.DotSettings.user
+*.sw?
+*.orig
+*.rej
+*.bak
+*~
+
+# ------------------------------------------------------------------------------
+# Aspire / 容器本地缓存
+# ------------------------------------------------------------------------------
+.aspire/
+.docker/
+
+# ------------------------------------------------------------------------------
+# 运行时产生的用户资源（生成出来的图片/视频不应进仓库）
+# 存储根目录在仓库外（D:/uploads），这里只兜住 API 的 wwwroot
+# ------------------------------------------------------------------------------
+**/wwwroot/uploads/
+
+# ------------------------------------------------------------------------------
+# 日志与临时文件
+# ------------------------------------------------------------------------------
+*.log
+logs/
+[Tt]emp/
+[Tt]mp/
+*.tmp
+*.cache
+
+# ------------------------------------------------------------------------------
+# 操作系统
+# ------------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+desktop.ini

@@ -36,3 +36,6 @@
 - 当前视频模型：`wan3.0-video`，endpoint `https://maas.qianwenaiapi.com`（第三方网关，
   主机名不含 dashscope，**必须显式选"百炼 DashScope"预设**，否则会落到 legacy 的 size 写法）。
 - 前端脚本用托管 npm：`& "C:\Users\user\.workbuddy\binaries\node\versions\22.22.2-6\npm.cmd" --prefix <Web目录> run build`
+- **git 仓库根是 `D:\WooProject\AIVidio`，不是 `code\WooVisAgent`**；`.gitignore` 只有根目录一份，
+  已改为全通配（`[Bb]in/`、`[Oo]bj/` 任意层级生效，覆盖所有项目）。想看本项目的 git 状态要在上层目录执行，
+  或在 `code/WooVisAgent` 下直接跑 git（会作用于整个仓库）。
