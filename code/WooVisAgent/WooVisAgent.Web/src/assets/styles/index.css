@@ -1600,6 +1600,20 @@ html:not(.dark) {
     font-size: 12px;
   }
 
+  /* 取消态：中性色而非错误色。用户主动取消不是故障，
+     沿用 fail-box 的红色会让人误以为出了什么问题。 */
+  .cancel-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: var(--r);
+    background: var(--elev);
+    border: 1px solid var(--line-2);
+    color: var(--sub);
+    font-size: 12px;
+  }
+
   .thumb {
     position: relative;
     border-radius: var(--r);

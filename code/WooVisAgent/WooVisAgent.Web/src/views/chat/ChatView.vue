@@ -1165,9 +1165,18 @@ onBeforeUnmount(() => {
                 <span class="cost">{{ item.card.meta }}</span>
               </div>
 
-              <!-- 生成中 / 排队：进度条 + 占位骨架 -->
+              <!--
+                生成中 / 排队：进度条 + 占位骨架。
+
+                这里必须用 isFinalStatus 排除终态，不能只看「有没有图 / 有没有报错」：
+                取消（canceled）的任务既没有产物也没有 errorMessage，
+                只看这两个条件的话，已取消的卡片会继续走这一分支，
+                于是顶部标签写着「已取消」、下面进度条却还在转、还显示「正在生成图片」。
+                failed 同理——后端给了 errorMessage 才走失败分支，
+                但产物缺失的异常终态（如 settle 兜底）也会落到这里。
+              -->
               <div
-                v-if="item.card.taskId && !item.card.images.length && !item.card.error"
+                v-if="item.card.taskId && !item.card.images.length && !item.card.error && !isFinalStatus(item.card.status)"
                 class="gc-body"
               >
                 <div class="gl-top">
@@ -1184,6 +1193,17 @@ onBeforeUnmount(() => {
                 <div class="bar"><i :style="{ width: `${Math.max(4, item.card.progress)}%` }" /></div>
                 <div class="gc-grid" :class="item.card.count > 1 ? 'g2' : 'g1'" style="margin-top: 14px">
                   <div v-for="n in Math.min(item.card.count, 4)" :key="n" class="shimmer" style="aspect-ratio: 1 / 1" />
+                </div>
+              </div>
+
+              <!--
+                取消：既没有产物也没有 errorMessage，需要独立的分支给出说明，
+                否则用户点完取消只看到一片空白，不知道到底停没停。
+              -->
+              <div v-else-if="item.card.status === 'canceled'" class="gc-body">
+                <div class="cancel-box">
+                  <app-icon name="alert" :size="14" />
+                  <span>已取消，未生成图片</span>
                 </div>
               </div>
 

@@ -12,8 +12,21 @@ var password = builder.AddParameter("pg-password", secret: true);
 //
 // 交给 Aspire 分配随机端口最稳：不与任何既有服务冲突，
 // 连接串由 WithReference 注入，永远指向正确的那个实例。
+//
+// WithLifetime(Persistent) 不能省。WithDataVolume 用的是<b>命名卷</b>，
+// 而默认的 ContainerLifetime.Session 每次重启 AppHost 都会新建一个容器挂同一个卷。
+// 于是旧容器还没退干净、新容器已经挂上来了，两个 postgres 抢同一份数据目录：
+// 新容器启动时发现 postmaster.pid 状态异常，直接自杀——
+// 日志里是 "could not open file postmaster.pid" +
+// "performing immediate shutdown because data directory lock file is invalid"，
+// 容器状态 Exited (0)。
+//
+// 症状极具迷惑性：Api / Worker 进程都还活着，接口也能通，
+// 但所有查库操作要么超时要么查不到数据，表现就是「登录超时、任务一直生成中」。
+// Persistent 让 Aspire 复用同一个容器，从根上避免这个竞争。
 var postgresdb = builder.AddPostgres("postgres", password: password)
     .WithDataVolume("woovisagent")
+    .WithLifetime(ContainerLifetime.Persistent)
     // pgweb 是数据库管理界面，首次运行需要联网拉取 sosedoff/pgweb 镜像。
     // 当前网络访问 Docker Hub 及 daemon.json里的镜像源都超时，该资源会一直 FailedToStart，
     // 所以先关掉；等网络恢复后取消下面这行注释即可。
