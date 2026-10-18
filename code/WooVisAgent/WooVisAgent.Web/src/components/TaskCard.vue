@@ -5,7 +5,7 @@ import { computed } from 'vue'
 import AppIcon from '@/components/common/AppIcon.vue'
 import { TASK_STATUS_META, TASK_TYPE_META } from '@/constants'
 import type { GenerationTask, TaskAsset, TaskStatus } from '@/types'
-import { formatDateTime, formatElapsed } from '@/utils'
+import { formatDateTime, formatElapsed, resolveMediaUrl } from '@/utils'
 
 const props = withDefaults(
   defineProps<{
@@ -151,13 +151,28 @@ const restCount = computed(() => Math.max(0, (props.task.outputs?.length ?? 0) -
       >
         <img
           v-if="asset.type === 'image'"
-          :src="asset.thumbnailUrl || asset.url"
+          :src="resolveMediaUrl(asset.thumbnailUrl || asset.url)"
           :alt="asset.fileName"
           loading="lazy"
         />
-        <span v-else class="grid h-full w-full place-items-center t-dim">
-          <app-icon name="video" :size="20" />
-        </span>
+        <!--
+          视频：显示后端抽帧生成的封面 + 播放角标。
+          早先这里只有 image 分支渲染 <img>，视频一律落到"视频图标"占位，
+          于是视频任务在列表里永远是一块灰底——而 thumbnailUrl 其实一直都有。
+        -->
+        <template v-else-if="asset.thumbnailUrl">
+          <img :src="resolveMediaUrl(asset.thumbnailUrl)" :alt="asset.fileName" loading="lazy" />
+          <span class="thumb-play">
+            <app-icon name="play" :size="14" />
+          </span>
+        </template>
+        <video
+          v-else
+          :src="resolveMediaUrl(asset.url)"
+          class="h-full w-full object-cover"
+          muted
+          preload="metadata"
+        />
 
         <span
           v-if="index === 3 && restCount > 0"
