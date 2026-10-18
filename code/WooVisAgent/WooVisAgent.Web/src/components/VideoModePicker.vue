@@ -39,6 +39,40 @@ const emit = defineEmits<{
 
 const uploading = ref(false)
 
+/**
+ * 「生成方式 + 素材区」是否折叠。
+ *
+ * <para>为什么要能折叠：这个面板让<b>视频</b>输入区比图片高出一大截，
+ * 而输入区在聊天页是常驻底部的——视频卡片一多，刚生成的视频就被顶到滚动区之外，
+ * 用户得拖滚动条才看得见。加了折叠后，视频输入区的高度回到和图片一致。</para>
+ *
+ * <para>默认折叠 + 记住选择：视频模式下的默认入口是"什么都不传直接文生视频"，
+ * 多数时候用不到素材区；折叠行上会写明当前模式与素材数，不至于看不见状态。</para>
+ */
+const COLLAPSED_KEY = 'woovis.videoModePanelCollapsed'
+
+function readCollapsed(): boolean {
+  try {
+    const raw = window.localStorage.getItem(COLLAPSED_KEY)
+    // 没写过这个键时默认折叠（返回 true）
+    return raw === null ? true : raw === '1'
+  } catch {
+    return true
+  }
+}
+
+const collapsed = ref(readCollapsed())
+
+function toggleCollapsed(): void {
+  collapsed.value = !collapsed.value
+
+  try {
+    window.localStorage.setItem(COLLAPSED_KEY, collapsed.value ? '1' : '0')
+  } catch {
+    // 存不下不影响本次折叠
+  }
+}
+
 const caps = computed<Required<VideoCapabilitySpec>>(() => ({
   modes: props.capabilities?.modes?.length ? props.capabilities.modes : ['omni'],
   maxReferenceImages: props.capabilities?.maxReferenceImages ?? 1,
@@ -66,6 +100,8 @@ const modeOptions = computed(() =>
 )
 
 const currentHint = computed(() => MODE_OPTIONS.find((x) => x.value === props.modelValue)?.hint ?? '')
+
+const currentModeLabel = computed(() => MODE_OPTIONS.find((x) => x.value === props.modelValue)?.label ?? '全能生成')
 
 /** 素材按上传顺序编号：@图片1、@图片2、视频1……与即梦一致 */
 const numbered = computed(() => {
@@ -165,20 +201,39 @@ const ICON: Record<VideoReferenceKind, string> = {
 
 <template>
   <div class="vm">
-    <div class="vm-head">
-      <span class="vm-label">生成方式</span>
+    <!--
+      标题行同时是折叠开关：整行可点，折叠后仍能看到「当前模式 + 素材数」，
+      不会因为收起来就不知道自己在用什么模式。
+    -->
+    <div class="vm-head" :class="{ 'is-folded': collapsed }">
+      <button
+        type="button"
+        class="vm-toggle"
+        :title="collapsed ? '展开生成方式与素材' : '折叠生成方式与素材'"
+        @click="toggleCollapsed"
+      >
+        <app-icon name="chevron-down" :size="14" class="vm-caret" />
+        <span class="vm-label">生成方式</span>
+      </button>
+
+      <template v-if="collapsed">
+        <span class="vm-folded-mode">{{ currentModeLabel }}</span>
+        <span v-if="props.references.length" class="vm-folded-count">{{ props.references.length }} 个素材</span>
+      </template>
+
       <n-select
+        v-else
         :value="modelValue"
         :options="modeOptions"
         class="w-[11rem]"
         size="small"
         @update:value="(value: VideoGenerationMode) => emit('update:modelValue', value)"
       />
-      <span v-if="currentHint" class="vm-hint">{{ currentHint }}</span>
+      <span v-if="!collapsed && currentHint" class="vm-hint">{{ currentHint }}</span>
     </div>
 
     <!-- 素材区 -->
-    <div class="vm-body">
+    <div v-if="!collapsed" class="vm-body">
       <div class="vm-slots">
         <div v-for="(item, index) in numbered" :key="item.url + index" class="vm-slot">
           <n-tooltip trigger="hover">
@@ -270,10 +325,16 @@ const ICON: Record<VideoReferenceKind, string> = {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 10px;
+  padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--bg-soft);
+}
+
+/* 折叠态只留一行，视频输入区的高度就和图片侧基本一致了 */
+.vm.is-folded {
+  padding: 5px 10px;
+  gap: 0;
 }
 
 .vm-head {
@@ -281,6 +342,41 @@ const ICON: Record<VideoReferenceKind, string> = {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.vm-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px 2px 2px;
+  border-radius: 6px;
+  color: var(--sub);
+  cursor: pointer;
+  transition: var(--t);
+}
+
+.vm-toggle:hover {
+  background: var(--card);
+  color: var(--text);
+}
+
+.vm-caret {
+  transition: transform 0.15s ease;
+}
+
+.vm-head.is-folded .vm-caret {
+  transform: rotate(-90deg);
+}
+
+.vm-folded-mode {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.vm-folded-count {
+  font-size: 12px;
+  color: var(--sub);
 }
 
 .vm-label {

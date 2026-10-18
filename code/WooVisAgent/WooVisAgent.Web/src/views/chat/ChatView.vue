@@ -209,6 +209,56 @@ const sizeLabel = computed(() => `${ratio.value.width}×${ratio.value.height}`)
 const videoResolution = ref<string>(VIDEO_RESOLUTION_OPTIONS[1].value)
 
 /**
+ * 输入区是否折叠。
+ *
+ * <para>为什么需要折叠：输入区在文档流里占着一整块固定高度（素材区 + 提示词 + 工具条 + 提示行），
+ * 视频一多就把可视区挤没了——用户得滚到最底下才看得到刚生成的视频，
+ * 小屏上更明显，产物几乎全被顶出视野。折叠后只留一条细栏，产物能一眼看全。</para>
+ *
+ * <para>状态存localStorage：折叠是"看图时"的临时需求，但反复点很烦，
+ * 记住这个偏好比每次重新点更省事。读取失败（隐私模式等）时按展开处理，绝不因此丢输入。</para>
+ */
+const COMPOSER_COLLAPSED_KEY = 'woovis.composerCollapsed'
+
+function readComposerCollapsed(): boolean {
+  try {
+    return window.localStorage.getItem(COMPOSER_COLLAPSED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+const composerCollapsed = ref(readComposerCollapsed())
+
+function toggleComposer(): void {
+  composerCollapsed.value = !composerCollapsed.value
+
+  try {
+    window.localStorage.setItem(COMPOSER_COLLAPSED_KEY, composerCollapsed.value ? '1' : '0')
+  } catch {
+    // 存不下就算了，不影响本次折叠
+  }
+
+  if (!composerCollapsed.value) void fitTextarea()
+}
+
+/**
+ * 折叠条上的摘要：让人知道"内容还在"，而不是以为被清空了。
+ * 素材数把拖拽区与模式面板两份状态都算上。
+ */
+const composerSummary = computed(() => {
+  const parts: string[] = []
+
+  const assets = mergedVideoReferences.value.length + attachments.value.length
+  if (assets > 0) parts.push(`${assets} 个素材`)
+
+  if (draft.value.trim()) parts.push(`提示词 ${draft.value.trim().length} 字`)
+  else parts.push('输入提示词开始创作')
+
+  return parts.join(' · ')
+})
+
+/**
  * 视频的三种生成方式与参考素材（全能生成 / 首尾帧 / 智能多帧）。
  *
  * 默认「全能生成」：不传素材就是文生视频，与改造前行为完全一致，
@@ -1774,8 +1824,18 @@ onBeforeUnmount(() => {
   </div>
 
   <!-- 输入区 -->
-  <div class="composer">
-    <div class="composer-in">
+  <div class="composer" :class="{ 'is-folded': composerCollapsed }">
+    <!--
+      折叠态：只留一条细栏，把整块高度让给消息与产物。
+      摘要文字用来告诉用户"内容还在"，否则会以为草稿被清空了。
+    -->
+    <button v-if="composerCollapsed" class="composer-fold" type="button" @click="toggleComposer">
+      <app-icon name="chevron-down" :size="16" class="composer-fold-caret" />
+      <span class="composer-fold-title">展开输入框</span>
+      <span class="composer-fold-sub">{{ composerSummary }}</span>
+    </button>
+
+    <div v-else class="composer-in">
       <div
         class="composer-box"
         :class="{ 'is-drag': dragOver }"
@@ -2019,6 +2079,16 @@ onBeforeUnmount(() => {
             @click="send"
           >
             <app-icon name="arrow-up" :size="17" stroke-width="2.2" />
+          </button>
+
+          <!-- 折叠：把整块输入区收成细栏，让刚生成的图片 / 视频一眼看全 -->
+          <button
+            class="btn-icon composer-toggle"
+            type="button"
+            :title="composerCollapsed ? '展开输入框' : '折叠输入框（专心看生成结果）'"
+            @click="toggleComposer"
+          >
+            <app-icon name="chevron-down" :size="16" />
           </button>
         </div>
       </div>
