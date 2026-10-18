@@ -92,6 +92,59 @@ public sealed class VideoDeliveryFramework(
             ? await ResolveFirstFrameAsync(request.FirstFrame!, client, cancellationToken)
             : null;
 
+        // 三种模式（全能 / 首尾帧 / 智能多帧）都要把素材转成模型可访问的形式，
+        // 逐个转而不是只转首帧：多图与参考视频同样存在"本站文件云端看不见"的问题。
+        var references = new List<VideoReference>();
+        var skipped = 0;
+
+        foreach (var reference in request.EffectiveReferences)
+        {
+            var asset = request.References?
+                .FirstOrDefault(x => x.Url == reference.Url)
+                ?? new TaskAsset { Url = reference.Url, Type = reference.Kind.ToWireValue() };
+
+            string? resolved;
+
+            try
+            {
+                resolved = await ResolveReferenceAsync(asset, client, cancellationToken);
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                // 素材地址失效（文件被删、路径不合法）不该让整条请求变成一个暴露内部细节的 500。
+                // 这里记下来继续，最后统一按"素材不足"给出用户看得懂的原因。
+                logger.LogWarning(exception, "参考素材 {Url} 解析失败，已跳过", reference.Url);
+                resolved = null;
+            }
+
+            // 读不到的素材直接跳过而不是传个空地址：
+            // 一个坏素材会让整条请求被拒，用户看到的是"完全没生成"而不是"少了一张参考图"
+            if (!string.IsNullOrWhiteSpace(resolved))
+                references.Add(new VideoReference(reference.Kind, resolved));
+            else
+                skipped++;
+        }
+
+        // 首尾帧少一张就完全跑不动，必须在这里说清楚，而不是让模型收到一张图后失败
+        if (request.Mode == VideoGenerationMode.FirstLastFrame && references.Count < 2)
+            throw new InvalidOperationException(
+                $"首尾帧模式需要两张图片，但只有 {references.Count} 张可以读取到。" +
+                "请重新上传这两张图片后再试（素材文件可能已被删除）。");
+
+        if (skipped > 0)
+            logger.LogWarning("本次有 {Skipped} 个参考素材无法读取，已跳过，实际参与生成 {Count} 个", skipped, references.Count);
+
+        var modeRequest = new VideoModeDeliveryRequest(
+            request.Model,
+            request.Mode,
+            request.Prompt,
+            references,
+            request.NegativePrompt,
+            request.Resolution,
+            request.DurationSeconds,
+            request.Seed,
+            request.ExtraParams);
+
         var deliveryRequest = new VideoDeliveryRequest(
             request.Model,
             request.Prompt,
@@ -103,7 +156,10 @@ public sealed class VideoDeliveryFramework(
             request.Seed,
             request.ExtraParams);
 
-        var body = VideoRequestBuilder.BuildSubmitBody(deliveryRequest, spec);
+        // 数组形状（火山方舟）走模式构建；扁平形状保持老的单首帧逻辑不变
+        var body = spec.BodyShape == VideoRequestBodyShape.ContentArray
+            ? VideoRequestBuilder.BuildModeSubmitBody(modeRequest, spec)
+            : VideoRequestBuilder.BuildSubmitBody(deliveryRequest, spec);
 
         var (taskId, submitBody) = await SubmitAsync(client, spec, request, submitUrl, body, cancellationToken);
 
@@ -629,6 +685,86 @@ public sealed class VideoDeliveryFramework(
 
         var contentType = GuessImageContentType(frame.FileName ?? url);
         return $"data:{contentType};base64,{Convert.ToBase64String(bytes)}";
+    }
+
+    /// <summary>
+    /// 把一份参考素材解析成模型能访问的地址。
+    ///
+    /// 与首帧图同一套规则：公网地址原样透传，本站 <c>/uploads</c> 的文件读成字节转 data URI。
+    /// 音频同样走这里（火山方舟接受 data URI 的音频），
+    /// 因此 MIME 必须按素材类型猜，猜错会让模型拒收整条请求。
+    /// </summary>
+    private async Task<string?> ResolveReferenceAsync(
+        TaskAsset asset,
+        HttpClient client,
+        CancellationToken cancellationToken)
+    {
+        var url = asset.Url;
+
+        if (Uri.TryCreate(url, UriKind.Absolute, out var absolute) && absolute.Scheme is "http" or "https")
+        {
+            // 若是本站域名，外部模型同样拉不到，仍需转 data URI
+            if (!IsLocalHost(absolute))
+                return url;
+        }
+
+        // 已经是 data URI 的直接用（例如音频在别处已经转好了）
+        if (url.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+            return url;
+
+        var bytes = await ReadLocalOrRemoteBytesAsync(url, client, cancellationToken);
+
+        if (bytes is null)
+        {
+            logger.LogWarning("参考素材 {Url} 读取失败，本次将忽略该素材", url);
+            return null;
+        }
+
+        var kind = VideoReferenceKindExtensions.TryParseWireValue(asset.Type, out var parsed)
+            ? parsed
+            : VideoReferenceKind.Image;
+
+        var contentType = kind == VideoReferenceKind.Image
+            ? GuessImageContentType(asset.FileName ?? url)
+            : kind == VideoReferenceKind.Audio
+                ? GuessAudioContentType(asset.FileName ?? url)
+                : GuessVideoContentType(asset.FileName ?? url);
+
+        return $"data:{contentType};base64,{Convert.ToBase64String(bytes)}";
+    }
+
+    /// <summary>
+    /// 按文件名猜音频 MIME。
+    ///
+    /// data URI 的类型猜错是最典型的"提交成功但模型不认"故障：
+    /// 方舟只接受 mp3 / wav / aac 这些，用 <c>application/octet-stream</c> 会被静默忽略。
+    /// </summary>
+    private static string GuessAudioContentType(string fileNameOrUrl)
+    {
+        var extension = Path.GetExtension(fileNameOrUrl.Split('?')[0]);
+
+        return extension.ToLowerInvariant() switch
+        {
+            ".wav" => "audio/wav",
+            ".mp3" => "audio/mpeg",
+            ".m4a" => "audio/mp4",
+            ".aac" => "audio/aac",
+            ".ogg" => "audio/ogg",
+            _ => "audio/mpeg",
+        };
+    }
+
+    private static string GuessVideoContentType(string fileNameOrUrl)
+    {
+        var extension = Path.GetExtension(fileNameOrUrl.Split('?')[0]);
+
+        return extension.ToLowerInvariant() switch
+        {
+            ".mov" => "video/quicktime",
+            ".m4v" => "video/x-m4v",
+            ".webm" => "video/webm",
+            _ => "video/mp4",
+        };
     }
 
     private async Task<byte[]?> ReadLocalOrRemoteBytesAsync(

@@ -1,4 +1,5 @@
-﻿using WooVisAgent.SharedLib.Domain;
+﻿using WooVisAgent.SharedLib.Delivery;
+using WooVisAgent.SharedLib.Domain;
 using WooVisAgentServices.ImageService.Contracts;
 
 namespace WooVisAgentServices.VideoService.Contracts;
@@ -32,10 +33,47 @@ public sealed record VideoGenerationRequest(
     long? Seed,
     IReadOnlyDictionary<string, object?> ExtraParams,
     ModelConfig Model,
-    IProgress<GenerationProgress>? Progress = null)
+    IProgress<GenerationProgress>? Progress = null,
+    /// <summary>输入模式：全能生成 / 首尾帧 / 智能多帧</summary>
+    VideoGenerationMode Mode = VideoGenerationMode.Omni,
+    /// <summary>
+    /// 有序参考素材。元素的 <c>Type</c> 为 image / video / audio。
+    /// 为空时按老的单首帧逻辑执行，保证既有视频模型行为不变。
+    /// </summary>
+    IReadOnlyList<TaskAsset>? References = null)
 {
     /// <summary>是否是图生视频</summary>
     public bool IsImageToVideo => FirstFrame is not null && !string.IsNullOrWhiteSpace(FirstFrame.Url);
+
+    /// <summary>
+    /// 最终要交给协议层的素材：优先用新的参考素材列表，
+    /// 没有时才回落到单一首帧（老任务、老模型）。
+    /// </summary>
+    public IReadOnlyList<(VideoReferenceKind Kind, string Url)> EffectiveReferences
+    {
+        get
+        {
+            if (References is { Count: > 0 } list)
+            {
+                var mapped = new List<(VideoReferenceKind Kind, string Url)>(list.Count);
+                foreach (var asset in list)
+                {
+                    if (string.IsNullOrWhiteSpace(asset.Url))
+                        continue;
+
+                    VideoReferenceKindExtensions.TryParseWireValue(asset.Type, out var kind);
+                    mapped.Add((kind, asset.Url));
+                }
+
+                if (mapped.Count > 0)
+                    return mapped;
+            }
+
+            return IsImageToVideo
+                ? [(VideoReferenceKind.Image, FirstFrame!.Url)]
+                : [];
+        }
+    }
 }
 
 /// <summary>

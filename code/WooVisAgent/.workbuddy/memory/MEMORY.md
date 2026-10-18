@@ -50,6 +50,20 @@
   ExtractStringArray` + `Unwrap` 拆嵌套）。qwen-plus 实测会包字符串、把结构塞进字段、夹未转义字符。
 - `Agent:EnableToolCalling` 断开工具声明；工具首次失败会自动去掉工具重试一次（兼容不支持 function calling 的中转）。
 
+## 视频生成三种模式（即梦 / Seedance）
+
+- 模式只有三个且**互斥**：`omni` 全能（默认，含纯文生视频）、`firstLastFrame` 首尾帧、`keyframes` 智能多帧。
+  映射到火山方舟 `content` 数组的 role：`first_frame`/`last_frame`/`reference_image`/
+  `reference_video`/`reference_audio`。**不要自己发明 role**，官方文档写死了，混用会异步报
+  `InvalidParameter.TaskTypeConstraint`。
+- 新增供应商优先加 `VideoDeliveryPresets` 里的**预设**（纯数据），而不是写协议类；
+  只有需要新请求体形状时才动 `VideoRequestBodyShape`。
+- 能力声明（支持哪些模式、素材上限）在 `VideoDeliveryTemplate.Capabilities` 里，
+  随 `DeliveryJson` 落库、不加新列；预设给保守值，用户覆盖。列表出参里的 `videoCapabilities`
+  是**解析后**的值，前端靠它禁用模式。
+- 方舟的分辨率是**小写 `720p`**，首尾帧 `ratio` 必须 `adaptive`，失败态包含 `expired`。
+- 取文件名别用 `new Uri(相对路径, UriKind.RelativeOrAbsolute).AbsolutePath`，相对地址会抛异常。
+
 ## 单实例约束（踩过两次，症状极具误导性）
 
 - **同一套数据库上只允许跑一套 AppHost/Api/Worker**。两套并存时：状态变更消息被两个 Api 进程轮流消费，

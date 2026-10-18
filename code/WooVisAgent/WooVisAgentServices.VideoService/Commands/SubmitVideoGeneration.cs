@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using WooVisAgent.Services.Common.Contracts;
+using WooVisAgent.SharedLib.Delivery;
 using WooVisAgent.SharedLib.Domain;
 using WooVisAgent.SharedLib.Ids;
 using WooVisAgent.SharedLib.Messaging;
@@ -72,19 +73,29 @@ public class SubmitVideoGenerationCommandHandler(
         if (capabilityError is not null)
             return Result.Invalid(capabilityError);
 
-        // 首帧图作为任务输入素材落库，Worker 原样读取
-        var inputs = firstFrameUrl is null
-            ? new List<TaskAsset>()
-            :
-            [
-                new TaskAsset
-                {
-                    Id = idGenerator.NextId().ToString(CultureInfo.InvariantCulture),
-                    Type = "image",
-                    Url = firstFrameUrl,
-                    FileName = Path.GetFileName(new Uri(firstFrameUrl, UriKind.RelativeOrAbsolute).AbsolutePath),
-                }
-            ];
+        // 三种模式（全能 / 首尾帧 / 智能多帧）统一归一成一份有序素材列表。
+        // 能力校验必须用同一份归一化结果，否则"校验通过但落库丢素材"这种问题会以
+        // 「模型收到了空的首帧」的形式在几分钟后才暴露出来。
+        var deliverySpec = VideoDeliveryResolver.Resolve(model);
+        var modeError = VideoGenerationInputValidator.ValidateModeAndCapabilities(
+            input, model, deliverySpec?.Capabilities);
+        if (modeError is not null)
+            return Result.Invalid(modeError);
+
+        var references = VideoGenerationInputValidator.ResolveReferences(input);
+
+        // 参考素材作为任务输入落库，Worker 原样读取（顺序即语义，不能排序）
+        var inputs = new List<TaskAsset>();
+        foreach (var reference in references)
+        {
+            inputs.Add(new TaskAsset
+            {
+                Id = idGenerator.NextId().ToString(CultureInfo.InvariantCulture),
+                Type = reference.Kind.ToWireValue(),
+                Url = reference.Url,
+                FileName = SafeFileName(reference.Url),
+            });
+        }
 
         // 解析所属会话。两个分支都会赋值，else 分支保证「不传也能拿到一个会话」
         Conversation? conversation = null;
@@ -245,5 +256,30 @@ public class SubmitVideoGenerationCommandHandler(
         return Result.Success(new VideoGenerationResultDto(
             task.Id.ToString(CultureInfo.InvariantCulture),
             task.Status.ToWireValue()));
+    }
+
+    /// <summary>
+    /// 取素材文件名。
+    ///
+    /// <para>刻意<b>不</b>用 <c>new Uri(url, UriKind.RelativeOrAbsolute).AbsolutePath</c>：
+    /// 本站素材地址都是 <c>/uploads/...</c> 这种相对路径，对它取 AbsolutePath 会抛
+    /// <c>InvalidOperationException: This operation is not supported for a relative URI</c>，
+    /// 整个提交直接变成 500。老代码里也是这么写的，只是它的入口路径恰好只拿到过
+    /// 绝对地址，问题一直没暴露；这次改成多素材后立刻被踩到。</para>
+    /// </summary>
+    private static string SafeFileName(string url)
+    {
+        // data URI（音频会在 Worker 侧转成 data URI，这里也可能出现）没有文件名
+        if (url.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+            return "inline";
+
+        var withoutQuery = url.Split('?', '#')[0];
+        var lastSlash = withoutQuery.LastIndexOf('/');
+
+        if (lastSlash < 0 || lastSlash == withoutQuery.Length - 1)
+            return "material";
+
+        var name = withoutQuery[(lastSlash + 1)..];
+        return name.Length == 0 ? "material" : name;
     }
 }

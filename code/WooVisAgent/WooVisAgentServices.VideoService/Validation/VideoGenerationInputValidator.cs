@@ -1,4 +1,5 @@
-﻿using WooVisAgent.SharedLib.Domain;
+﻿using WooVisAgent.SharedLib.Delivery;
+using WooVisAgent.SharedLib.Domain;
 using WooVisAgentServices.VideoService.Dtos;
 
 namespace WooVisAgentServices.VideoService.Validation;
@@ -61,7 +62,151 @@ public static class VideoGenerationInputValidator
         if (input.FirstFrameUrl is { Length: > 1024 })
             return "首帧图地址过长。";
 
+        if (input.References is { Count: > 0 } references)
+        {
+            if (references.Count > MaxReferences)
+                return $"参考素材最多 {MaxReferences} 个，当前传了 {references.Count} 个。";
+
+            for (var index = 0; index < references.Count; index++)
+            {
+                var reference = references[index];
+                if (reference is null || string.IsNullOrWhiteSpace(reference.Url))
+                    return $"第 {index + 1} 个参考素材缺少地址。";
+
+                if (reference.Url.Trim().Length > 2048)
+                    return $"第 {index + 1} 个参考素材地址过长。";
+
+                if (!VideoReferenceKindExtensions.TryParseWireValue(reference.Kind, out _))
+                    return $"第 {index + 1} 个参考素材的类型只能是 image、video 或 audio。";
+            }
+        }
+
         return null;
+    }
+
+    /// <summary>参考素材总量上限。真实上限由模型能力决定，这里只挡明显的误操作</summary>
+    public const int MaxReferences = 50;
+
+    /// <summary>把入参里的模式 + 素材归一化成一份可直接落库、有序的素材列表</summary>
+    public static VideoGenerationMode ResolveMode(VideoGenerationInput input)
+        => VideoGenerationModeExtensions.ParseWireValue(input.Mode);
+
+    /// <summary>
+    /// 归一化参考素材：把老的 <c>firstFrameUrl</c> 也并进来。
+    ///
+    /// 老的表单只有一个首帧上传位，它等价于"全能模式下的一张参考图"，
+    /// 因此不要求前端立刻改造就能继续工作。
+    /// </summary>
+    public static List<(VideoReferenceKind Kind, string Url)> ResolveReferences(VideoGenerationInput input)
+    {
+        var result = new List<(VideoReferenceKind Kind, string Url)>();
+
+        if (input.References is { Count: > 0 })
+        {
+            foreach (var reference in input.References)
+            {
+                if (string.IsNullOrWhiteSpace(reference.Url))
+                    continue;
+
+                VideoReferenceKindExtensions.TryParseWireValue(reference.Kind, out var kind);
+                result.Add((kind, reference.Url.Trim()));
+            }
+        }
+
+        // 老字段兜底：前端没传 references 但传了 firstFrameUrl 时，按一张参考图处理
+        if (result.Count == 0
+            && !string.IsNullOrWhiteSpace(input.FirstFrameUrl)
+            && ResolveMode(input) == VideoGenerationMode.Omni)
+        {
+            result.Add((VideoReferenceKind.Image, input.FirstFrameUrl.Trim()));
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 校验「模式 + 素材」与模型声明能力是否匹配。
+    ///
+    /// <para>三条硬规则都来自火山方舟官方文档，踩中任意一条都会在<b>异步</b>阶段才报错，
+    /// 用户看到的现象是"提交成功、等几分钟、然后失败"，极难定位，所以必须在提交前拦下来：</para>
+    /// <list type="number">
+    ///   <item>首帧 / 首尾帧 / 全模态参考三种场景<b>互斥</b>，不能混着传；</item>
+    ///   <item>首尾帧必须恰好两张图，多一张少一张都不行；</item>
+    ///   <item>各类素材数量不能超过模型声明的上限。</item>
+    /// </list>
+    /// </summary>
+    public static string? ValidateModeAndCapabilities(
+        VideoGenerationInput input,
+        ModelConfig model,
+        VideoCapabilitySpec? capabilities)
+    {
+        var mode = ResolveMode(input);
+        var references = ResolveReferences(input);
+
+        // 模型没声明能力（老配置）时按"只支持全能、1 张图"的保守口径处理
+        capabilities ??= new VideoCapabilitySpec();
+
+        if (!capabilities.Supports(mode))
+            return $"模型「{model.Name}」不支持「{mode.ToDisplayName()}」模式，" +
+                   $"当前支持的模式：{DescribeModes(capabilities)}。请换一个模型或改用支持的模式。";
+
+        switch (mode)
+        {
+            case VideoGenerationMode.FirstLastFrame:
+                if (references.Count != 2)
+                    return $"首尾帧模式需要恰好两张图片（第一张是开头、第二张是结尾），当前是 {references.Count} 张。";
+
+                if (references.Any(x => x.Kind != VideoReferenceKind.Image))
+                    return "首尾帧模式只支持图片，不支持视频或音频参考。";
+
+                break;
+
+            case VideoGenerationMode.Keyframes:
+                if (references.Count < 2)
+                    return $"智能多帧至少需要 2 张关键帧，当前只有 {references.Count} 张。";
+
+                if (references.Count > capabilities.MaxKeyframes)
+                    return $"智能多帧最多支持 {capabilities.MaxKeyframes} 张关键帧，当前传了 {references.Count} 张。";
+
+                if (references.Any(x => x.Kind != VideoReferenceKind.Image))
+                    return "智能多帧只支持图片作为关键帧。";
+
+                break;
+
+            case VideoGenerationMode.Omni:
+                if (references.Any(x => x.Kind != VideoReferenceKind.Image) && !model.SupportsImageToVideo)
+                {
+                    // 仅图生视频的老模型收不了非图片素材，给一句能看懂的提示而不是笼统的"不支持"
+                    var kinds = string.Join("、", references
+                        .Select(x => x.Kind.ToReferenceLabel())
+                        .Distinct());
+                    return $"模型「{model.Name}」只支持图片参考，当前传入了{kinds}。";
+                }
+
+                foreach (var kind in new[] { VideoReferenceKind.Image, VideoReferenceKind.Video, VideoReferenceKind.Audio })
+                {
+                    var count = references.Count(x => x.Kind == kind);
+                    if (count == 0)
+                        continue;
+
+                    var limit = capabilities.MaxFor(kind);
+                    if (limit <= 0)
+                        return $"模型「{model.Name}」不支持{kind.ToReferenceLabel()}参考素材。";
+
+                    if (count > limit)
+                        return $"{kind.ToReferenceLabel()}参考素材最多 {limit} 个，当前传了 {count} 个。";
+                }
+
+                break;
+        }
+
+        return null;
+    }
+
+    private static string DescribeModes(VideoCapabilitySpec capabilities)
+    {
+        var names = capabilities.Modes.Select(x => x.ToDisplayName());
+        return string.Join("、", names);
     }
 
     /// <summary>
@@ -94,6 +239,9 @@ public static class VideoGenerationInputValidator
     public static Dictionary<string, object?> BuildParamsSnapshot(VideoGenerationInput input)
     {
         var snapshot = new Dictionary<string, object?>();
+
+        // 输入模式必须固化：Worker 重放消息时靠它决定素材怎么映射成 role
+        snapshot["mode"] = ResolveMode(input).ToWireValue();
 
         if (input.Resolution is { Length: > 0 } resolution)
             snapshot["resolution"] = resolution.Trim();

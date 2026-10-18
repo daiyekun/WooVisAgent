@@ -96,6 +96,7 @@ const VIDEO_DELIVERY_PRESET_OPTIONS = [
   { label: '百炼 DashScope（video-synthesis）', value: 'dashscope-video' },
   { label: '百炼 旧版（size 写法）', value: 'dashscope-legacy-video' },
   { label: 'SiliconFlow（/v1/video/submit）', value: 'siliconflow-video' },
+  { label: '火山方舟 Seedance（即梦，content 数组）', value: 'ark-seedance' },
 ]
 
 const VIDEO_OUTPUT_KIND_OPTIONS = [

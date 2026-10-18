@@ -1,6 +1,14 @@
 import { del, get, post } from './http'
 import type { RequestOptions } from './types'
-import type { GenerationTask, PageQuery, PagedResult, TaskAsset, TaskStatus } from '@/types'
+import type {
+  GenerationTask,
+  PageQuery,
+  PagedResult,
+  TaskAsset,
+  TaskStatus,
+  VideoGenerationMode,
+  VideoReferenceInput,
+} from '@/types'
 
 const BASE_URL = '/api/video/generations'
 
@@ -10,7 +18,14 @@ export interface VideoGenerationInput {
   modelId: string
   prompt: string
   negativePrompt?: string
-  /** 首帧图 URL（图生视频） */
+  /**
+   * 输入模式：全能生成（默认，含纯文生视频）/ 首尾帧 / 智能多帧。
+   * 三者互斥，由模型能力决定是否可用。
+   */
+  mode?: VideoGenerationMode
+  /** 参考素材，顺序即语义（首尾帧取前两张，智能多帧按顺序当关键帧） */
+  references?: VideoReferenceInput[]
+  /** 首帧图 URL（老字段，等价于全能模式下的一张参考图） */
   firstFrameUrl?: string
   /** 尾帧图 URL */
   lastFrameUrl?: string

@@ -191,14 +191,46 @@ export interface ModelConfig {
   supportsTextToVideo?: boolean
   /** 是否支持图生视频（传首帧图）。只支持文生的模型应为 false */
   supportsImageToVideo?: boolean
+  /**
+   * 视频模型：<b>后端解析后</b>的能力声明（预设 + 用户模板合并的结果）。
+   * 模式下拉里哪些项可选、各类素材能传几个，全看它。
+   */
+  videoCapabilities?: VideoCapabilitySpec | null
   remark?: string
   createdAt: string
   updatedAt: string
 }
 
 /**
+ * 视频生成模式，对齐即梦（Seedance）的三种参考模式。
+ * 三者互斥，一次请求只能选一种。
+ */
+export type VideoGenerationMode = 'omni' | 'firstLastFrame' | 'keyframes'
+
+/** 参考素材种类 */
+export type VideoReferenceKind = 'image' | 'video' | 'audio'
+
+export interface VideoReferenceInput {
+  kind: VideoReferenceKind
+  url: string
+}
+
+/**
+ * 模型对「模式与素材数量」的能力声明。
+ * 随交付模板一起下发（后端 VideoCapabilitySpec），前端据此禁用不支持的模式。
+ */
+export interface VideoCapabilitySpec {
+  modes?: VideoGenerationMode[]
+  maxReferenceImages?: number
+  maxReferenceVideos?: number
+  maxReferenceAudios?: number
+  maxKeyframes?: number
+  framesRequireAdaptiveRatio?: boolean
+}
+
+/**
  * 视频交付模板。字段全部可选，只覆盖与预设不同的部分。
- * 内置预设：openai-videos / dashscope-video / dashscope-legacy-video / siliconflow-video
+ * 内置预设：openai-videos / dashscope-video / dashscope-legacy-video / siliconflow-video / ark-seedance
  */
 export interface VideoDeliveryTemplate {
   preset?: string
@@ -228,9 +260,26 @@ export interface VideoDeliveryTemplate {
     fps?: string
     seed?: string
     extraParamsContainer?: string
+    /** ContentArray 形状（火山方舟）专用 */
+    contentArray?: string
+    textItemType?: string
+    imageItemType?: string
+    videoItemType?: string
+    audioItemType?: string
+    urlField?: string
+    roleField?: string
+    roleFirstFrame?: string
+    roleLastFrame?: string
+    roleReferenceImage?: string
+    roleReferenceVideo?: string
+    roleReferenceAudio?: string
   }
-  /** 分辨率表达形式：omit / pixel / tier / tierRatio */
-  resolutionStyle?: 'omit' | 'pixel' | 'tier' | 'tierRatio' | string
+  /** 分辨率表达形式：omit / pixel / tier / tierRatio / tierLower */
+  resolutionStyle?: 'omit' | 'pixel' | 'tier' | 'tierRatio' | 'tierLower' | string
+  /** 请求体形状：flat（扁平字段）/ contentArray（火山方舟那种数组） */
+  bodyShape?: 'flat' | 'contentArray' | string
+  /** 能力声明：支持哪些模式、各类素材上限。模板里没写时用预设的值 */
+  capabilities?: VideoCapabilitySpec
 }
 
 /** 新建/编辑模型入参 */

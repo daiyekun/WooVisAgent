@@ -10,6 +10,8 @@
  * 全程只依赖 taskId，会话本身不落库（与原型一致：图片/视频共用一条对话流）。
  */
 
+import type { VideoGenerationMode, VideoReferenceInput } from '@/types'
+
 import type { TaskStatus } from '@/types'
 
 export type ChatMode = 'image' | 'video'
@@ -71,6 +73,10 @@ export interface VideoChatPayload {
   resolution: string
   withAudio: boolean
   seed?: number
+  /** 输入模式：全能生成 / 首尾帧 / 智能多帧。重跑时沿用这一项 */
+  mode?: VideoGenerationMode
+  /** 当轮用的参考素材快照。重跑时沿用，避免首尾帧被降级成单首帧 */
+  videoReferences?: VideoReferenceInput[]
 }
 
 /** 挂在助手消息下的生成卡：既是进度条，也是结果展示区 */

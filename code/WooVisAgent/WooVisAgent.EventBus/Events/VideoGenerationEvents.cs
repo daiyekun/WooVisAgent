@@ -39,4 +39,14 @@ public record VideoGenerationRequested(
     string ParamsJson,
     DateTimeOffset RequestedAt,
     string? MessageId = null,
-    Dictionary<string, string>? TraceHeaders = null);
+    Dictionary<string, string>? TraceHeaders = null,
+    /// <summary>
+    /// 输入模式：全能生成 / 首尾帧 / 智能多帧。
+    /// 放在末尾且带默认值，是为了兼容队列里可能残留的旧格式消息。
+    /// </summary>
+    VideoGenerationMode Mode = VideoGenerationMode.Omni,
+    /// <summary>
+    /// 参考素材（有序），元素的 <c>Type</c> 就是素材种类（image / video / audio）。
+    /// 全能生成与智能多帧用它，首尾帧取前两张。
+    /// </summary>
+    IReadOnlyList<TaskAsset>? References = null);

@@ -37,6 +37,15 @@ public static class VideoGenerationRequestedFactory
         // 前端表单也只有一个上传位，所以这里不存在"多张取哪张"的歧义。
         var firstFrame = inputs.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x.Url));
 
+        // 输入模式存在参数快照里，随消息一起重放：改了前端也不会影响已提交的任务
+        var mode = VideoGenerationModeExtensions.ParseWireValue(ReadString(parameters, "mode"));
+
+        // 参考素材就是全部输入素材（按落库顺序），种类由 TaskAsset.Type 决定。
+        // 首尾帧取前两张、智能多帧按顺序当关键帧，全能生成按类型分别映射。
+        IReadOnlyList<TaskAsset> references = mode == VideoGenerationMode.FirstLastFrame
+            ? inputs.Take(2).ToList()
+            : inputs;
+
         return new VideoGenerationRequested(
             task.Id,
             task.OwnerId,
@@ -54,7 +63,9 @@ public static class VideoGenerationRequestedFactory
             task.ParamsJson,
             DateTimeOffset.UtcNow,
             MessageId: messageId ?? Guid.NewGuid().ToString("N"),
-            TraceHeaders: traceHeaders);
+            TraceHeaders: traceHeaders,
+            Mode: mode,
+            References: references);
     }
 
     private static readonly JsonSerializerOptions Options = new()

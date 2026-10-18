@@ -179,6 +179,81 @@ public static class VideoDeliveryPresets
         ResolutionStyle = VideoResolutionStyle.PixelSize,
     };
 
+    /// <summary>
+    /// 火山方舟 Seedance（即梦的 API 形态）：
+    /// <c>POST /api/v3/contents/generations/tasks</c>，
+    /// <c>GET /api/v3/contents/generations/tasks/{id}</c> 轮询，
+    /// <c>status=succeeded</c> 完成，视频地址在 <c>content.video_url</c>。
+    ///
+    /// <para><b>它和其他预设的根本差别</b>：请求体不是扁平字段，而是一个 <c>content</c> 数组，
+    /// 提示词和所有素材混在一起，靠 <c>type</c> 与 <c>role</c> 区分：</para>
+    /// <code>
+    /// { "model": "doubao-seedance-2-0-fast-260128",
+    ///   "content": [
+    ///     {"type": "text", "text": "提示词"},
+    ///     {"type": "image_url", "role": "first_frame", "image_url": {"url": "..."}},
+    ///     {"type": "image_url", "role": "last_frame",  "image_url": {"url": "..."}},
+    ///     {"type": "image_url", "role": "reference_image", "image_url": {"url": "..."}},
+    ///     {"type": "video_url", "role": "reference_video", "video_url": {"url": "..."}},
+    ///     {"type": "audio_url", "role": "reference_audio", "audio_url": {"url": "..."}} ],
+    ///   "resolution": "720p", "ratio": "adaptive", "duration": 5 }
+    /// </code>
+    ///
+    /// <para>三个必须记住的约束（官方文档明确写了）：</para>
+    /// <list type="number">
+    ///   <item><b>首帧、首尾帧、全模态参考三种场景互斥</b>，不能混在一次请求里；</item>
+    ///   <item><b>首尾帧时 <c>ratio</c> 必须为 <c>adaptive</c></b>，否则异步报错 TaskTypeConstraint；</item>
+    ///   <item><b>分辨率是小写 <c>720p</c></b>，传大写 720P 直接被拒。</item>
+    /// </list>
+    ///
+    /// <para>能力上限按<b>保守值</b>给（9 图 / 3 视频 / 3 音频，对应 Seedance 2.0 系列）：
+    /// Seedance 2.5 可以到 30 图 / 10 视频 / 10 音频，但那是文档里的版本差异，
+    /// 用户可以在模型配置的交付模板里改 <c>capabilities</c> 对象覆盖。</para>
+    /// </summary>
+    public static VideoDeliverySpec ArkSeedance { get; } = new()
+    {
+        PresetName = "ark-seedance",
+        SubmitPath = "/api/v3/contents/generations/tasks",
+        StatusPath = "/api/v3/contents/generations/tasks/{taskId}",
+        StatusMethod = "GET",
+        TaskIdPath = "id",
+        StatusValuePath = "status",
+        SucceededStatus = "succeeded",
+        // expired 是 Seedance 特有的一种失败（任务超时过期），漏掉它会让任务一直轮询到超时
+        FailedStatuses = "failed,cancelled,canceled,expired",
+        VideoUrlPath = "content.video_url",
+        ErrorPath = "error.message",
+        OutputKind = VideoOutputKind.Url,
+        ContentPath = null,
+        ExtraHeaders = new Dictionary<string, string>(),
+        BodyShape = VideoRequestBodyShape.ContentArray,
+        RequestFields = new VideoRequestFieldMap
+        {
+            Model = "model",
+            // 提示词也走 content 数组，这里留空表示"不按路径写"，由数组分支负责
+            Prompt = null,
+            // Seedance 没有负向提示词这个字段
+            NegativePrompt = null,
+            FirstFrame = null,
+            Duration = "duration",
+            Resolution = "resolution",
+            Ratio = "ratio",
+            Fps = null,
+            Seed = "seed",
+            ExtraParamsContainer = "",
+        },
+        ResolutionStyle = VideoResolutionStyle.TierLower,
+        Capabilities = new VideoCapabilitySpec
+        {
+            Modes = [VideoGenerationMode.Omni, VideoGenerationMode.FirstLastFrame, VideoGenerationMode.Keyframes],
+            MaxReferenceImages = 9,
+            MaxReferenceVideos = 3,
+            MaxReferenceAudios = 3,
+            MaxKeyframes = 10,
+            FramesRequireAdaptiveRatio = true,
+        },
+    };
+
     /// <summary>全部预设，供「选哪个预设」的界面下拉使用</summary>
     public static IReadOnlyList<VideoDeliverySpec> All { get; } =
     [
@@ -186,6 +261,7 @@ public static class VideoDeliveryPresets
         DashScopeVideo,
         DashScopeLegacyVideo,
         SiliconFlowVideo,
+        ArkSeedance,
     ];
 
     /// <summary>按名称找预设；找不到返回 null（此时应当由用户的自定义模板接管）</summary>

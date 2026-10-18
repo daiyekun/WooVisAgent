@@ -29,11 +29,19 @@ public sealed class FileController(
     ISnowflakeIdGenerator idGenerator,
     ILogger<FileController> logger) : ControllerBase
 {
-    /// <summary>单张图片体积上限（10 MB）。再大只会拖慢模型调用，没有收益</summary>
-    private const long MaxFileSize = 10L * 1024 * 1024;
+    /// <summary>
+    /// 单个文件体积上限。图片给到 10MB 就够，但视频 / 音频参考动辄几十 MB，
+    /// 沿用 10MB 会让用户传参考视频时被服务端直接拒掉，且报错只说"文件过大"，
+    /// 完全看不出是"图片上限"套到了视频身上。
+    /// </summary>
+    private const long MaxImageSize = 10L * 1024 * 1024;
+    private const long MaxFileSize = 100L * 1024 * 1024;
 
-    /// <summary>单次最多上传张数，与 ImageGenerationInputValidator 的参考图上限一致</summary>
-    private const int MaxFileCount = 8;
+    /// <summary>单次请求体总上限（一次传 50 个素材的现实值）</summary>
+    private const long MaxRequestSize = 512L * 1024 * 1024;
+
+    /// <summary>单次最多上传个数，与 VideoGenerationInputValidator.MaxReferences 对齐</summary>
+    private const int MaxFileCount = 50;
 
     private static readonly HashSet<string> AllowedContentTypes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -44,6 +52,22 @@ public sealed class FileController(
         "image/gif",
         "image/bmp",
         "image/avif",
+
+        // 视频参考（火山方舟全能生成用来复刻运镜与动作）
+        "video/mp4",
+        "video/quicktime",
+        "video/x-m4v",
+        "video/webm",
+
+        // 音频参考（用来参考音色）
+        "audio/mpeg",
+        "audio/mp3",
+        "audio/wav",
+        "audio/x-wav",
+        "audio/mp4",
+        "audio/x-m4a",
+        "audio/aac",
+        "audio/ogg",
     };
 
     private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
@@ -55,15 +79,26 @@ public sealed class FileController(
         ".gif",
         ".bmp",
         ".avif",
+
+        ".mp4",
+        ".mov",
+        ".m4v",
+        ".webm",
+
+        ".mp3",
+        ".wav",
+        ".m4a",
+        ".aac",
+        ".ogg",
     };
 
     /// <summary>
-    /// 上传参考图，一次可传多张（表单字段名任意，服务端按 <c>Request.Form.Files</c> 全收）。
-    /// 前端调用方：WooVisAgent.Web/src/api/file.ts 的 uploadImages。
+    /// 上传参考素材（图片 / 视频 / 音频），一次可传多个（表单字段名任意，服务端按 <c>Request.Form.Files</c> 全收）。
+    /// 前端调用方：WooVisAgent.Web/src/api/file.ts 的 uploadFiles。
     /// </summary>
     [HttpPost("upload")]
     [Consumes("multipart/form-data")]
-    [RequestSizeLimit(MaxFileSize * MaxFileCount)]
+    [RequestSizeLimit(MaxRequestSize)]
     [ProducesResponseType<IReadOnlyList<UploadFileResultDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Upload(CancellationToken cancellationToken)
@@ -77,7 +112,7 @@ public sealed class FileController(
             return Result.Invalid("没有收到任何文件。").ToActionResult();
 
         if (form.Files.Count > MaxFileCount)
-            return Result.Invalid($"一次最多上传 {MaxFileCount} 张图片。").ToActionResult();
+            return Result.Invalid($"一次最多上传 {MaxFileCount} 个素材。").ToActionResult();
 
         var results = new List<UploadFileResultDto>(form.Files.Count);
 
@@ -110,13 +145,23 @@ public sealed class FileController(
         return Result.Success<IReadOnlyList<UploadFileResultDto>>(results).ToActionResult();
     }
 
+    private static bool IsImageExtension(string extension) => extension.ToLowerInvariant() switch
+    {
+        ".png" or ".jpg" or ".jpeg" or ".webp" or ".gif" or ".bmp" or ".avif" => true,
+        _ => false,
+    };
+
     private static string? Validate(IFormFile file)
     {
         if (file.Length == 0)
             return $"文件「{file.FileName}」为空。";
 
-        if (file.Length > MaxFileSize)
-            return $"图片不能超过 {MaxFileSize / 1024 / 1024} MB。";
+        var isImage = file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase)
+                      || IsImageExtension(Path.GetExtension(file.FileName));
+
+        var limit = isImage ? MaxImageSize : MaxFileSize;
+        if (file.Length > limit)
+            return $"{(isImage ? "图片" : "素材")}不能超过 {limit / 1024 / 1024} MB。";
 
         // 扩展名与 Content-Type 只要有一个可信就放行：
         // 浏览器一般两者都给，但从剪贴板粘贴时 Content-Type 可能是空串，

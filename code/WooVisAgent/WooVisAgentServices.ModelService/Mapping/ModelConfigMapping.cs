@@ -27,5 +27,10 @@ public static class ModelConfigMapping
         VideoDeliveryResolver.ReadTemplate(entity.DeliveryJson),
         entity.SupportsTextToVideo,
         entity.SupportsImageToVideo,
+        // 解析后的能力声明（视频模型才有）。解析不出形状时返回 null，
+        // 前端会按"只有全能 + 1 张图"的保守口径显示，与后端校验一致
+        entity.Category == ModelCategory.Video
+            ? VideoDeliveryResolver.Resolve(entity)?.Capabilities
+            : null,
         includeApiKey ? entity.ApiKey : null);
 }

@@ -16,9 +16,10 @@ import { useRouter } from 'vue-router'
 import { agentApi, imageApi, videoApi } from '@/api'
 import AppIcon from '@/components/common/AppIcon.vue'
 import ModelSettingForm from '@/components/ModelSettingForm.vue'
+import VideoModePicker from '@/components/VideoModePicker.vue'
 import { useModelStore } from '@/stores/modelStore'
 import { useTaskStore } from '@/stores/taskStore'
-import type { TaskType } from '@/types'
+import type { TaskType, VideoGenerationMode, VideoReferenceInput } from '@/types'
 import { message } from '@/utils'
 
 const router = useRouter()
@@ -54,6 +55,33 @@ const videoOptions = reactive({
   resolution: '1280x720',
   withAudio: false,
 })
+
+/**
+ * 视频输入模式与参考素材。
+ *
+ * 默认「全能生成」——它同时覆盖纯文生视频（不传素材）与多模态参考，
+ * 所以老用户只写文字、不做任何配置，行为与之前完全一致。
+ */
+const videoMode = ref<VideoGenerationMode>('omni')
+const videoReferences = ref<VideoReferenceInput[]>([])
+
+/** 当前选中的视频模型声明了哪些能力；缺失时组件按保守口径处理 */
+const videoCapabilities = computed(() => currentModel.value?.videoCapabilities ?? null)
+
+/** 切换模型时清掉不被支持的素材，避免带着上一家模型的素材去提交 */
+watch(
+  () => form.modelId,
+  () => {
+    if (videoReferences.value.length === 0) return
+
+    const supported = currentModel.value?.videoCapabilities?.modes ?? ['omni']
+    const next = videoMode.value && supported.includes(videoMode.value)
+      ? videoReferences.value
+      : []
+
+    if (next.length !== videoReferences.value.length) videoReferences.value = next
+  },
+)
 
 /** 选中模型的扩展参数 */
 const modelParams = ref<Record<string, unknown>>({})
@@ -178,6 +206,9 @@ async function submit(): Promise<void> {
         modelId: form.modelId,
         prompt: form.prompt.trim(),
         negativePrompt: form.negativePrompt.trim() || undefined,
+        mode: videoMode.value,
+        references: videoReferences.value,
+        // 老字段仍传首帧，保持与既有模型兼容
         firstFrameUrl: videoOptions.firstFrameUrl.trim() || undefined,
         durationSeconds: videoOptions.durationSeconds,
         fps: videoOptions.fps,
@@ -200,6 +231,18 @@ async function submit(): Promise<void> {
 /** 是否显示 Agent 润色入口 */
 const agentAvailable = ref(false)
 const polishing = ref(false)
+
+/**
+ * 把 @图片1 这类引用插进提示词末尾。
+ *
+ * 素材区的编号与模型看到的一致（按上传顺序、分类别计数），
+ * 因此这里插入的 @图片1 就是模型理解的第一张图，不会错位。
+ */
+function insertReference(label: string): void {
+  const cursor = form.prompt.length
+  const needsSpace = cursor > 0 && !/\s$/u.test(form.prompt)
+  form.prompt = `${form.prompt}${needsSpace ? ' ' : ''}${label}`
+}
 
 async function probeAgent(): Promise<void> {
   try {
@@ -423,7 +466,22 @@ onMounted(async () => {
               当前模型未声明支持文生视频或图生视频，请先在「模型配置」中勾选其支持的能力。
             </n-alert>
 
-            <n-form-item v-if="supportsImageToVideo" label="首帧图地址">
+            <!--
+              生成方式 + 参考素材。
+              放在提示词之后：素材区里的 @引用要写进提示词，先看到素材再写词更顺手。
+              首尾帧 / 智能多帧模式下隐藏老的「首帧图地址」输入框，避免两个入口同时存在。
+            -->
+            <n-form-item label-placement="top" :show-feedback="false" class="mb">
+              <video-mode-picker
+                v-model="videoMode"
+                :references="videoReferences"
+                :capabilities="videoCapabilities"
+                @update:references="videoReferences = $event"
+                @insert-reference="insertReference"
+              />
+            </n-form-item>
+
+            <n-form-item v-if="supportsImageToVideo && videoMode === 'omni'" label="首帧图地址">
               <n-input
                 v-model:value="videoOptions.firstFrameUrl"
                 placeholder="可选，填入图片 URL 实现图生视频"
@@ -431,7 +489,7 @@ onMounted(async () => {
               />
             </n-form-item>
 
-            <n-alert v-else type="info" :show-icon="true" class="mb">
+            <n-alert v-else-if="!supportsImageToVideo" type="info" :show-icon="true" class="mb">
               该模型仅支持文生视频，不接受首帧图。
             </n-alert>
 

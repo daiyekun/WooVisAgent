@@ -104,6 +104,14 @@ public sealed record ModelConfigDto(
     VideoDeliveryTemplate? Delivery = null,
     bool SupportsTextToVideo = true,
     bool SupportsImageToVideo = true,
+    /// <summary>
+    /// <b>解析后</b>的视频能力声明（预设 + 用户模板合并的结果）。
+    ///
+    /// 单独出参而不是让前端去猜：能力写在预设里，用户只要选了「火山方舟 Seedance」
+    /// 预设就该看到三种模式，而模板 JSON 里可能根本没有 capabilities 这一段。
+    /// 前端靠它决定模式下拉里哪些项可选。
+    /// </summary>
+    VideoCapabilitySpec? VideoCapabilities = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ApiKey = null);
 
 /// <summary>连通性测试结果</summary>

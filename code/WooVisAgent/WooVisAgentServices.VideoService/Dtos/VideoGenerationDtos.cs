@@ -17,6 +17,18 @@ public sealed class VideoGenerationInput
 
     public string? NegativePrompt { get; set; }
 
+    /// <summary>
+    /// 输入模式：<c>omni</c>（全能，默认）/ <c>firstLastFrame</c>（首尾帧）/ <c>keyframes</c>（智能多帧）。
+    /// 留空等同 <c>omni</c>，因此老的前端调用不受影响。
+    /// </summary>
+    public string? Mode { get; set; }
+
+    /// <summary>
+    /// 参考素材，<b>顺序即语义</b>。
+    /// 首尾帧取前两张；智能多帧按顺序当关键帧；全能生成按类型分别映射成参考图 / 参考视频 / 参考音频。
+    /// </summary>
+    public List<VideoReferenceInput>? References { get; set; }
+
     /// <summary>首帧图地址（图生视频）。填了就按图生视频执行。</summary>
     public string? FirstFrameUrl { get; set; }
 
@@ -43,6 +55,16 @@ public sealed class VideoGenerationInput
 
     /// <summary>模型扩展参数，键与 ModelParamSpec.key 对应</summary>
     public Dictionary<string, object?>? Params { get; set; }
+}
+
+/// <summary>
+/// 一份参考素材。<see cref="Kind" /> 取 <c>image</c> / <c>video</c> / <c>audio</c>。
+/// </summary>
+public sealed class VideoReferenceInput
+{
+    public string Kind { get; set; } = "image";
+
+    public string Url { get; set; } = string.Empty;
 }
 
 /// <summary>

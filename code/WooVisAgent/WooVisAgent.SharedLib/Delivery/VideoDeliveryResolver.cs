@@ -69,8 +69,22 @@ public sealed class VideoDeliveryTemplate
     /// </summary>
     public VideoRequestFieldTemplate? RequestFields { get; set; }
 
-    /// <summary>覆盖分辨率表达形式：omit / pixel / tier / tierRatio</summary>
+    /// <summary>覆盖分辨率表达形式：omit / pixel / tier / tierRatio / tierLower</summary>
     public string? ResolutionStyle { get; set; }
+
+    /// <summary>
+    /// 覆盖请求体形状：flat（扁平字段）/ contentArray（火山方舟那种数组）。
+    /// 留空表示沿用预设。
+    /// </summary>
+    public string? BodyShape { get; set; }
+
+    /// <summary>
+    /// 覆盖能力声明：支持哪些模式、各类素材上限多少。
+    ///
+    /// Seedance 三个版本的能力差别很大（1.0 pro 只有首尾帧、2.0 参考图 9 张、2.5 可到 30 张），
+    /// 预设只能给一个保守值，具体模型要放宽或收紧时改这里。
+    /// </summary>
+    public VideoCapabilitySpec? Capabilities { get; set; }
 }
 
 /// <summary>请求体字段映射的可配置形态</summary>
@@ -86,6 +100,20 @@ public sealed class VideoRequestFieldTemplate
     public string? Fps { get; set; }
     public string? Seed { get; set; }
     public string? ExtraParamsContainer { get; set; }
+
+    // ContentArray 形状专用
+    public string? ContentArray { get; set; }
+    public string? TextItemType { get; set; }
+    public string? ImageItemType { get; set; }
+    public string? VideoItemType { get; set; }
+    public string? AudioItemType { get; set; }
+    public string? UrlField { get; set; }
+    public string? RoleField { get; set; }
+    public string? RoleFirstFrame { get; set; }
+    public string? RoleLastFrame { get; set; }
+    public string? RoleReferenceImage { get; set; }
+    public string? RoleReferenceVideo { get; set; }
+    public string? RoleReferenceAudio { get; set; }
 }
 
 /// <summary>
@@ -135,6 +163,14 @@ public static class VideoDeliveryResolver
             || endpoint.Contains("silicon", StringComparison.Ordinal))
         {
             return VideoDeliveryPresets.SiliconFlowVideo;
+        }
+
+        // 火山方舟：主机名含 volces（火山引擎的根域）或 ark
+        if (endpoint.Contains("volces.com", StringComparison.Ordinal)
+            || endpoint.Contains("volcengine", StringComparison.Ordinal)
+            || endpoint.Contains("ark.cn-", StringComparison.Ordinal))
+        {
+            return VideoDeliveryPresets.ArkSeedance;
         }
 
         // 百炼 / DashScope：主机名含 dashscope 或 aliyuncs
@@ -229,6 +265,8 @@ public static class VideoDeliveryResolver
                 : preset.ExtraHeaders,
             RequestFields = fields,
             ResolutionStyle = ParseResolutionStyle(template.ResolutionStyle) ?? preset.ResolutionStyle,
+            BodyShape = ParseBodyShape(template.BodyShape) ?? preset.BodyShape,
+            Capabilities = template.Capabilities ?? preset.Capabilities,
             // 预设的内部属性，不向用户模板开放：路径怎么拼取决于协议本身，不由配置决定
             VendorNativePaths = preset.VendorNativePaths,
         };
@@ -256,6 +294,20 @@ public static class VideoDeliveryResolver
             Fps = Override(template.Fps, preset.Fps),
             Seed = Override(template.Seed, preset.Seed),
             ExtraParamsContainer = Override(template.ExtraParamsContainer, preset.ExtraParamsContainer) ?? string.Empty,
+
+            // ContentArray 形状专用
+            ContentArray = Override(template.ContentArray, preset.ContentArray),
+            TextItemType = Override(template.TextItemType, preset.TextItemType),
+            ImageItemType = Override(template.ImageItemType, preset.ImageItemType),
+            VideoItemType = Override(template.VideoItemType, preset.VideoItemType),
+            AudioItemType = Override(template.AudioItemType, preset.AudioItemType),
+            UrlField = Override(template.UrlField, preset.UrlField),
+            RoleField = Override(template.RoleField, preset.RoleField),
+            RoleFirstFrame = Override(template.RoleFirstFrame, preset.RoleFirstFrame),
+            RoleLastFrame = Override(template.RoleLastFrame, preset.RoleLastFrame),
+            RoleReferenceImage = Override(template.RoleReferenceImage, preset.RoleReferenceImage),
+            RoleReferenceVideo = Override(template.RoleReferenceVideo, preset.RoleReferenceVideo),
+            RoleReferenceAudio = Override(template.RoleReferenceAudio, preset.RoleReferenceAudio),
         };
     }
 
@@ -311,6 +363,21 @@ public static class VideoDeliveryResolver
             "pixel" or "pixelsize" or "wxh" => VideoResolutionStyle.PixelSize,
             "tier" => VideoResolutionStyle.Tier,
             "tierratio" or "tier-ratio" or "tier_and_ratio" => VideoResolutionStyle.TierAndRatio,
+            // 火山方舟要小写档位：720p
+            "tierlower" or "tier-lower" or "lower" => VideoResolutionStyle.TierLower,
+            _ => null,
+        };
+    }
+
+    private static VideoRequestBodyShape? ParseBodyShape(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        return value.Trim().ToLowerInvariant() switch
+        {
+            "flat" => VideoRequestBodyShape.Flat,
+            "contentarray" or "content-array" or "content" => VideoRequestBodyShape.ContentArray,
             _ => null,
         };
     }

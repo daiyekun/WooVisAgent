@@ -24,6 +24,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AppIcon from '@/components/common/AppIcon.vue'
 import ImagePreview from '@/components/ImagePreview.vue'
 import VideoPlayer from '@/components/VideoPlayer.vue'
+import VideoModePicker from '@/components/VideoModePicker.vue'
 import { cancelImageTask, fetchImageTask, generateImage } from '@/api/image'
 import { cancelVideoTask, fetchVideoTask, generateVideo } from '@/api/video'
 import { uploadFiles } from '@/api/file'
@@ -39,6 +40,8 @@ import type {
   ModelConfig,
   TaskAsset,
   TaskStatus,
+  VideoGenerationMode,
+  VideoReferenceInput,
 } from '@/types'
 
 import {
@@ -204,6 +207,38 @@ const sizeLabel = computed(() => `${ratio.value.width}×${ratio.value.height}`)
  * 用户根本选不到 480P / 1080P；而万相 3.0 这类模型恰恰要能选档位。
  */
 const videoResolution = ref<string>(VIDEO_RESOLUTION_OPTIONS[1].value)
+
+/**
+ * 视频的三种生成方式与参考素材（全能生成 / 首尾帧 / 智能多帧）。
+ *
+ * 默认「全能生成」：不传素材就是文生视频，与改造前行为完全一致，
+ * 用户什么都不配也不会被新概念打扰。
+ */
+const videoMode = ref<VideoGenerationMode>('omni')
+const videoReferences = ref<VideoReferenceInput[]>([])
+
+/** 当前视频模型的能力声明；读不到时按"只有全能 + 1 张图"的保守口径处理 */
+const videoCapabilities = computed(
+  () => modelStore.videoModels.find((item) => item.id === currentModel.value?.id)?.videoCapabilities ?? null,
+)
+
+/** 拖拽区的图片 + 模式面板里的素材，图片在前（保证 @图片1 的顺序直觉正确） */
+const mergedVideoReferences = computed<VideoReferenceInput[]>(() => {
+  const dropped = attachments.value
+    .map((item) => item.url)
+    .filter((url): url is string => Boolean(url))
+    .map((url) => ({ kind: 'image' as const, url }))
+
+  return [...dropped, ...videoReferences.value]
+})
+
+/** 把 @图片1 这类引用插进输入框末尾 */
+function insertVideoReference(label: string): void {
+  const cursor = draft.value.length
+  const needsSpace = cursor > 0 && !/\s$/u.test(draft.value)
+  draft.value = `${draft.value}${needsSpace ? ' ' : ''}${label}`
+  void fitTextarea()
+}
 
 /**
  * 卡片进行中的阶段文案。
@@ -757,7 +792,15 @@ async function submit(payload: {
  * 后端 ValidateCapabilities 会校验模型是否接受首帧图，
  * 只支持文生的模型带了首帧会被直接拒掉，所以这里只传用户真的放了的图。
  */
-async function submitVideo(payload: VideoChatPayload & { firstFrameUrl?: string }): Promise<void> {
+async function submitVideo(
+  payload: VideoChatPayload & {
+    firstFrameUrl?: string
+    /** 输入模式；重跑旧卡片时可能不带，此时按全能处理 */
+    mode?: VideoGenerationMode
+    /** 参考素材；重跑旧卡片时可能不带，此时只用首帧 */
+    references?: VideoReferenceInput[]
+  },
+): Promise<void> {
   // 只能回退到视频分类内的模型。之前这里回退到 currentModel，
   // 而重跑旧卡片时当前 mode 可能是图片，于是把图片模型 id 发给了视频接口，
   // 后端会以「该模型不是视频模型」直接拒绝。
@@ -773,6 +816,9 @@ async function submitVideo(payload: VideoChatPayload & { firstFrameUrl?: string 
   const modelId = model.id
 
   const isEdit = Boolean(payload.firstFrameUrl)
+  const mode: VideoGenerationMode = payload.mode ?? 'omni'
+  const references: VideoReferenceInput[] =
+    payload.references?.length ? payload.references : isEdit ? [{ kind: 'image', url: payload.firstFrameUrl! }] : []
 
   messages.value.push({
     id: createTempId(),
@@ -805,7 +851,7 @@ async function submitVideo(payload: VideoChatPayload & { firstFrameUrl?: string 
     sizeLabel: payload.resolution,
     // 视频一次只产出一条，卡片骨架按 1 个占位渲染
     count: 1,
-    references: payload.firstFrameUrl ? [payload.firstFrameUrl] : [],
+    references: references.map((item) => item.url),
     payload: {
       modelId,
       prompt: payload.prompt,
@@ -815,6 +861,8 @@ async function submitVideo(payload: VideoChatPayload & { firstFrameUrl?: string 
       resolution: payload.resolution,
       withAudio: payload.withAudio,
       seed: payload.seed,
+      mode,
+      videoReferences: references,
     },
   }
 
@@ -835,6 +883,8 @@ async function submitVideo(payload: VideoChatPayload & { firstFrameUrl?: string 
       modelId,
       prompt: payload.prompt,
       negativePrompt: payload.negativePrompt,
+      mode,
+      references,
       firstFrameUrl: payload.firstFrameUrl,
       durationSeconds: payload.durationSeconds,
       fps: payload.fps,
@@ -899,7 +949,11 @@ async function send(): Promise<void> {
       resolution: videoResolution.value,
       withAudio: withAudio.value,
       seed: seed.value > 0 ? seed.value : undefined,
-      firstFrameUrl: references[0],
+      // 拖拽区里的图片与模式面板里的素材合并，图片按顺序排在最前，
+      // 这样"@图片1"指向的一定是用户最先放进去的那张
+      firstFrameUrl: mergedVideoReferences.value.find((x) => x.kind === 'image')?.url,
+      mode: videoMode.value,
+      references: mergedVideoReferences.value,
     })
   } else {
     await submit({
@@ -928,7 +982,12 @@ async function send(): Promise<void> {
 function rerun(card: ChatCard): void {
   if (card.kind === 'video') {
     const payload = card.payload as VideoChatPayload
-    void submitVideo({ ...payload, firstFrameUrl: card.references[0] })
+    // 重跑沿用这张卡片当初的模式与素材，否则首尾帧 / 多帧任务会被降级成单首帧
+    void submitVideo({
+      ...payload,
+      firstFrameUrl: card.references[0],
+      references: payload.videoReferences,
+    })
     return
   }
 
@@ -1710,6 +1769,20 @@ onBeforeUnmount(() => {
             ＋
           </div>
         </div>
+
+        <!--
+          视频的三种生成方式与素材区。
+          只在视频模式下出现：图片生成没有这些概念，露出来只会让人以为也能多传几张。
+        -->
+        <video-mode-picker
+          v-if="mode === 'video'"
+          v-model="videoMode"
+          :references="videoReferences"
+          :capabilities="videoCapabilities"
+          class="mb-2"
+          @update:references="videoReferences = $event"
+          @insert-reference="insertVideoReference"
+        />
 
         <textarea
           ref="promptEl"

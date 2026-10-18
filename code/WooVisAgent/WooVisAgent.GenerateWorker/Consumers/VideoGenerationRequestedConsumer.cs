@@ -144,11 +144,13 @@ public class VideoGenerationRequestedConsumer(
                 message.Seed,
                 ExtractExtraParams(parameters),
                 model,
-                pump.Progress);
+                pump.Progress,
+                message.Mode,
+                message.References);
 
             await notifier.NotifyAsync(
                 task,
-                message: request.IsImageToVideo ? "正在提交到模型（图生视频）" : "正在提交到模型（文生视频）",
+                message: DescribeStage(request),
                 cancellationToken: cancellationToken);
 
             var outputs = await videoGenerationService.GenerateAsync(request, cancellationToken);
@@ -237,6 +239,28 @@ public class VideoGenerationRequestedConsumer(
     /// 因为它们已由消息单独承载并被协议层单独写入请求体；
     /// 不剔除会让同一个值以两个字段名各发一遍，多数网关会因此报「未知参数」。
     /// </summary>
+    /// <summary>
+    /// 进度文案带上模式与素材数量，用户能一眼确认系统理解的是哪种生成方式。
+    /// 文案含糊时"生成出来的不是我要的"很难被当成配置问题来查。
+    /// </summary>
+    private static string DescribeStage(VideoGenerationRequest request)
+    {
+        var references = request.EffectiveReferences;
+        if (references.Count == 0)
+            return $"正在提交到模型（{request.Mode.ToDisplayName()} · 文生视频）";
+
+        var images = references.Count(x => x.Kind == VideoReferenceKind.Image);
+        var videos = references.Count(x => x.Kind == VideoReferenceKind.Video);
+        var audios = references.Count(x => x.Kind == VideoReferenceKind.Audio);
+
+        var parts = new List<string>();
+        if (images > 0) parts.Add($"{images} 图");
+        if (videos > 0) parts.Add($"{videos} 视频");
+        if (audios > 0) parts.Add($"{audios} 音频");
+
+        return $"正在提交到模型（{request.Mode.ToDisplayName()} · {string.Join("、", parts)}）";
+    }
+
     private static IReadOnlyDictionary<string, object?> ExtractExtraParams(
         IReadOnlyDictionary<string, object?> parameters)
     {

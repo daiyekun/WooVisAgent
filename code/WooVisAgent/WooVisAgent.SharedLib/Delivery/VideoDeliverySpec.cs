@@ -117,6 +117,26 @@ public sealed class VideoDeliverySpec
     /// </summary>
     public bool VendorNativePaths { get; init; } = true;
 
+    /// <summary>
+    /// 请求体的整体形状。
+    ///
+    /// <para><b>Flat（默认）</b>是「字段名 → 点号路径」的扁平写法，百炼、OpenAI、硅基流动都是这一类。</para>
+    /// <para><b>ContentArray</b> 是火山方舟 Seedance 那种<b>数组</b>写法：
+    /// 提示词与所有素材都塞进 <c>content</c> 数组，靠 <c>type</c> 与 <c>role</c> 区分。
+    /// 它是唯一能表达「多张参考图 + 参考视频 + 参考音频」的形状，
+    /// 因此首尾帧、智能多帧、全能参考这三种模式都建立在它之上。</para>
+    /// </summary>
+    public VideoRequestBodyShape BodyShape { get; init; } = VideoRequestBodyShape.Flat;
+
+    /// <summary>
+    /// 该模型支持哪些输入模式、各类素材能传多少。
+    ///
+    /// 放在交付模板里而不是模型表上，是为了让能力<b>随预设走</b>：
+    /// 同一个 Seedance 2.5 预设天然支持三种模式，用户换个 1.0 pro 就自动只剩首尾帧。
+    /// 用户也可以在模型配置里改这个对象来覆盖预设默认值。
+    /// </summary>
+    public VideoCapabilitySpec? Capabilities { get; init; }
+
     /// <summary>解析出的提交 URL；解析不出来时返回 null，由调用方给出明确错误而不是硬拼路径。</summary>
     public string? ResolveSubmitUrl(ModelConfig model)
         => Combine(EndpointOf(model), SubmitPath, VendorNativePaths);
@@ -258,6 +278,67 @@ public enum VideoResolutionStyle
 
     /// <summary>额外传宽高比 <c>16:9</c>，与档位配合使用（百炼）</summary>
     TierAndRatio = 3,
+
+    /// <summary>档位但用小写（<c>720p</c>）。火山方舟 Seedance 要小写，传 <c>720P</c> 直接 400</summary>
+    TierLower = 4,
+}
+
+/// <summary>请求体的整体形状</summary>
+public enum VideoRequestBodyShape
+{
+    /// <summary>扁平写法：字段名 → 点号路径。百炼 / OpenAI / 硅基流动</summary>
+    Flat = 0,
+
+    /// <summary>数组写法：<c>content</c> 里放 text / image_url / video_url / audio_url。火山方舟 Seedance</summary>
+    ContentArray = 1,
+}
+
+/// <summary>参考素材（中立表示，已解析成云端可访问的地址）</summary>
+/// <param name="Kind">图片 / 视频 / 音频</param>
+/// <param name="Url">图片或视频地址；音频是 data URI</param>
+public sealed record VideoReference(VideoReferenceKind Kind, string Url);
+
+/// <summary>
+/// 模型对「输入模式与素材数量」的能力声明。
+///
+/// 之所以让模型自己声明而不是写死在代码里：Seedance 三个版本的素材上限差别很大
+/// （1.0 pro 只能首尾帧；2.0 参考图最多 9 张；2.5 可到 30 图 + 10 视频 + 10 音频），
+/// 而这些数字是厂商文档里的事实，不该由我们的代码来猜。
+/// </summary>
+public sealed class VideoCapabilitySpec
+{
+    /// <summary>支持的输入模式。默认只有全能生成（含文生视频）</summary>
+    public IReadOnlyList<VideoGenerationMode> Modes { get; init; } = [VideoGenerationMode.Omni];
+
+    /// <summary>全能生成最多能传几张参考图</summary>
+    public int MaxReferenceImages { get; init; } = 1;
+
+    /// <summary>全能生成最多能传几个参考视频（0 表示不支持）</summary>
+    public int MaxReferenceVideos { get; init; }
+
+    /// <summary>全能生成最多能传几个参考音频（0 表示不支持）</summary>
+    public int MaxReferenceAudios { get; init; }
+
+    /// <summary>智能多帧最多能传几张关键帧（0 表示不支持该模式）</summary>
+    public int MaxKeyframes { get; init; }
+
+    /// <summary>
+    /// 首尾帧时是否强制 <c>ratio=adaptive</c>。
+    ///
+    /// 火山方舟明确要求：首帧 / 首尾帧生视频时 <c>ratio</c> 必须为 <c>adaptive</c>，
+    /// 传固定比例会异步报错（<c>InvalidParameter.TaskTypeConstraint</c>）。
+    /// </summary>
+    public bool FramesRequireAdaptiveRatio { get; init; }
+
+    public bool Supports(VideoGenerationMode mode) => Modes.Contains(mode);
+
+    /// <summary>取某类素材的上限；<paramref name="kind" /> 不支持时返回 0</summary>
+    public int MaxFor(VideoReferenceKind kind) => kind switch
+    {
+        VideoReferenceKind.Video => MaxReferenceVideos,
+        VideoReferenceKind.Audio => MaxReferenceAudios,
+        _ => MaxReferenceImages,
+    };
 }
 
 /// <summary>
@@ -290,6 +371,39 @@ public sealed class VideoRequestFieldMap
     public string? Resolution { get; init; } = "size";
 
     public string? Ratio { get; init; }
+
+    // ---- ContentArray 形状专用（火山方舟 Seedance）------------------------
+    // 这组字段只在 BodyShape = ContentArray 时被读取。
+    // 全部可配置：不同厂商（以及不同版本）的 type/role 取值可能不同，
+    // 与其写死在代码里，不如让用户在交付模板里改。
+
+    /// <summary>数组字段名</summary>
+    public string? ContentArray { get; init; } = "content";
+
+    /// <summary>文本项的类型标识</summary>
+    public string? TextItemType { get; init; } = "text";
+
+    public string? ImageItemType { get; init; } = "image_url";
+
+    public string? VideoItemType { get; init; } = "video_url";
+
+    public string? AudioItemType { get; init; } = "audio_url";
+
+    /// <summary>素材对象里装地址的字段名（火山方舟是 <c>{"image_url":{"url":"..."}}</c>）</summary>
+    public string? UrlField { get; init; } = "url";
+
+    /// <summary>素材角色字段名</summary>
+    public string? RoleField { get; init; } = "role";
+
+    public string? RoleFirstFrame { get; init; } = "first_frame";
+
+    public string? RoleLastFrame { get; init; } = "last_frame";
+
+    public string? RoleReferenceImage { get; init; } = "reference_image";
+
+    public string? RoleReferenceVideo { get; init; } = "reference_video";
+
+    public string? RoleReferenceAudio { get; init; } = "reference_audio";
 
     /// <summary>
     /// 帧率字段路径。为空表示该预设不支持传帧率——大多数视频接口不接受自定义 fps，
@@ -332,6 +446,38 @@ public sealed record VideoDeliveryRequest(
 
     /// <summary>实际使用的种子；未指定时给一个稳定值，避免每次都随机导致复现困难</summary>
     public long EffectiveSeed => Seed ?? Random.Shared.NextInt64(1, int.MaxValue);
+}
+
+/// <summary>
+/// 带模式的视频交付请求。
+///
+/// 与 <see cref="VideoDeliveryRequest" /> 的区别只有两处：多了输入模式，
+/// 以及用<b>有序</b>的参考素材列表取代了单一首帧。
+/// 保留旧结构是为了让百炼 / OpenAI 这类"只有一张首帧"的协议一行不改继续工作。
+/// </summary>
+/// <param name="References">
+/// 参考素材，<b>顺序即语义</b>：首尾帧取前两张，智能多帧按顺序当关键帧，
+/// 全能生成则按类型分别映射成 reference_image / reference_video / reference_audio。
+/// </param>
+public sealed record VideoModeDeliveryRequest(
+    ModelConfig Model,
+    VideoGenerationMode Mode,
+    string Prompt,
+    IReadOnlyList<VideoReference> References,
+    string? NegativePrompt,
+    string? Resolution,
+    int? DurationSeconds,
+    long? Seed,
+    IReadOnlyDictionary<string, object?> ExtraParams)
+{
+    public long EffectiveSeed => Seed ?? Random.Shared.NextInt64(1, int.MaxValue);
+
+    /// <summary>该模式下需要放进请求体的素材</summary>
+    public IReadOnlyList<VideoReference> EffectiveReferences => Mode switch
+    {
+        VideoGenerationMode.FirstLastFrame => References.Take(2).ToList(),
+        _ => References,
+    };
 }
 
 /// <summary>按点号路径读写 JsonNode 的小工具，同时支持 <c>a.b[0].c</c> 形式的数组下标</summary>
