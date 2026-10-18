@@ -95,6 +95,7 @@ const VIDEO_DELIVERY_PRESET_OPTIONS = [
   { label: 'OpenAI 兼容（/v1/videos）', value: 'openai-videos' },
   { label: '百炼 DashScope（video-synthesis）', value: 'dashscope-video' },
   { label: '百炼 旧版（size 写法）', value: 'dashscope-legacy-video' },
+  { label: '百炼 Wan 2.7+（media 数组，支持首尾帧）', value: 'dashscope-media-video' },
   { label: 'SiliconFlow（/v1/video/submit）', value: 'siliconflow-video' },
   { label: '火山方舟 Seedance（即梦，content 数组）', value: 'ark-seedance' },
 ]

@@ -254,12 +254,100 @@ public static class VideoDeliveryPresets
         },
     };
 
+    /// <summary>
+    /// 阿里云百炼 Wan <b>2.7 及以上</b>的图生视频（首尾帧）。
+    ///
+    /// <para>提交路径、轮询、产物地址与 <see cref="DashScopeVideo" /> 完全一样，
+    /// <b>唯一的变化是入参从单个 <c>img_url</c> 换成了 <c>media</c> 数组</b>：</para>
+    /// <code>
+    /// "input": { "prompt": "...", "media": [ { "type": "first_frame", "url": "..." },
+    ///                                       { "type": "last_frame",  "url": "..." } ] }
+    /// </code>
+    ///
+    /// <para>官方把 <c>media</c> 的合法组合写死了，只有这几种，
+    /// 组合非法会直接报错：</para>
+    /// <list type="bullet">
+    ///   <item><c>first_frame</c>（单首帧，也就是文生/图生视频的常规用法）</item>
+    ///   <item><c>first_frame + last_frame</c>（首尾帧）</item>
+    ///   <item><c>first_frame + driving_audio</c>、<c>first_frame + last_frame + driving_audio</c>（音画同步）</item>
+    ///   <item><c>first_clip (+ last_frame)</c>（视频续写）</item>
+    /// </list>
+    ///
+    /// <para><b>Wan 2.6 及更早不支持这些</b>——官方明确写了
+    /// "Wan 2.6 and earlier models supports only first-frame-to-video"，
+    /// 它们的入参仍是单个 <c>input.img_url</c>，要用 <see cref="DashScopeVideo" />。
+    /// 万相系也<b>没有多关键帧</b>这种能力（那是即梦 Seedance 的），所以本预设不声明智能多帧。</para>
+    /// </summary>
+    public static VideoDeliverySpec DashScopeMediaVideo { get; } = new()
+    {
+        PresetName = "dashscope-media-video",
+        SubmitPath = "/api/v1/services/aigc/video-generation/video-synthesis",
+        StatusPath = "/api/v1/tasks/{taskId}",
+        StatusMethod = "GET",
+        TaskIdPath = "output.task_id",
+        StatusValuePath = "output.task_status",
+        SucceededStatus = "SUCCEEDED",
+        FailedStatuses = "FAILED,CANCELED,UNKNOWN",
+        VideoUrlPath = "output.video_url",
+        ErrorPath = "output.message",
+        OutputKind = VideoOutputKind.Url,
+        ExtraHeaders = new Dictionary<string, string>
+        {
+            ["X-DashScope-Async"] = "enable",
+        },
+        BodyShape = VideoRequestBodyShape.ContentArray,
+        RequestFields = new VideoRequestFieldMap
+        {
+            Model = "model",
+            // 提示词仍是普通字段，不进 media 数组
+            Prompt = "input.prompt",
+            NegativePrompt = "input.negative_prompt",
+            FirstFrame = null,
+            ContentArray = "input.media",
+
+            // media 的元素没有"同名子对象"，type 直接就是角色名，url 与之同级
+            TextItemType = null,
+            ImageItemType = null,
+            VideoItemType = null,
+            AudioItemType = null,
+            UrlField = "url",
+            RoleField = null,
+            UrlInline = true,
+
+            // 全能模式下只有一张图时，它就是首帧
+            RoleReferenceImage = "first_frame",
+            RoleReferenceAudio = "driving_audio",
+            RoleReferenceVideo = "first_clip",
+            RoleFirstFrame = "first_frame",
+            RoleLastFrame = "last_frame",
+
+            Duration = "parameters.duration",
+            Resolution = "parameters.resolution",
+            Ratio = "parameters.ratio",
+            Fps = null,
+            Seed = "parameters.seed",
+            ExtraParamsContainer = "parameters",
+        },
+        ResolutionStyle = VideoResolutionStyle.TierAndRatio,
+        Capabilities = new VideoCapabilitySpec
+        {
+            // 万相没有多模态参考、也没有多关键帧，所以只给两种模式
+            Modes = [VideoGenerationMode.Omni, VideoGenerationMode.FirstLastFrame],
+            MaxReferenceImages = 1,
+            MaxReferenceVideos = 0,
+            MaxReferenceAudios = 1,
+            MaxKeyframes = 0,
+            FramesRequireAdaptiveRatio = false,
+        },
+    };
+
     /// <summary>全部预设，供「选哪个预设」的界面下拉使用</summary>
     public static IReadOnlyList<VideoDeliverySpec> All { get; } =
     [
         OpenAiVideos,
         DashScopeVideo,
         DashScopeLegacyVideo,
+        DashScopeMediaVideo,
         SiliconFlowVideo,
         ArkSeedance,
     ];

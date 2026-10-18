@@ -209,6 +209,82 @@ public class VideoModeDeliveryTests
     }
 
     [Fact]
+    public void 百炼media预设_首尾帧用first_frame与last_frame且地址平铺()
+    {
+        var spec = VideoDeliveryPresets.DashScopeMediaVideo;
+
+        var body = Build(
+            Request(
+                VideoGenerationMode.FirstLastFrame,
+                (VideoReferenceKind.Image, "https://cdn/first.jpg"),
+                (VideoReferenceKind.Image, "https://cdn/last.jpg")),
+            spec);
+
+        var media = body.GetProperty("input").GetProperty("media");
+        Assert.Equal(2, media.GetArrayLength());
+
+        // 百炼没有独立的 role 字段，类型值直接就是角色名
+        Assert.Equal("first_frame", media[0].GetProperty("type").GetString());
+        Assert.Equal("https://cdn/first.jpg", media[0].GetProperty("url").GetString());
+        Assert.Equal("last_frame", media[1].GetProperty("type").GetString());
+
+        // 提示词仍在 input.prompt，不进数组；也没有嵌套的 image_url 子对象
+        Assert.Equal("一只猫在雨夜街头走过积水", body.GetProperty("input").GetProperty("prompt").GetString());
+        Assert.False(media[0].TryGetProperty("image_url", out _));
+        Assert.False(media[0].TryGetProperty("role", out _));
+    }
+
+    [Fact]
+    public void 百炼media预设_文生视频时完全不带media字段()
+    {
+        var body = Build(Request(VideoGenerationMode.Omni), VideoDeliveryPresets.DashScopeMediaVideo);
+
+        // media 传空数组会被百炼判为参数错误，所以文生视频必须一个字段都不带
+        Assert.False(body.GetProperty("input").TryGetProperty("media", out _));
+        Assert.Equal("一只猫在雨夜街头走过积水", body.GetProperty("input").GetProperty("prompt").GetString());
+        Assert.Equal("720P", body.GetProperty("parameters").GetProperty("resolution").GetString());
+    }
+
+    [Fact]
+    public void 百炼media预设_全能模式单图等价于首帧()
+    {
+        var body = Build(
+            Request(VideoGenerationMode.Omni, (VideoReferenceKind.Image, "https://cdn/a.jpg")),
+            VideoDeliveryPresets.DashScopeMediaVideo);
+
+        var media = body.GetProperty("input").GetProperty("media");
+        Assert.Single(media.EnumerateArray());
+        Assert.Equal("first_frame", media[0].GetProperty("type").GetString());
+    }
+
+    [Fact]
+    public void 百炼media预设_不声明智能多帧()
+    {
+        var capabilities = VideoDeliveryPresets.DashScopeMediaVideo.Capabilities;
+
+        Assert.NotNull(capabilities);
+        Assert.Contains(VideoGenerationMode.Omni, capabilities!.Modes);
+        Assert.Contains(VideoGenerationMode.FirstLastFrame, capabilities.Modes);
+
+        // 万相确实没有多关键帧能力，这里必须如实声明 0，而不是给个假的上限
+        Assert.DoesNotContain(VideoGenerationMode.Keyframes, capabilities.Modes);
+        Assert.Equal(0, capabilities.MaxKeyframes);
+        Assert.Equal(0, capabilities.MaxReferenceVideos);
+    }
+
+    [Fact]
+    public void 百炼media预设_参数仍走parameters容器()
+    {
+        var body = Build(
+            Request(VideoGenerationMode.Omni, (VideoReferenceKind.Image, "https://cdn/a.jpg")),
+            VideoDeliveryPresets.DashScopeMediaVideo);
+
+        var parameters = body.GetProperty("parameters");
+        Assert.Equal(5, parameters.GetProperty("duration").GetInt32());
+        Assert.Equal("720P", parameters.GetProperty("resolution").GetString());
+    }
+
+    [Fact]
     public void 扁平协议会自动降级成单首帧不影响既有模型()
     {
         var model = new ModelConfig

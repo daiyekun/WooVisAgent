@@ -62,6 +62,11 @@
   随 `DeliveryJson` 落库、不加新列；预设给保守值，用户覆盖。列表出参里的 `videoCapabilities`
   是**解析后**的值，前端靠它禁用模式。
 - 方舟的分辨率是**小写 `720p`**，首尾帧 `ratio` 必须 `adaptive`，失败态包含 `expired`。
+- **用户目标：接任何厂商只改模型配置、不改代码。** 厂商差异必须落在 `VideoDeliveryPresets`（纯数据）
+  与 `VideoDeliveryTemplate`（用户可覆盖）里。新增厂商 = 加一条预设，不要加协议类。
+- 数组协议有两种写法，用 `UrlInline` 开关区分，不要为它新增 `BodyShape`：
+  方舟嵌套（`{"type":"image_url","image_url":{"url":"..."}}`）vs 百炼 2.7 平铺（`{"type":"first_frame","url":"..."}`）。
+- 写带层级的字段一律用 `JsonNodePath.Set`，**不要 `body["input.media"]`**——那会生成字面键名。
 - 取文件名别用 `new Uri(相对路径, UriKind.RelativeOrAbsolute).AbsolutePath`，相对地址会抛异常。
 
 ## 单实例约束（踩过两次，症状极具误导性）

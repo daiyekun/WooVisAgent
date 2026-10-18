@@ -64,39 +64,58 @@ public static class VideoRequestBuilder
         if (!string.IsNullOrWhiteSpace(request.Model.ModelKey))
             JsonNodePath.Set(body, fields.Model, JsonValue.Create(request.Model.ModelKey));
 
-        // 提示词排在数组第一位，与官方示例一致
-        var content = new JsonArray
+        var content = new JsonArray();
+
+        // 提示词有两种放法：火山方舟把它塞进数组第一位（type=text），
+        // 百炼则仍然是 input.prompt 这种普通字段（TextItemType 留空即表示这种）
+        if (!string.IsNullOrWhiteSpace(fields.TextItemType))
         {
-            new JsonObject
+            content.Add(new JsonObject
             {
-                ["type"] = fields.TextItemType ?? "text",
+                ["type"] = fields.TextItemType,
                 ["text"] = request.Prompt,
-            },
-        };
+            });
+        }
+        else
+        {
+            JsonNodePath.Set(body, fields.Prompt, JsonValue.Create(request.Prompt));
+        }
 
         var references = request.EffectiveReferences;
         for (var index = 0; index < references.Count; index++)
         {
             var reference = references[index];
-            var (itemType, role) = ResolveItem(request.Mode, reference.Kind, index, fields);
+            var (typeValue, role, nestedKey) = ResolveItem(request.Mode, reference.Kind, index, fields);
 
-            var item = new JsonObject
+            var item = new JsonObject { ["type"] = typeValue };
+
+            if (nestedKey is null)
             {
-                ["type"] = itemType,
-                [itemType] = new JsonObject
+                // 平铺写法：地址与 type 同级（百炼 2.7 的 media 数组）
+                item[fields.UrlField ?? "url"] = reference.Url;
+            }
+            else
+            {
+                // 嵌套写法：地址包在与 type 同名的子对象里（火山方舟的 content 数组）
+                item[nestedKey] = new JsonObject
                 {
                     [fields.UrlField ?? "url"] = reference.Url,
-                },
-            };
+                };
 
-            // role 为空表示"不声明角色"，比如某些厂商不需要区分参考图
-            if (!string.IsNullOrWhiteSpace(role) && !string.IsNullOrWhiteSpace(fields.RoleField))
-                item[fields.RoleField] = role;
+                // role 为空表示"不声明角色"，比如某些厂商不需要区分参考图
+                if (!string.IsNullOrWhiteSpace(role) && !string.IsNullOrWhiteSpace(fields.RoleField))
+                    item[fields.RoleField] = role;
+            }
 
             content.Add(item);
         }
 
-        body[fields.ContentArray ?? "content"] = content;
+        // 没有任何素材时不写这个字段：百炼的 media 传空数组会直接报参数错误，
+        // 而"文生视频"本来就该是一个字段都不带。
+        // 用 JsonNodePath 而不是 body[key]：数组路径可能带层级（百炼是 input.media），
+        // 直接按字面键名赋值会生成一个名叫 "input.media" 的属性，供应商当然认不出来。
+        if (content.Count > 0)
+            JsonNodePath.Set(body, fields.ContentArray, content);
 
         if (request.DurationSeconds is > 0)
             JsonNodePath.Set(body, fields.Duration, JsonValue.Create(request.DurationSeconds.Value));
@@ -111,30 +130,41 @@ public static class VideoRequestBuilder
     }
 
     /// <summary>
-    /// 决定每个素材项的 <c>type</c> 与 <c>role</c>。
+    /// 决定每个素材项的 <c>type</c>、可选的 <c>role</c>，以及地址是嵌套还是平铺。
     ///
-    /// 首尾帧与全能参考在官方文档里是<b>互斥</b>的：首尾帧必须用
+    /// <para>首尾帧与全能参考在官方文档里是<b>互斥</b>的：首尾帧必须用
     /// <c>first_frame</c> / <c>last_frame</c>，不能写成 <c>reference_image</c>；
-    /// 智能多帧走的是"多张参考图"，因此用 <c>reference_image</c>。
+    /// 智能多帧走的是"多张参考图"，因此用 <c>reference_image</c>。</para>
     /// </summary>
-    private static (string ItemType, string? Role) ResolveItem(
+    private static (string TypeValue, string? Role, string? NestedKey) ResolveItem(
         VideoGenerationMode mode,
         VideoReferenceKind kind,
         int index,
         VideoRequestFieldMap fields)
     {
-        if (mode == VideoGenerationMode.FirstLastFrame)
+        var role = mode switch
         {
-            var role = index == 0 ? fields.RoleFirstFrame : fields.RoleLastFrame;
-            return (fields.ImageItemType ?? "image_url", role);
-        }
-
-        return kind switch
-        {
-            VideoReferenceKind.Video => (fields.VideoItemType ?? "video_url", fields.RoleReferenceVideo),
-            VideoReferenceKind.Audio => (fields.AudioItemType ?? "audio_url", fields.RoleReferenceAudio),
-            _ => (fields.ImageItemType ?? "image_url", fields.RoleReferenceImage),
+            VideoGenerationMode.FirstLastFrame => index == 0 ? fields.RoleFirstFrame : fields.RoleLastFrame,
+            _ => kind switch
+            {
+                VideoReferenceKind.Video => fields.RoleReferenceVideo,
+                VideoReferenceKind.Audio => fields.RoleReferenceAudio,
+                _ => fields.RoleReferenceImage,
+            },
         };
+
+        // 平铺协议（百炼 2.7）：没有独立 role 字段，类型值本身就是角色名
+        if (fields.UrlInline)
+            return (role ?? "image", null, null);
+
+        var itemType = kind switch
+        {
+            VideoReferenceKind.Video => fields.VideoItemType ?? "video_url",
+            VideoReferenceKind.Audio => fields.AudioItemType ?? "audio_url",
+            _ => fields.ImageItemType ?? "image_url",
+        };
+
+        return (itemType, role, itemType);
     }
 
     /// <summary>
@@ -159,7 +189,14 @@ public static class VideoRequestBuilder
             && resolution.Length > 0
             && !string.IsNullOrWhiteSpace(fields.Resolution))
         {
-            JsonNodePath.Set(body, fields.Resolution, JsonValue.Create(ToTierLower(resolution)));
+            var tier = ToTier(resolution);
+
+            // 大小写不是风格而是硬约束：百炼要 720P，火山方舟要 720p，传错直接被拒
+            var value = spec.ResolutionStyle == VideoResolutionStyle.TierLower
+                ? tier.ToLowerInvariant()
+                : tier;
+
+            JsonNodePath.Set(body, fields.Resolution, JsonValue.Create(value));
         }
 
         if (string.IsNullOrWhiteSpace(fields.Ratio))
@@ -177,13 +214,6 @@ public static class VideoRequestBuilder
 
         if (resolution.Length > 0)
             JsonNodePath.Set(body, fields.Ratio, JsonValue.Create(ToRatio(resolution)));
-    }
-
-    /// <summary>像素尺寸或档位 → 小写档位（火山方舟要 720p 而不是 720P）</summary>
-    private static string ToTierLower(string resolution)
-    {
-        var tier = ToTier(resolution);
-        return tier.ToLowerInvariant();
     }
 
     /// <summary>构造提交任务的 JSON 请求体</summary>

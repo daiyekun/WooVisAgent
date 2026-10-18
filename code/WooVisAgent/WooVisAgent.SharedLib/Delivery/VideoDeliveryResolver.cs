@@ -114,6 +114,14 @@ public sealed class VideoRequestFieldTemplate
     public string? RoleReferenceImage { get; set; }
     public string? RoleReferenceVideo { get; set; }
     public string? RoleReferenceAudio { get; set; }
+
+    /// <summary>
+    /// 素材地址是否与 <c>type</c> 同级。
+    /// 百炼 2.7 的 media 数组是 <c>{"type":"first_frame","url":"..."}</c>（平铺），
+    /// 火山方舟的 content 是 <c>{"type":"image_url","image_url":{"url":"..."}}</c>（嵌套）。
+    /// 留空表示沿用预设。
+    /// </summary>
+    public bool? UrlInline { get; set; }
 }
 
 /// <summary>
@@ -308,6 +316,7 @@ public static class VideoDeliveryResolver
             RoleReferenceImage = Override(template.RoleReferenceImage, preset.RoleReferenceImage),
             RoleReferenceVideo = Override(template.RoleReferenceVideo, preset.RoleReferenceVideo),
             RoleReferenceAudio = Override(template.RoleReferenceAudio, preset.RoleReferenceAudio),
+            UrlInline = template.UrlInline ?? preset.UrlInline,
         };
     }
 

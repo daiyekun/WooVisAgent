@@ -406,6 +406,19 @@ public sealed class VideoRequestFieldMap
     public string? RoleReferenceAudio { get; init; } = "reference_audio";
 
     /// <summary>
+    /// 地址是否与 <c>type</c> <b>同级</b>（而不是包在同名子对象里）。
+    ///
+    /// <para>这是两种数组协议的唯一结构差异，也是"抽象过度"的典型反例：</para>
+    /// <list type="bullet">
+    ///   <item>火山方舟：<c>{"type":"image_url","role":"first_frame","image_url":{"url":"..."}}</c>（嵌套）</item>
+    ///   <item>百炼 2.7：<c>{"type":"first_frame","url":"..."}</c>（平铺，且类型值直接是角色名）</item>
+    /// </list>
+    /// 把它做成开关而不是新形状，是因为两者的字段名、轮询方式、产物路径完全一致，
+    /// 为此再开一种 <c>BodyShape</c> 只会让"形状"这个维度失去意义。
+    /// </summary>
+    public bool UrlInline { get; init; }
+
+    /// <summary>
     /// 帧率字段路径。为空表示该预设不支持传帧率——大多数视频接口不接受自定义 fps，
     /// 多传一个它不认识的字段，轻则 400、重则被静默忽略。
     /// </summary>
