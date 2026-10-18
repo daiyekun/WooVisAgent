@@ -42,6 +42,11 @@ public static class DependencyInjection
         {
             builder.AddNpgsqlDbContext<AiCopilotDbContext>("woovisagent", configureDbContextOptions: options =>
                 options.AddInterceptors(sqlTracer));
+
+            // 只在真实数据库下检测：同一套库上跑两套实例会让进度推送随机丢失，
+            // 症状是"页面进度卡住但任务其实已完成"，很难从现象反推到根因。
+            // 这里拿到锁就安静，拿不到就大声告警，但不阻断启动。
+            builder.Services.AddHostedService<SingleInstanceGuard>();
         }
 
         builder.Services.AddScoped(typeof(IReadRepository<>), typeof(EfReadRepository<>));

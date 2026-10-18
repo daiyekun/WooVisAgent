@@ -526,6 +526,20 @@ function finishTask(taskId: string): void {
   void scrollToBottom()
 }
 
+/**
+ * 最近一次收到该任务推送的时间。
+ *
+ * 轮询不再因为"推送能通"就整个撤掉——推送是会丢的：
+ * Hub 重连、Aspire 多实例时消息被另一个 Api 进程消费、浏览器休眠后 WebSocket 断过，
+ * 都可能出现"该来的那条完成通知没到"。之前这里 stopPolling 之后，
+ * 一旦最后一条推送丢失，进度就永远停在最后一个收到的数值上（实测卡在 92%）。
+ * 现在改成：推送正常时按时间戳跳过无谓的请求，推送断了则轮询自动接管。
+ */
+const lastPushAt = new Map<string, number>()
+
+/** 推送刚到过就跳过这一轮轮询，兼顾及时性与请求量 */
+const PUSH_GRACE_MS = 8_000
+
 function startPolling(taskId: string): void {
   if (pollTimers.has(taskId)) return
 
@@ -536,6 +550,10 @@ function startPolling(taskId: string): void {
         stopPolling(taskId)
         return
       }
+
+      // 刚刚才收到推送，这一轮不用再查
+      const pushed = lastPushAt.get(taskId) ?? 0
+      if (Date.now() - pushed < PUSH_GRACE_MS) return
 
       try {
         const task = await fetchTaskByKind(taskId, card.kind)
@@ -565,6 +583,7 @@ function stopPolling(taskId: string): void {
 
 function stopWatch(taskId: string): void {
   watchers.delete(taskId)
+  lastPushAt.delete(taskId)
   stopPolling(taskId)
 
   const settle = settleTimers.get(taskId)
@@ -583,8 +602,8 @@ function watchTask(taskId: string, messageId: string): void {
 useTaskEvents((event) => {
   if (!watchers.has(event.taskId)) return
 
-  // 推送能通就说明链路是好的，轮询只是断线时的兜底，这里顺手撤掉省掉一半请求
-  stopPolling(event.taskId)
+  // 只记时间戳，不停轮询：漏掉的那一条推送由轮询兜底（见 lastPushAt 注释）
+  lastPushAt.set(event.taskId, Date.now())
 
   applyTaskUpdate(event.taskId, {
     status: event.status,

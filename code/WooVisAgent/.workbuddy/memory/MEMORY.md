@@ -49,3 +49,15 @@
 - 解析模型输出**不要假设整段 JSON 合法**：按 `"key"` 逐字段取值（`AgentJson.ExtractString/ExtractInt/
   ExtractStringArray` + `Unwrap` 拆嵌套）。qwen-plus 实测会包字符串、把结构塞进字段、夹未转义字符。
 - `Agent:EnableToolCalling` 断开工具声明；工具首次失败会自动去掉工具重试一次（兼容不支持 function calling 的中转）。
+
+## 单实例约束（踩过两次，症状极具误导性）
+
+- **同一套数据库上只允许跑一套 AppHost/Api/Worker**。两套并存时：状态变更消息被两个 Api 进程轮流消费，
+  浏览器连着的那个收不到「生成完成」→ 进度条永远停在最后一个数值（实测 92%），而任务其实早已成功；
+  后启动的实例抢不到 5199，Aspire 注入的 Vite 代理会指向已退出的进程 → 页面能开但接口全 502。
+- 启动前自查：`docker exec eventbus-b58fdf20 rabbitmqctl list_queues name consumers`
+  里 `WooVisAgent.Api` / `WooVisAgent.GenerateWorker` 的 consumers **必须都是 1**。
+- `SingleInstanceGuard` 已内置：advisory lock（`0x57564D49`）拿不到就 LogError 提示，抢到则静默；
+  用 `SELECT count(*) FROM pg_locks WHERE locktype='advisory'` 可验证。
+- 前端推送会丢，这是既定事实：聊天页与任务列表都保留轮询兜底
+  （推送只记 `lastPushAt` 时间戳，**不要因为"推送能通"就 `stopPolling`**——漏一条就永久卡住）。

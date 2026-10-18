@@ -193,10 +193,16 @@ function stopPolling(): void {
 
 function startPolling(): void {
   stopPolling()
-  const interval = appStore.autoRefreshInterval
-  if (interval > 0 && appStore.realtimeState !== 'connected') {
-    timer = setInterval(() => void taskStore.loadTasks(), interval)
-  }
+  const configured = appStore.autoRefreshInterval
+  if (configured <= 0) return
+
+  // SignalR 显示「已连接」不等于每条状态消息都能收到：
+  // Aspire 多实例时状态消息会被另一个 Api 进程消费走，页面就会停在旧数据上。
+  // 所以连接状态下也保留慢速轮询（推送正常时几乎无感，断推时列表能自愈）。
+  const interval =
+    appStore.realtimeState === 'connected' ? Math.max(configured, 10_000) : configured
+
+  timer = setInterval(() => void taskStore.loadTasks(), interval)
 }
 
 watch(

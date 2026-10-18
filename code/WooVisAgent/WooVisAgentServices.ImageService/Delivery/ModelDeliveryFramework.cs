@@ -545,7 +545,7 @@ public sealed class ModelDeliveryFramework : IModelDeliveryFramework
             || body.Contains("Free quota exhausted", StringComparison.OrdinalIgnoreCase))
         {
             return prefix +
-                "：账号的<b>免费额度已用尽</b>，且当前开启了「仅使用免费额度」模式，因此付费调用被拒绝。" +
+                "：账号的「免费额度已用尽」，且当前开启了「仅使用免费额度」模式，因此付费调用被拒绝。" +
                 "这不是程序问题，也换模型解决不了。请到百炼控制台的模型广场 → 该模型 → " +
                 "「开通服务 / 资源管理」里二选一：" +
                 "① 充值后关闭「仅使用免费额度」开关；② 切换到有额度的模型。";
