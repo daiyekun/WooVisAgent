@@ -80,3 +80,6 @@
   用 `SELECT count(*) FROM pg_locks WHERE locktype='advisory'` 可验证。
 - 前端推送会丢，这是既定事实：聊天页与任务列表都保留轮询兜底
   （推送只记 `lastPushAt` 时间戳，**不要因为"推送能通"就 `stopPolling`**——漏一条就永久卡住）。
+- 控制流**不要用"看最后一条消息有没有 taskId"这类间接推断**，让提交函数返回
+  `Promise<boolean>`，早退与 catch 显式 `return false`。聊天页有**两份输入状态**
+  （拖拽区 `attachments` + 视频模式面板 `videoReferences`），提交成功/新建会话都要一起清。

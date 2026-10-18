@@ -649,7 +649,12 @@ useTaskEvents((event) => {
   })
 })
 
-/** 提交一次图片生成。多轮迭代与首次生成共用这一条路径 */
+/**
+ * 提交一次图片生成。多轮迭代与首次生成共用这一条路径
+ *
+ * 返回是否真的把任务提交出去了：<b>调用方据此决定要不要清空输入区</b>，
+ * 失败时必须保留提示词与参考图，否则用户改个词重发都要重新贴图。
+ */
 async function submit(payload: {
   modelId: string
   prompt: string
@@ -662,14 +667,14 @@ async function submit(payload: {
   seed?: number
   references: string[]
   fromMessageId?: string
-}): Promise<void> {
+}): Promise<boolean> {
   // 与视频侧对称：只在图片分类内回退，避免把视频模型 id 发给图片接口
   const model =
     imageModels.value.find((item) => item.id === payload.modelId) ??
     modelStore.resolvePreferredModel('image')
   if (!model) {
     message.warning('还没有可用的图片模型，请先到「模型配置」里添加一个')
-    return
+    return false
   }
 
   // 实际使用的模型以解析结果为准：原模型可能已被删除或停用，
@@ -775,12 +780,16 @@ async function submit(payload: {
 
     // 后端会把这一轮写进会话，提交成功后刷新侧边栏的「最近会话」与角标
     void conversationStore.loadRecent()
+
+    return true
   } catch {
     // 错误提示已由拦截器统一弹出，这里只把卡片收尾，避免留下一个永远转圈的进度条
     card.status = 'failed'
     card.error = '提交失败，请检查模型配置后重试。'
     const target = messages.value.find((item) => item.id === assistantId)
     if (target) target.text = '这次没能提交成功，请检查模型配置后重试。'
+
+    return false
   }
 }
 
@@ -800,7 +809,7 @@ async function submitVideo(
     /** 参考素材；重跑旧卡片时可能不带，此时只用首帧 */
     references?: VideoReferenceInput[]
   },
-): Promise<void> {
+): Promise<boolean> {
   // 只能回退到视频分类内的模型。之前这里回退到 currentModel，
   // 而重跑旧卡片时当前 mode 可能是图片，于是把图片模型 id 发给了视频接口，
   // 后端会以「该模型不是视频模型」直接拒绝。
@@ -809,7 +818,7 @@ async function submitVideo(
     modelStore.resolvePreferredModel('video')
   if (!model) {
     message.warning('还没有可用的视频模型，请先到「模型配置」里添加一个')
-    return
+    return false
   }
 
   // 与图片侧同理：实际使用的模型以解析结果为准，保证卡片、重跑、提交三者一致
@@ -899,11 +908,16 @@ async function submitVideo(
     watchTask(result.taskId, assistantId)
 
     void conversationStore.loadRecent()
+
+    return true
   } catch {
     card.status = 'failed'
     card.error = '提交失败，请检查视频模型配置后重试。'
     const target = messages.value.find((item) => item.id === assistantId)
     if (target) target.text = '这次没能提交成功，请检查视频模型配置后重试。'
+
+    // 失败时保留输入区内容，用户改一改就能重发
+    return false
   }
 }
 
@@ -939,8 +953,10 @@ async function send(): Promise<void> {
     message.warning('视频生成只使用第一张参考图作为首帧，其余的已忽略')
   }
 
+  let submitted = false
+
   if (mode.value === 'video') {
-    await submitVideo({
+    submitted = await submitVideo({
       modelId: currentModel.value.id,
       prompt: text,
       negativePrompt: negativePrompt.value.trim() || undefined,
@@ -956,7 +972,7 @@ async function send(): Promise<void> {
       references: mergedVideoReferences.value,
     })
   } else {
-    await submit({
+    submitted = await submit({
       modelId: currentModel.value.id,
       prompt: text,
       negativePrompt: negativePrompt.value.trim() || undefined,
@@ -971,11 +987,24 @@ async function send(): Promise<void> {
     })
   }
 
-  // 提交成功后才清空输入区，失败时保留内容方便用户改改再发
-  if (messages.value[messages.value.length - 1]?.card?.taskId) {
-    draft.value = ''
-    attachments.value = []
-  }
+  /**
+   * 提交成功才清空输入区，失败时原样保留，用户改一改就能重发。
+   *
+   * 曾经用"最后一条消息有没有 taskId"来判断成功与否——那是推断不是事实：
+   * 消息插入顺序一变（中间多插一条提示、或者走了别的分支）判断就会失准，
+   * 表现为任务已经生成、输入框里的提示词和素材却还留着，
+   * 用户以为没提交成功又点一次，白白生成两条。
+   */
+  if (!submitted) return
+
+  draft.value = ''
+  attachments.value.forEach((item) => URL.revokeObjectURL(item.previewUrl))
+  attachments.value = []
+
+  // 模式面板（全能 / 首尾帧 / 智能多帧）里的素材同样属于"这一轮的内容"，也要清。
+  // 模式本身保留：那是用户选的生成方式，不是这一次的输入。
+  videoReferences.value = []
+  void fitTextarea()
 }
 
 /** 重跑：沿用上一轮的模型与参数，不改任何设置再来一次 */
@@ -1032,6 +1061,9 @@ function resetSession(): void {
   title.value = NEW_CHAT_TITLE
   draft.value = ''
   attachments.value = []
+  // 模式面板里的素材同样属于"这个会话的输入"：开新会话不带走，
+  // 否则上一轮的首尾帧图会莫名其妙地出现在下一轮里
+  videoReferences.value = []
   void fitTextarea()
 }
 
