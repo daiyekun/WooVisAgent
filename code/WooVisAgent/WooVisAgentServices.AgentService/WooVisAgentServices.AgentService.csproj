@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!--
+    Microsoft Agent Framework 1.25.0（GA）。
+    刻意只引 GA 包：Microsoft.Agents.AI.Hosting / .DurableTask 目前仍是 preview，
+    版本会漂移，本模块用不到。
+
+    本章节是本项目唯一依赖 MAF 的地方。若将来要整体摘除，
+    删掉这个项目 + Api 里的一处 AddAgentService 即可，生成链路零影响。
+  -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Agents.AI" Version="1.25.0" />
+    <PackageReference Include="Microsoft.Agents.AI.OpenAI" Version="1.25.0" />
+    <PackageReference Include="MediatR" Version="14.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.13" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.13" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WooVisAgent.EntityFrameworkCore\WooVisAgent.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\WooVisAgent.Services.Common\WooVisAgent.Services.Common.csproj" />
+    <ProjectReference Include="..\WooVisAgent.SharedLib\WooVisAgent.SharedLib.csproj" />
+  </ItemGroup>
+
+</Project>

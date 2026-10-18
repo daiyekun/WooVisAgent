@@ -18,6 +18,7 @@
     <ProjectReference Include="..\WooVisAgent.ServiceDefaults\WooVisAgent.ServiceDefaults.csproj" />
     <ProjectReference Include="..\WooVisAgent.Services.Common\WooVisAgent.Services.Common.csproj" />
     <ProjectReference Include="..\WooVisAgent.SharedLib\WooVisAgent.SharedLib.csproj" />
+    <ProjectReference Include="..\WooVisAgentServices.AgentService\WooVisAgentServices.AgentService.csproj" />
     <ProjectReference Include="..\WooVisAgentServices.IdentityService\WooVisAgentServices.IdentityService.csproj" />
     <ProjectReference Include="..\WooVisAgentServices.ImageService\WooVisAgentServices.ImageService.csproj" />
     <ProjectReference Include="..\WooVisAgentServices.ModelService\WooVisAgentServices.ModelService.csproj" />

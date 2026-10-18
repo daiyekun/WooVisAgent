@@ -17,6 +17,7 @@ using WooVisAgentServices.IdentityService;
 using WooVisAgentServices.IdentityService.Options;
 using WooVisAgentServices.ImageService;
 using WooVisAgentServices.VideoService;
+using WooVisAgentServices.AgentService;
 using WooVisAgentServices.ModelService;
 
 namespace WooVisAgent.Api;
@@ -41,6 +42,10 @@ public class Program
         // 视频生成用例：与图片同构的异步链路（提交 → RabbitMQ → Worker 生成 → SignalR 推送）。
         // 放在 AddImageService 之后，因为提交用例复用了它的通用派发器
         builder.AddVideoService();
+
+        // Agent 能力（Microsoft Agent Framework）：只做提示词润色与参数建议，
+        // 不提交任务、不参与轮询。注册期不发任何外部请求，没配语言模型也不影响启动
+        builder.AddAgentService();
 
         // 产物落盘实现。与 GenerateWorker 使用同一实现、同一目录，
         // 这样 Worker 写出的图片能被下面挂载的 /uploads 静态托管读到

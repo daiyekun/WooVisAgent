@@ -12,6 +12,7 @@ export * from './http'
 export * from './types'
 
 export * as authApi from './auth'
+export * as agentApi from './agent'
 export * as fileApi from './file'
 export * as imageApi from './image'
 export * as videoApi from './video'

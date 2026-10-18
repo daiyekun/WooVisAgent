@@ -13,7 +13,7 @@ import {
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { imageApi, videoApi } from '@/api'
+import { agentApi, imageApi, videoApi } from '@/api'
 import AppIcon from '@/components/common/AppIcon.vue'
 import ModelSettingForm from '@/components/ModelSettingForm.vue'
 import { useModelStore } from '@/stores/modelStore'
@@ -197,12 +197,62 @@ async function submit(): Promise<void> {
   }
 }
 
+/** 是否显示 Agent 润色入口 */
+const agentAvailable = ref(false)
+const polishing = ref(false)
+
+async function probeAgent(): Promise<void> {
+  try {
+    const status = await agentApi.fetchAgentStatus()
+    agentAvailable.value = status.enabled && status.available
+  } catch {
+    agentAvailable.value = false
+  }
+}
+
+/**
+ * 调用 Agent 润色提示词。
+ *
+ * 注意：这是**纯文本改写**，不会提交任何生成任务，也不会扣配额。
+ * 润色结果直接覆盖输入框，用户不满意可以撤销（Ctrl+Z）或重新手写。
+ */
+async function polishPrompt(): Promise<void> {
+  const source = form.prompt.trim()
+  if (!source) {
+    message.warning('先写一句描述，再让 Agent 润色')
+    return
+  }
+
+  polishing.value = true
+  try {
+    const result = await agentApi.polishPrompt({ prompt: source, target: taskType.value })
+    form.prompt = result.polished
+
+    // 负向提示词只补空位，不覆盖用户已经写好的内容
+    if (!form.negativePrompt.trim() && result.negative) {
+      form.negativePrompt = result.negative
+    }
+
+    message.success(result.tips[0] ? `已润色：${result.tips[0]}` : '提示词已润色')
+  } catch (error) {
+    const detail = (error as { message?: string })?.message
+    message.error(detail || '润色失败，请稍后重试')
+  } finally {
+    polishing.value = false
+  }
+}
+
 onMounted(async () => {
   if (!modelStore.models.length) {
     await modelStore.loadModels()
   }
   form.modelId = modelStore.resolvePreferredModel(taskType.value)?.id ?? null
+
+  // 探一次 Agent 可用性决定是否显示润色按钮。失败按不可用处理，
+  // 任何异常都不允许影响本页正常的提交路径
+  void probeAgent()
 })
+
 </script>
 
 <template>
@@ -259,7 +309,24 @@ onMounted(async () => {
             />
           </n-form-item>
 
-          <n-form-item label="提示词">
+          <n-form-item>
+            <template #label>
+              <span class="inline-flex items-center gap-1">
+                提示词
+                <!-- Agent 润色：纯文本改写，不提交任务。没配语言模型时整块不渲染 -->
+                <n-button
+                  v-if="agentAvailable"
+                  text
+                  type="primary"
+                  size="tiny"
+                  :loading="polishing"
+                  :disabled="!form.prompt.trim() || polishing"
+                  @click="polishPrompt"
+                >
+                  Agent 润色
+                </n-button>
+              </span>
+            </template>
             <n-input
               v-model:value="form.prompt"
               type="textarea"

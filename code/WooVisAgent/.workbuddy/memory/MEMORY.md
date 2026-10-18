@@ -39,3 +39,13 @@
 - **git 仓库根是 `D:\WooProject\AIVidio`，不是 `code\WooVisAgent`**；`.gitignore` 只有根目录一份，
   已改为全通配（`[Bb]in/`、`[Oo]bj/` 任意层级生效，覆盖所有项目）。想看本项目的 git 状态要在上层目录执行，
   或在 `code/WooVisAgent` 下直接跑 git（会作用于整个仓库）。
+
+## Agent（Microsoft Agent Framework）
+
+- MAF 只在 `WooVisAgentServices.AgentService` 里出现（GA 包 `Microsoft.Agents.AI` + `.OpenAI` 1.25.0，
+  nuspec 有独立 `net10.0` 依赖组）。**动 MAF 相关代码先看这个项目，别动生成链路**。
+- 红线：Agent 只做决策（改写提示词、推荐参数），**绝不提交任务、不跑轮询**；
+  `DeliveryFramework` 管执行、Wolverine 管长任务，三者互不替代。
+- 解析模型输出**不要假设整段 JSON 合法**：按 `"key"` 逐字段取值（`AgentJson.ExtractString/ExtractInt/
+  ExtractStringArray` + `Unwrap` 拆嵌套）。qwen-plus 实测会包字符串、把结构塞进字段、夹未转义字符。
+- `Agent:EnableToolCalling` 断开工具声明；工具首次失败会自动去掉工具重试一次（兼容不支持 function calling 的中转）。
