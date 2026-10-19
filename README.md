@@ -107,3 +107,17 @@
 <img width="972" height="756" alt="image" src="https://github.com/user-attachments/assets/5cb94ccc-9964-4f46-b776-42a7e2ccc4d0" />
 
 更加详细的产品架构请看产品架构文档： [产品架构文档](docs/prd/ARCHITECTURE.md)
+
+## 四、怎么跑起来（步骤清单）
+1. 装好 .NET 10 SDK 与 Docker（数据库和消息队列用容器起）。
+2. 拉代码：`git clone https://github.com/daiyekun/WooVisAgent.git`
+3. 根目录用 `dotnet run` 启动 AppHost（Aspire 会拉起 Api、Worker、PostgreSQL、RabbitMQ）。
+4. 前端在 `WooVisAgent.Web` 目录 `npm install && npm run dev`。
+5. 进模型配置页，选一个预设、填 endpoint 和 key，保存默认模型。
+6. 回到对话或任务页，写需求、传素材、提交，看进度。
+
+
+
+> 如果需要人多，未来考虑简化部署.....
+
+
