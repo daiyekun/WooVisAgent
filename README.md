@@ -110,7 +110,7 @@
 ## 四 .NET Aspir 资源平台
 <img width="2558" height="582" alt="image" src="https://github.com/user-attachments/assets/7a9a840f-f6a1-47b0-99d3-6f34347d9c79" />
 
-## 四、怎么跑起来（步骤清单）
+## 五、怎么跑起来（步骤清单）
 1. 装好 .NET 10 SDK 与 Docker（数据库和消息队列用容器起）。
 2. 拉代码：`git clone https://github.com/daiyekun/WooVisAgent.git`
 3. 根目录用 `dotnet run` 启动 AppHost（Aspire 会拉起 Api、Worker、PostgreSQL、RabbitMQ）。
