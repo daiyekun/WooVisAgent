@@ -107,6 +107,8 @@
 <img width="972" height="756" alt="image" src="https://github.com/user-attachments/assets/5cb94ccc-9964-4f46-b776-42a7e2ccc4d0" />
 
 更加详细的产品架构请看产品架构文档： [产品架构文档](docs/prd/ARCHITECTURE.md)
+## 四 .NET Aspir 资源平台
+<img width="2558" height="582" alt="image" src="https://github.com/user-attachments/assets/7a9a840f-f6a1-47b0-99d3-6f34347d9c79" />
 
 ## 四、怎么跑起来（步骤清单）
 1. 装好 .NET 10 SDK 与 Docker（数据库和消息队列用容器起）。
